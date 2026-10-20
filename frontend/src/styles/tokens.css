@@ -1,0 +1,89 @@
+/*
+ * NavAgenda — tokens del sistema de diseño.
+ * Única fuente de verdad: los componentes usan estas variables (vía utilidades de Tailwind),
+ * nunca valores sueltos. Contrastes verificados contra WCAG AA.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Fondo y superficies: carbón cálido en capas */
+  --bg: #0e0d0c;
+  --surface-1: #171614; /* tarjetas, paneles */
+  --surface-2: #1f1e1b; /* inputs, filas en hover */
+  --surface-3: #2a2825; /* popovers, elementos elevados */
+
+  /* Líneas */
+  --border: #34312c; /* divisores y bordes finos decorativos */
+  --border-strong: #4a4640; /* bordes con más presencia (hover de tarjetas) */
+  --border-input: #736c62; /* borde de controles: 3:1 sobre surface-2 */
+
+  /* Texto (marfil) */
+  --text: #f2ece1; /* 14:1 sobre surface-2 */
+  --text-muted: #b8b0a3; /* 7.7:1 */
+  --text-subtle: #9a9388; /* ≥4.8:1 en todas las superficies */
+
+  /* Acento metálico: lo sobrescribe cada barbería (data-accent-scope) */
+  --accent: #c9a46a; /* dorado viejo */
+  --on-accent: #1a1408;
+
+  /* Semánticos */
+  --success: #8dbf98;
+  --warning: #e3a85c;
+  --danger: #e08a79; /* texto/ícono de error */
+  --danger-strong: #9e4434; /* fondo de botón destructivo (marfil encima: 5.4:1) */
+  --info: #8fb0d1;
+
+  /* Estados del turno */
+  --st-reservado: #8fb0d1;
+  --st-asistio: #8dbf98;
+  --st-ausente: #e08a79;
+  --st-cancelado: #a39c91;
+  --st-bloqueo: #4a4640;
+
+  /* Tipografía */
+  --type-display: 'Bodoni Moda', 'Bodoni 72', 'Didot', Georgia, serif;
+  --type-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Radios */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+
+  /* Elevación: sombras suaves con un brillo superior de 1px */
+  --highlight: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --elev-1: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px -2px rgb(0 0 0 / 0.35);
+  --elev-2: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 12px 32px -8px rgb(0 0 0 / 0.45);
+  --elev-3: 0 12px 24px -6px rgb(0 0 0 / 0.55), 0 32px 64px -16px rgb(0 0 0 / 0.6);
+
+  /* Movimiento */
+  --motion-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+
+  /* Accesibilidad */
+  --tap-min: 44px;
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
+/*
+ * Derivados del acento. Se declaran también en cada scope para que, si una barbería
+ * cambia --accent en un contenedor, sus tonos se recalculen ahí y no hereden los de :root.
+ */
+:root,
+[data-accent-scope] {
+  --accent-hover: color-mix(in oklch, var(--accent) 84%, white);
+  --accent-press: color-mix(in oklch, var(--accent) 88%, black);
+  --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+  --accent-line: color-mix(in oklch, var(--accent) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}
