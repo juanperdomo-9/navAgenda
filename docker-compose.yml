@@ -1,0 +1,23 @@
+# Postgres local para desarrollo y tests. Misma versión mayor que Supabase.
+# Uso: docker compose up -d
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: navagenda-db
+    environment:
+      POSTGRES_USER: navagenda
+      POSTGRES_PASSWORD: navagenda
+      POSTGRES_DB: navagenda
+    ports:
+      - "5433:5432"
+    volumes:
+      - navagenda-db:/var/lib/postgresql/data
+      - ./backend/db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U navagenda"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  navagenda-db:

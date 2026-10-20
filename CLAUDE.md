@@ -81,6 +81,9 @@ Los barberos **no tienen login propio** en el MVP: son entidades que crea y gest
 - Flujo de reserva: elegir servicio → elegir barbero (o "el primero disponible") → elegir día y horario → nombre + teléfono → confirmar.
 - Pantalla de confirmación con el link privado del turno, botón "agregar al calendario" y progreso del beneficio ("te faltan 2 cortes para tu corte gratis").
 
+Convenciones de la base: IDs UUID, fechas `timestamptz` (UTC), estados y tipos como texto con CHECK.
+Las tablas hijas llevan `barberia_id` con FKs compuestas `(id, barberia_id)`: la base rechaza mezclar datos de dos barberías.
+
 ## Reglas de negocio clave
 - Nunca dos turnos superpuestos para el mismo barbero. Validarlo en el backend y con constraint en la base (EXCLUDE con btree_gist).
 - Los horarios disponibles salen de: horario laboral del barbero − turnos existentes − bloqueos − duración del servicio.
@@ -93,12 +96,13 @@ Los barberos **no tienen login propio** en el MVP: son entidades que crea y gest
 - `barberias`: id, nombre, slug, logo_url, color_acento, direccion, ciudad, barrio, lat, lng, descripcion, horas_min_cancelacion, activa
 - `usuarios` (solo admin/superadmin): id, barberia_id (null para superadmin), nombre, usuario, password_hash, rol (superadmin/admin), activo
 - `barberos`: id, barberia_id, nombre, foto_url, activo, creado_en
-- `horarios_barbero`: id, barbero_id, dia_semana, desde, hasta
-- `servicios`: id, barberia_id, nombre, precio, duracion_min, activo
+- `horarios_barbero`: id, barbero_id, dia_semana (0 = lunes), desde, hasta — puede haber varios tramos por día
+- `servicios`: id, barberia_id, nombre, precio (pesos enteros), duracion_min (múltiplo de 5), activo
+- `barbero_servicios`: barbero_id, servicio_id, barberia_id — qué servicios hace cada barbero
 - `clientes`: id, barberia_id, telefono (E.164), nombre, bloqueado, creado_en — único por (barberia_id, telefono)
 - `turnos`: id, barberia_id, barbero_id, cliente_id, servicio_id, inicio, fin, precio, estado (reservado/asistio/no_asistio/cancelado), beneficio_aplicado, token_acceso_hash, origen (web/manual), creado_en
-- `bloqueos`: id, barbero_id, inicio, fin, motivo
-- `reglas_beneficio`: id, barberia_id, cada_x_cortes, tipo, valor, descripcion, activa
+- `bloqueos`: id, barberia_id, barbero_id, inicio, fin, motivo (los días libres sueltos son bloqueos de día completo)
+- `reglas_beneficio`: id, barberia_id, cada_x_cortes, tipo, valor, servicio_id (para servicio gratis), descripcion, activa — una sola activa por barbería
 - `fidelidad`: cliente_id, barberia_id, cortes_acumulados, beneficios_disponibles
 
 ## Diseño: 100% profesional y premium
@@ -138,11 +142,14 @@ Dirección visual:
 
 ## Comandos
 - Frontend: `cd frontend && npm install && npm run dev` (http://localhost:5173), `npm run build`, `npm test`, `npm run typecheck`
+- Base local: `docker compose up -d` (Postgres 17 en localhost:5433, bases `navagenda` y `navagenda_test`)
 - Backend: `cd backend && uv sync && uv run uvicorn app.main:app --reload` (http://localhost:8000/health), `uv run pytest`
+- Migraciones: `cd backend && uv run alembic upgrade head` (usa `DATABASE_URL`; sin definir, la base local)
+- Datos de ejemplo: `cd backend && uv run python -m app.db.seed`
 
 ## Orden de tareas
 1. ✅ Sistema de diseño (tokens y componentes base) y estructura del proyecto
-2. Esquema de base y migraciones (Alembic sobre Supabase), con datos de ejemplo (1 barbería, 3 barberos, 4 servicios)
+2. ✅ Esquema de base y migraciones (Alembic sobre Supabase), con datos de ejemplo (1 barbería, 3 barberos, 4 servicios)
 3. Auth del panel (admin y superadmin) con usuario y contraseña, y roles
 4. ABM de barberos, servicios y horarios
 5. Cálculo de horarios disponibles (con tests)

@@ -8,7 +8,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=("../.env", ".env"), extra="ignore")
 
-    database_url: str = "postgresql+psycopg://localhost:5432/navagenda"
+    # Por defecto, el Postgres local de docker-compose. En Supabase se define en .env.
+    database_url: str = "postgresql+psycopg://navagenda:navagenda@127.0.0.1:5433/navagenda"
+    test_database_url: str = (
+        "postgresql+psycopg://navagenda:navagenda@127.0.0.1:5433/navagenda_test"
+    )
     jwt_secret: str = ""
     cors_origins: str = "http://localhost:5173"
 
