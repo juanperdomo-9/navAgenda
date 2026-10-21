@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { api, ApiError } from '@/lib/api'
 import { estiloBarberia, fechaLarga, horaAR, pesos } from './comun'
+import { Cargando } from './Cargando'
 import './barberia.css'
 
 type Ticket = {
@@ -20,7 +21,7 @@ export function TicketPage() {
   const [confirmando, setConfirmando] = useState(false)
   const [msg, setMsg] = useState('')
 
-  if (t.isPending) return <div className="pb grid place-items-center">Cargando…</div>
+  if (t.isPending) return <Cargando texto="Buscando tu turno…" />
   if (t.isError) return <div className="pb tk-pag"><p className="tk-msg" role="alert">{t.error instanceof ApiError && t.error.status === 404 ? 'No encontramos ese turno. Revisá el link.' : t.error.message}</p></div>
   const d = t.data, b = d.barberia
   const mapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${b.direccion ?? ''}, ${b.ciudad ?? 'La Plata'}`)}`

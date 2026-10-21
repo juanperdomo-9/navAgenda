@@ -6,19 +6,19 @@ import { NotFoundPage } from '@/routes/NotFoundPage'
 import { estiloBarberia, guardarTicket, horaAR, hoyMas, pesos, tinta } from './comun'
 import { Led } from './Led'
 import { diaDe, Secciones, type Libre, type PaginaBarberia } from './Secciones'
+import { Cargando } from './Cargando'
 import './barberia.css'
 
 type Pagina = PaginaBarberia & { color_acento: string }
 
 const sinTildes = (t: string) => t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
-const iniciales = (n: string) => n.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
 
 /** navagenda.com.ar/:slug — la página que comparte cada barbería. Diseño: design/barberia. */
 export function BarberiaPage() {
   const { slug = '' } = useParams()
   const [params] = useSearchParams()
   const pag = useQuery({ queryKey: ['pagina', slug], queryFn: () => api<Pagina>(`/p/${slug}`), retry: false })
-  if (pag.isPending) return <div className="pb grid place-items-center" aria-busy>Cargando…</div>
+  if (pag.isPending) return <Cargando />
   if (pag.error instanceof ApiError && pag.error.status === 404) return <NotFoundPage />
   if (pag.isError) return <div className="pb p-6" role="alert">{pag.error.message}</div>
   return <Maquina p={pag.data} con={params.get('con')} />
@@ -76,17 +76,10 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
           )}
         </div>
         <section className="maq" aria-label="Sacá tu turno" ref={maq}>
-          <fieldset>
-            <legend>¿Con quién?</legend>
-            <div className="chips">
-              {[{ id: null as string | null, nombre: 'Cualquiera' }, ...p.barberos].map((b) => (
-                <button key={b.id ?? 'todos'} type="button" className="chipb" aria-pressed={barbero === b.id} onClick={() => setBarbero(b.id)}>
-                  <span className={`ini ${b.id ? '' : 'todos'}`} aria-hidden>{b.id ? iniciales(b.nombre) : '·'}</span>
-                  {b.nombre.split(' ').slice(0, 2).join(' ')}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {barbero && (
+            <p className="con-quien">Con {p.barberos.find((b) => b.id === barbero)?.nombre}
+              <button type="button" onClick={() => setBarbero(null)}>Ver con todos</button></p>
+          )}
           <div className="dias" role="group" aria-label="Día">
             <button type="button" aria-pressed={!fecha && dia === 0} onClick={() => { setFecha(''); setDia(0) }}>Hoy</button>
             <button type="button" aria-pressed={!fecha && dia === 1} onClick={() => { setFecha(''); setDia(1) }}>Mañana</button>
@@ -105,18 +98,6 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
           <p className="fine">Nombre y teléfono, nada más. Sin cuenta, sin seña.</p>
         </section>
       </main>
-      {lista.length > 1 && (
-        <section className="mas" aria-label="Más horarios">
-          <h2>Más horarios {diaTxt}</h2>
-          <div className="stubs">
-            {lista.slice(1, 13).map((l) => (
-              <button key={l.inicio + l.barbero_id} type="button" className="stub" onClick={() => setElegido(l)} aria-label={`${horaAR(l.inicio)} con ${nombreDe(l.barbero_id)}`}>
-                <b>{horaAR(l.inicio)}</b><span>con {nombreDe(l.barbero_id)}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
       <Secciones p={p} servicio={servicio} setServicio={elegirServicio} nombreDe={nombreDe} onElegir={setElegido} subir={subir} />
       <dialog ref={hoja} className="hoja-p" onClose={() => setElegido(null)} aria-label="Tus datos">
         {elegido && (
