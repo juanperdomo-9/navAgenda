@@ -196,9 +196,10 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Crear el superadmin: `cd backend && uv run python -m app.cli crear-superadmin <usuario> "<nombre>"` (pide la clave)
 
 ## Estado actual y próximos pasos (actualizado 2026-10-21)
-- **Backend listo**: esquema + migraciones, auth del panel, API del panel (`/panel/*`: barberos, horarios, días libres,
-  servicios, configuración) con 73 tests. Falta: cálculo de horarios disponibles (tarea 5), API pública de reserva (6),
-  turnos/grilla (7), fidelidad (8), números (9).
+- **Backend listo para salir** (105 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
+  horarios libres cada 30 min, API pública (`/p/{slug}`, `/p/{slug}/libres`, `/p/{slug}/turnos`, `/t/{token}`),
+  agenda (`/panel/agenda`, asistió/no vino con tarjeta de cortes, corregir, turno a mano). Falta: números (9).
+  Primera barbería real: `uv run python -m app.cli cargar-inspirationmen`.
 - **Diseño aprobado en prototipos** (fuente de verdad visual para portar a React):
   - `design/hero/` portal · `design/barberia/` página de la barbería · `design/panel/` panel completo
     (`ingresar.html`, `index.html` + `panel.css` + `panel.js`: Agenda con grilla cada 30 min y todos los días, Barberos con
