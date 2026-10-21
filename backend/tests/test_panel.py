@@ -322,3 +322,30 @@ def test_superadmin_y_anonimo_no_usan_el_panel(client, db):
     crear_usuario(db, "juan", rol="superadmin")
     ingresar(client, "juan")
     assert client.get("/panel/barberos").status_code == 403
+
+
+def test_regla_de_fidelidad_se_reemplaza(client, admin):
+    assert client.get("/panel/fidelidad").json() is None
+    s = client.get("/panel/servicios").json()[0]["id"]
+    r = client.put(
+        "/panel/fidelidad",
+        json={
+            "cada_x_cortes": 6,
+            "tipo": "servicio_gratis",
+            "servicio_id": s,
+            "descripcion": "Cada 6, uno gratis",
+        },
+    )
+    assert r.status_code == 200 and r.json()["cada_x_cortes"] == 6
+    r = client.put(
+        "/panel/fidelidad",
+        json={"cada_x_cortes": 4, "tipo": "descuento_pct", "valor": 50, "descripcion": "50% off"},
+    )
+    assert client.get("/panel/fidelidad").json()["tipo"] == "descuento_pct"
+    assert (
+        client.put(
+            "/panel/fidelidad",
+            json={"cada_x_cortes": 4, "tipo": "descuento_pct", "valor": 150, "descripcion": "x"},
+        ).status_code
+        == 422
+    )

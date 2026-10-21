@@ -20,7 +20,7 @@ type Turno = { id: string; barbero_id: string; inicio: string; fin: string; prec
 type Agenda = { cada_x_cortes: number | null; premio: string | null; turnos: Turno[]; bloqueos: { id: string; barbero_id: string; inicio: string; fin: string; motivo: string | null }[] }
 
 /** Hoja (panel lateral) reutilizable. */
-function Hoja({ titulo, abierta, onCerrar, children, pie }: { titulo: string; abierta: boolean; onCerrar: () => void; children: ReactNode; pie: ReactNode }) {
+export function Hoja({ titulo, abierta, onCerrar, children, pie }: { titulo: string; abierta: boolean; onCerrar: () => void; children: ReactNode; pie: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => { if (abierta) ref.current?.showModal(); else ref.current?.close() }, [abierta])
   return (

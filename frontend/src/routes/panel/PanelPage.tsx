@@ -1,17 +1,20 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, ExternalLink, LogOut } from 'lucide-react'
+import { CalendarDays, ExternalLink, Globe, LogOut, Scissors, Users } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { api, ApiError, type UsuarioPanel } from '@/lib/api'
 import { Agenda } from './Agenda'
+import { Barberos, MiPagina, Servicios } from './Vistas'
 import './panel.css'
 
 type Config = { nombre: string; slug: string }
+const NAV = [['agenda', 'Agenda', CalendarDays], ['barberos', 'Barberos', Users], ['servicios', 'Servicios', Scissors], ['pagina', 'Mi página', Globe]] as const
 
 /** Panel de la barbería (diseño: design/panel). Verifica la sesión y muestra la Agenda. */
 export function PanelPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const [vista, setVista] = useState<'agenda' | 'barberos' | 'servicios' | 'pagina'>('agenda')
   const yo = useQuery({ queryKey: ['yo'], queryFn: () => api<UsuarioPanel>('/auth/yo'), retry: false })
   const admin = yo.data?.rol === 'admin' && !yo.data.debe_cambiar_clave
   const cfg = useQuery({ queryKey: ['p-config'], queryFn: () => api<Config>('/panel/barberia'), enabled: admin })
@@ -32,8 +35,8 @@ export function PanelPage() {
       <div className="app">
         <nav className="lado" aria-label="Panel">
           <div className="b"><span>Panel de</span><b className="cond">{nombre}</b></div>
-          <a href="/panel" aria-current="page"><CalendarDays className="i" aria-hidden />Agenda</a>
-          {cfg.data && <a href={`/${cfg.data.slug}`} target="_blank" rel="noopener"><ExternalLink className="i" aria-hidden />Mi página</a>}
+          {admin && NAV.map(([k, t, I]) => <a key={k} href="#" aria-current={vista === k ? 'page' : undefined} onClick={(e) => { e.preventDefault(); setVista(k) }}><I className="i" aria-hidden />{t}</a>)}
+          {cfg.data && <a href={`/${cfg.data.slug}`} target="_blank" rel="noopener"><ExternalLink className="i" aria-hidden />Ver mi página</a>}
           <a href="#" className="salir" onClick={(e) => { e.preventDefault(); salir() }}><LogOut className="i" aria-hidden />Salir</a>
         </nav>
         <div>
@@ -42,10 +45,11 @@ export function PanelPage() {
             <button type="button" className="ver-pagina" onClick={salir} style={{ background: 'none', cursor: 'pointer' }}>Salir</button>
           </header>
           {yo.data.debe_cambiar_clave ? <CambiarClave nombre={yo.data.nombre} onListo={() => qc.invalidateQueries({ queryKey: ['yo'] })} />
-            : admin ? <Agenda />
+            : admin ? (vista === 'agenda' ? <Agenda /> : vista === 'barberos' ? <Barberos /> : vista === 'servicios' ? <Servicios /> : <MiPagina />)
             : <main><div className="titulo"><h1 className="cond">Hola, {yo.data.nombre.split(' ')[0]}</h1><p>Sos superadmin. Las barberías se crean con la API /super o con los comandos de DEPLOY.md.</p></div></main>}
         </div>
       </div>
+      {admin && <nav className="abajo" aria-label="Panel" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>{NAV.map(([k, t, I]) => <a key={k} href="#" aria-current={vista === k ? 'page' : undefined} onClick={(e) => { e.preventDefault(); setVista(k); scrollTo(0, 0) }}><I className="i" aria-hidden />{k === 'pagina' ? 'Página' : t}</a>)}</nav>}
     </div>
   )
 }

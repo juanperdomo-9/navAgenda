@@ -5,13 +5,15 @@ Un id de otra barbería responde 404, igual que uno que no existe.
 """
 
 from datetime import UTC, datetime
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.api.deps import DB, Admin
-from app.models import Barberia, Barbero, Bloqueo, Servicio
+from app.models import Barberia, Barbero, Bloqueo, ReglaBeneficio, Servicio
 from app.schemas.panel import (
     BarberoCambios,
     BarberoNuevo,
@@ -222,3 +224,70 @@ def cambiar_barberos_del_servicio(
 def dar_de_baja_servicio(servicio_id: UUID, admin: Admin, db: DB) -> None:
     _servicio(db, admin, servicio_id).activo = False
     db.commit()
+
+
+# ─── Tarjeta de cortes (regla de fidelidad) ───
+
+
+class ReglaIn(BaseModel):
+    cada_x_cortes: int = Field(ge=1, le=20)
+    tipo: Literal["descuento_pct", "descuento_monto", "servicio_gratis", "texto"]
+    valor: int | None = Field(default=None, ge=1, le=10_000_000)
+    servicio_id: UUID | None = None
+    descripcion: str = Field(min_length=3, max_length=120)
+
+
+def _regla_out(r: ReglaBeneficio | None) -> dict | None:
+    if not r:
+        return None
+    return {
+        "cada_x_cortes": r.cada_x_cortes,
+        "tipo": r.tipo,
+        "valor": r.valor,
+        "servicio_id": r.servicio_id,
+        "descripcion": r.descripcion,
+    }
+
+
+@router.get("/fidelidad")
+def ver_regla(admin: Admin, db: DB):
+    return _regla_out(
+        db.scalar(
+            select(ReglaBeneficio).where(
+                ReglaBeneficio.barberia_id == admin.barberia_id, ReglaBeneficio.activa
+            )
+        )
+    )
+
+
+@router.put("/fidelidad")
+def cambiar_regla(datos: ReglaIn, admin: Admin, db: DB):
+    """Reemplaza la regla activa (la anterior queda guardada, inactiva). Las tarjetas siguen."""
+    if datos.tipo == "servicio_gratis":
+        if not datos.servicio_id:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, "Elegí qué servicio es gratis."
+            )
+        _servicio(db, admin, datos.servicio_id)
+    if datos.tipo in ("descuento_pct", "descuento_monto") and not datos.valor:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Poné el valor del descuento.")
+    if datos.tipo == "descuento_pct" and datos.valor > 100:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "El descuento va de 1 a 100%.")
+    for r in db.scalars(
+        select(ReglaBeneficio).where(
+            ReglaBeneficio.barberia_id == admin.barberia_id, ReglaBeneficio.activa
+        )
+    ):
+        r.activa = False
+    db.flush()
+    nueva = ReglaBeneficio(
+        barberia_id=admin.barberia_id,
+        cada_x_cortes=datos.cada_x_cortes,
+        tipo=datos.tipo,
+        valor=datos.valor if datos.tipo != "servicio_gratis" else None,
+        servicio_id=datos.servicio_id if datos.tipo == "servicio_gratis" else None,
+        descripcion=datos.descripcion.strip(),
+    )
+    db.add(nueva)
+    db.commit()
+    return _regla_out(nueva)

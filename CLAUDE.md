@@ -212,8 +212,9 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Superadmin local de desarrollo: `juan` (lo crea el seed). En producción: `uv run python -m app.cli crear-superadmin`.
 - **En React y conectado**: portal `/` (próximo libre de todas + listado), `/:slug`, `/t/:token`, `/panel/ingresar`,
   `/panel` (Agenda completa + cambio de clave temporal). Deploy listo: `render.yaml` + `DEPLOY.md`.
-- **Falta para estar al 100%** (en este orden): en el panel, Barberos (franjas), Servicios y Mi página (color y regla de
-  fidelidad) — la API ya existe; después Clientes y Números (falta API: listado de clientes y totales por período);
+- Panel en React: Agenda, Barberos (franjas, servicios, días libres, baja), Servicios (edición completa) y Mi página
+  (links por barbero `?con=nombre-apellido`, color con contraste, datos, tarjeta de cortes).
+- **Falta para estar al 100%**: Clientes y Números (falta API: listado de clientes y totales por período);
   panel de superadmin (hoy por comandos); secciones de abajo de `/:slug` (precios, semana, mapa) y mapa del portal.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).

@@ -30,7 +30,8 @@ export function BarberiaPage() {
 
 function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   const navigate = useNavigate()
-  const inicial = p.barberos.find((b) => con && sinTildes(b.nombre.split(' ')[0]) === sinTildes(con))
+  // ?con=agus-martin (nombre completo) o ?con=thiago (nombre de pila)
+  const inicial = con ? p.barberos.find((b) => sinTildes(b.nombre).replace(/\s+/g, '-') === sinTildes(con)) ?? p.barberos.find((b) => sinTildes(b.nombre.split(' ')[0]) === sinTildes(con)) : undefined
   const [barbero, setBarbero] = useState<string | null>(inicial?.id ?? null)
   const servicios = p.servicios.filter((s) => !barbero || p.barberos.find((b) => b.id === barbero)?.servicio_ids.includes(s.id))
   const [servicio, setServicio] = useState(servicios[0]?.id ?? '')
