@@ -11,6 +11,7 @@ Primer arranque en producción (lo corre Render antes de levantar la API; no hac
 
 import argparse
 import getpass
+import os
 import sys
 
 from sqlalchemy import select
@@ -76,10 +77,12 @@ def cargar_inspirationmen() -> int:
 SUPERADMIN = ("juan", "Juan Perdomo")
 
 
-def preparar_inicial(db: Session) -> list[str]:
+def preparar_inicial(db: Session, hashes: dict[str, str] | None = None) -> list[str]:
     """Crea el superadmin y carga Inspirationmen si faltan, con claves temporales al azar.
 
-    Devuelve las líneas a mostrar (con las claves); vacía si ya estaba todo.
+    `hashes`: {usuario: hash argon2} de claves temporales que se cargan como variables
+    CLAVE_TEMPORAL_<USUARIO> en Render (sin Shell y sin que la clave pase por los logs).
+    Solo se aplican mientras el usuario todavía no eligió su clave. Devuelve las líneas a mostrar.
     """
     from app.core.security import clave_temporal
     from app.db import inspirationmen
@@ -96,18 +99,35 @@ def preparar_inicial(db: Session) -> list[str]:
                 debe_cambiar_clave=True,
             )
         )
-        avisos.append(f"Superadmin '{SUPERADMIN[0]}': clave temporal {clave}")
-    clave = inspirationmen.cargar(db)
-    if clave:
-        avisos.append(f"Admin 'inspirationmen': clave temporal {clave}")
+        avisos.append(f"Superadmin '{SUPERADMIN[0]}' creado (clave: variable CLAVE_TEMPORAL_JUAN)")
+    if inspirationmen.cargar(db):
+        avisos.append("Inspirationmen cargada (clave: variable CLAVE_TEMPORAL_INSPIRATIONMEN)")
+    db.flush()
+    for nombre, h in (hashes or {}).items():
+        u = buscar_por_usuario(db, nombre)
+        if not u or not h.startswith("$argon2"):
+            avisos.append(f"CLAVE_TEMPORAL de '{nombre}' ignorada (usuario o hash inválido)")
+        elif u.debe_cambiar_clave and u.password_hash != h:
+            u.password_hash, u.intentos_fallidos, u.bloqueado_hasta = h, 0, None
+            avisos.append(f"Usuario '{u.usuario}': clave temporal aplicada")
     return avisos
+
+
+def _hashes_del_entorno() -> dict[str, str]:
+    """CLAVE_TEMPORAL_JUAN=... → {"juan": ...}; los guiones del usuario van como "_"."""
+    pre = "CLAVE_TEMPORAL_"
+    return {
+        k[len(pre) :].lower().replace("_", "-"): v.strip()
+        for k, v in os.environ.items()
+        if k.startswith(pre) and v.strip()
+    }
 
 
 def inicial() -> int:
     with Session(get_engine()) as db, db.begin():
-        avisos = preparar_inicial(db)
+        avisos = preparar_inicial(db, _hashes_del_entorno())
     for a in avisos:
-        print(f"[NavAgenda] {a} (se cambia al entrar en /panel/ingresar)", flush=True)
+        print(f"[NavAgenda] {a}", flush=True)
     return 0
 
 

@@ -209,5 +209,25 @@ def test_arranque_inicial_crea_superadmin_e_inspirationmen_una_sola_vez(db):
     from app.cli import preparar_inicial
 
     avisos = preparar_inicial(db)
-    assert len(avisos) == 2 and "juan" in avisos[0] and "inspirationmen" in avisos[1]
+    assert len(avisos) == 2 and "juan" in avisos[0] and "Inspirationmen" in avisos[1]
+    assert not any("temporal " in a for a in avisos)  # las claves nunca van a los logs
     assert preparar_inicial(db) == []
+
+
+def test_clave_temporal_por_hash_y_no_pisa_la_clave_elegida(client, db):
+    from app.cli import preparar_inicial
+    from app.core.security import hashear_clave
+
+    preparar_inicial(db)
+    h = hashear_clave("temporal-de-prueba-1")
+    assert preparar_inicial(db, {"juan": h, "nadie": h}) == [
+        "Usuario 'juan': clave temporal aplicada",
+        "CLAVE_TEMPORAL de 'nadie' ignorada (usuario o hash inválido)",
+    ]
+    ingresar(client, "juan", "temporal-de-prueba-1")
+    client.post(
+        "/auth/cambiar-clave",
+        json={"clave_actual": "temporal-de-prueba-1", "clave_nueva": "mi-clave-nueva-123"},
+    )
+    # Ya eligió su clave: la variable que quedó en Render no la vuelve a pisar
+    assert preparar_inicial(db, {"juan": h}) == []

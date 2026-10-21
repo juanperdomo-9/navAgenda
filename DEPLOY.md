@@ -4,10 +4,13 @@
    copiá la del **Session pooler** y cambiá el comienzo `postgresql://` por `postgresql+psycopg://`.
 2. **Render**: *New → Blueprint* y elegí este repo (usa `render.yaml`, plan free). Cuando te pida `DATABASE_URL`,
    pegá la de Supabase. Al terminar quedan `navagenda-api` y `navagenda-web`.
-3. **Claves (sin Shell)**: en el primer arranque la API crea las tablas, tu superadmin `juan` y la barbería
-   Inspirationmen con su admin `inspirationmen`, cada uno con una clave temporal al azar.
-   Las ves en Render → `navagenda-api` → *Logs*, en las líneas que empiezan con `[NavAgenda]`.
-   En los arranques siguientes no se crea ni se cambia nada.
+3. **Claves (sin Shell y sin que pasen por los logs)**: en el primer arranque la API crea las tablas, tu superadmin
+   `juan` y la barbería Inspirationmen con su admin `inspirationmen`. Las claves temporales se cargan como hash
+   argon2 en variables de entorno de `navagenda-api`: `CLAVE_TEMPORAL_JUAN` y `CLAVE_TEMPORAL_INSPIRATIONMEN`
+   (para otro usuario: `CLAVE_TEMPORAL_<USUARIO>`, con "_" en lugar de "-"). Generar clave y hash:
+   `uv run python -c "from app.core.security import clave_temporal, hashear_clave as h; c=clave_temporal(); print(c, h(c))"`.
+   Solo se aplican mientras el usuario no eligió su clave; en los logs aparece "clave temporal aplicada".
+   Después del primer ingreso se pueden borrar las variables.
 4. Entrá a `https://navagenda-web.onrender.com/panel/ingresar` con `juan` y tu clave temporal: te pide elegir una
    propia. Pasale al dueño de Inspirationmen su usuario y su clave temporal (al entrar elige la suya y marca su
    local en *Mi página*). Probá `https://navagenda-web.onrender.com/inspirationmen`.
