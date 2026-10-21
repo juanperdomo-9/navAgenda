@@ -4,7 +4,7 @@ services:
     name: navagenda-api
     runtime: python
     rootDir: backend
-    plan: starter
+    plan: free
     buildCommand: pip install uv && uv sync --frozen --no-dev
     # Aplica las migraciones pendientes y arranca la API detrás del proxy de Render
     startCommand: uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
