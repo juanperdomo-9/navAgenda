@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f6d13a" />
+<title>Ingresar · NavAgenda</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23141210'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='900' font-size='15' text-anchor='middle' fill='%23f6d13a'%3EN%C2%BA%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" />
+<link rel="stylesheet" href="panel.css" />
+<style>
+  html, body { background: var(--roll); }
+  .entrar { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; }
+  .ticket { position: relative; width: 100%; max-width: 400px; background: var(--papel); padding: 0 24px 28px; }
+  .ticket::after { content: ''; position: absolute; left: 0; right: 0; bottom: -8px; height: 8px; background: radial-gradient(circle at 8px 0, var(--papel) 6px, transparent 6.5px) 0 0 / 16px 8px repeat-x; }
+  .ticket header { margin: 0 -24px 22px; padding: 16px 24px; background: var(--screen); color: var(--roll); display: flex; justify-content: space-between; align-items: center; }
+  .ticket header b { font-size: 24px; } .ticket header span { font: 700 12px 'Archivo'; color: var(--warm-2); }
+  .ticket h1 { font-size: 56px; line-height: .85; }
+  .ticket p { margin-top: 10px; font: 500 15px/1.4 'Archivo'; color: var(--ink-2); }
+  .ticket form { display: grid; gap: 4px; margin-top: 10px; }
+  .ojo { min-height: 44px; width: 44px; border: 0; background: none; cursor: pointer; font: 700 13px 'Archivo'; text-decoration: underline; flex: none; }
+  .error-caja { margin-top: 14px; padding: 12px 14px; border: 2px solid var(--mal); background: #b3261e0d; font: 600 15px/1.4 'Archivo'; color: var(--mal); }
+  .ticket .btn { margin-top: 18px; width: 100%; }
+  .ticket small.pie { display: block; margin-top: 18px; font: 500 13px/1.4 'Archivo'; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<main class="entrar">
+  <section class="ticket" aria-labelledby="t">
+    <header><b class="cond">NavAgenda</b><span>Panel de la barbería</span></header>
+    <h1 class="cond" id="t">Ingresar</h1>
+    <p>Para dueños y encargados. Tus clientes no necesitan cuenta.</p>
+    <form id="f" novalidate>
+      <label class="campo" id="c-u">Usuario<input id="u" autocomplete="username" autocapitalize="off" spellcheck="false" enterkeyhint="next" /></label>
+      <label class="campo" id="c-c">Clave<span class="prefijo"><input id="c" type="password" autocomplete="current-password" style="padding-left:14px" /><button class="ojo" type="button" id="ver" aria-pressed="false">Ver</button></span></label>
+      <div class="error-caja" id="err" role="alert" hidden></div>
+      <button class="btn" type="submit" id="ok">Entrar</button>
+    </form>
+    <small class="pie">¿Te olvidaste la clave? Escribile a NavAgenda y te damos una temporal para que la cambies al entrar.</small>
+  </section>
+</main>
+<script>
+  // Prototipo: "navaja" entra; "bloqueado" muestra el bloqueo por intentos; cualquier otro, error.
+  const $ = (s) => document.querySelector(s);
+  $('#ver').onclick = () => { const v = $('#c').type === 'password'; $('#c').type = v ? 'text' : 'password'; $('#ver').textContent = v ? 'Ocultar' : 'Ver'; $('#ver').setAttribute('aria-pressed', v); $('#ver').style.width = v ? '72px' : '44px'; };
+  $('#f').onsubmit = (e) => {
+    e.preventDefault();
+    const u = $('#u').value.trim().toLowerCase(), err = $('#err');
+    if (!u || !$('#c').value) { err.hidden = false; err.textContent = 'Completá tu usuario y tu clave.'; (u ? $('#c') : $('#u')).focus(); return; }
+    $('#ok').textContent = 'Entrando…'; $('#ok').disabled = true;
+    setTimeout(() => {
+      $('#ok').textContent = 'Entrar'; $('#ok').disabled = false;
+      if (u === 'navaja' || u === 'la-navaja') { location.href = './#hoy'; return; }
+      err.hidden = false;
+      err.textContent = u === 'bloqueado' ? 'Por seguridad bloqueamos la cuenta un rato. Probá de nuevo en 15 min.' : 'Usuario o clave incorrectos.';
+      $('#c').select();
+    }, 500);
+  };
+</script>
+</body>
+</html>
