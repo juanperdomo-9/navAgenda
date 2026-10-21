@@ -1,0 +1,36 @@
+# Deploy en Render (Blueprint). El deploy lo dispara Juan desde el panel de Render.
+services:
+  - type: web
+    name: navagenda-api
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    # Aplica las migraciones pendientes y arranca la API detrás del proxy de Render
+    startCommand: uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+      - key: ENTORNO
+        value: produccion
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # la connection string de Supabase (ver DEPLOY.md)
+
+  - type: web
+    name: navagenda-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      # La API va por el mismo dominio: la cookie de sesión queda propia del sitio
+      - type: rewrite
+        source: /api/*
+        destination: https://navagenda-api.onrender.com/*
+      # Todas las rutas (/inspirationmen, /t/..., /panel) las resuelve la app
+      - type: rewrite
+        source: /*
+        destination: /index.html

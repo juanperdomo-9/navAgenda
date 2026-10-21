@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { api, ApiError, type UsuarioPanel } from '@/lib/api'
 
@@ -28,10 +29,37 @@ export function PanelPage() {
       </header>
       <section className="p-6">
         <h1 className="cond text-6xl leading-[.85]">Hola, {yo.data.nombre.split(' ')[0]}</h1>
-        <p className="mt-3 text-tinta-2">
-          {yo.data.debe_cambiar_clave ? 'Antes de seguir tenés que cambiar tu clave temporal.' : 'Sesión iniciada. Las pantallas del panel llegan en los próximos pasos.'}
-        </p>
+        {yo.data.debe_cambiar_clave ? <CambiarClave onListo={() => qc.invalidateQueries({ queryKey: ['yo'] })} /> : (
+          <p className="mt-3 text-tinta-2">Sesión iniciada.</p>
+        )}
       </section>
     </main>
+  )
+}
+
+/** Primera entrada con clave temporal: hay que elegir una propia antes de usar el panel. */
+function CambiarClave({ onListo }: { onListo: () => void }) {
+  const [actual, setActual] = useState('')
+  const [nueva, setNueva] = useState('')
+  const [error, setError] = useState('')
+  async function enviar(e: FormEvent) {
+    e.preventDefault()
+    if (nueva.length < 10) return setError('La clave nueva tiene que tener al menos 10 caracteres.')
+    try {
+      await api('/auth/cambiar-clave', { method: 'POST', body: JSON.stringify({ clave_actual: actual, clave_nueva: nueva }) })
+      onListo()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No pudimos cambiar la clave.')
+    }
+  }
+  const campo = 'min-h-13 rounded-md border-2 border-linea-fuerte bg-papel px-3.5 text-[17px] font-semibold outline-none focus:border-tinta'
+  return (
+    <form onSubmit={enviar} className="mt-5 grid max-w-100 gap-3">
+      <p className="text-tinta-2">Entraste con una clave temporal. Elegí una tuya para seguir.</p>
+      <label className="grid gap-1.5 text-sm font-bold">Clave temporal<input className={campo} type="password" value={actual} onChange={(e) => setActual(e.target.value)} autoComplete="current-password" /></label>
+      <label className="grid gap-1.5 text-sm font-bold">Clave nueva (mínimo 10 caracteres)<input className={campo} type="password" value={nueva} onChange={(e) => setNueva(e.target.value)} autoComplete="new-password" /></label>
+      {error && <p role="alert" className="font-semibold text-mal">{error}</p>}
+      <button type="submit" className="cond min-h-13 rounded-md border-2 border-tinta bg-roll text-lg">Guardar clave</button>
+    </form>
   )
 }
