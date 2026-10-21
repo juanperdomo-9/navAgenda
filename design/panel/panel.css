@@ -116,6 +116,43 @@ main { padding: 24px var(--g) 110px; max-width: 1180px; width: 100%; display: gr
 .elegir { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 @media (min-width: 960px) { .solo-cel { display: none !important; } }
 
+/* Grilla del día: una columna por barbero, una fila cada 30 min */
+.leyenda { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font: 600 13px 'Archivo'; color: var(--ink-2); }
+.leyenda .k { display: inline-block; width: 16px; height: 16px; margin-right: -8px; border: 1.5px solid var(--ink); vertical-align: -3px; }
+.k.reservado { background: var(--papel); } .k.k-premio { background: var(--roll); } .k.asistio { background: var(--ink); } .k.no_asistio { background: #b3261e22; border-color: var(--mal); } .k.k-libre { border-style: dashed; border-color: var(--linea-fuerte); }
+.agenda { overflow-x: auto; border: 2px solid var(--ink); background: var(--papel); margin: 0 calc(var(--g) * -1); }
+@media (min-width: 720px) { .agenda { margin: 0; } }
+.ag-cab, .ag-cuerpo { display: grid; grid-template-columns: 54px repeat(var(--cols), minmax(132px, 1fr)); min-width: max-content; }
+@media (min-width: 720px) { .ag-cab, .ag-cuerpo { min-width: 0; } }
+.ag-cab { position: sticky; top: 0; z-index: 3; background: var(--screen); color: var(--roll); }
+.ag-cab span { padding: 10px 10px 8px; font-size: 22px; line-height: 1; border-left: 1px solid var(--bezel); }
+.ag-cab span:first-child { position: sticky; left: 0; background: var(--screen); border: 0; }
+.ag-cuerpo { position: relative; }
+.ag-horas { position: sticky; left: 0; z-index: 2; background: var(--papel); border-right: 1px solid var(--linea-fuerte); }
+.ag-horas span { position: absolute; left: 0; right: 0; padding: 4px 6px; font: 800 13px 'Archivo'; font-variant-numeric: tabular-nums; border-top: 1px solid var(--linea-fuerte); }
+.ag-horas span.media { font-weight: 600; color: var(--ink-2); border-top: 1px dashed var(--linea); }
+.col-b { position: relative; border-left: 1px solid var(--linea); background: repeating-linear-gradient(to bottom, transparent 0 59px, var(--linea) 59px 60px); }
+.celda { position: absolute; left: 0; right: 0; height: 60px; }
+.celda.fuera { background: repeating-linear-gradient(135deg, #14121008 0 6px, #1412100f 6px 12px); }
+.celda.libre { display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border: 0; background: none; cursor: pointer; color: var(--ink-2); font: 700 13px 'Archivo'; opacity: 0; }
+.celda.libre:hover, .celda.libre:focus-visible { opacity: 1; background: #f6d13a40; outline-offset: -3px; }
+@media (hover: none) { .celda.libre { opacity: .55; } .celda.libre span { visibility: hidden; } }
+.bloque-t { position: absolute; left: 4px; right: 4px; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 8px; overflow: hidden;
+  border: 2px solid var(--ink); border-radius: 4px; background: var(--papel); text-align: left; cursor: pointer; font: 500 13px/1.2 'Archivo'; }
+.bloque-t b { font: 800 14px/1.15 'Archivo'; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.bloque-t span { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.bloque-t em { font: 800 11px 'Archivo'; font-style: normal; font-stretch: 75%; letter-spacing: .1em; text-transform: uppercase; padding: 1px 4px; border: 1px solid currentColor; border-radius: 3px; margin-right: 4px; }
+.bloque-t.corto { flex-direction: row; align-items: center; gap: 6px; padding: 2px 8px; }
+.bloque-t.corto b, .bloque-t.corto span { font-size: 12px; }
+.bloque-t.con-premio { background: var(--roll); }
+.bloque-t.con-premio span { color: var(--ink); }
+.bloque-t.asistio { background: var(--ink); color: var(--papel); } .bloque-t.asistio span { color: var(--warm-2); }
+.bloque-t.no_asistio { background: #fbe9e6; border-color: var(--mal); color: var(--mal); } .bloque-t.no_asistio b { text-decoration: line-through; }
+.bloque-t:hover { box-shadow: 0 0 0 3px var(--roll); }
+.bloque-b { position: absolute; left: 4px; right: 4px; z-index: 1; border: 1.5px dashed var(--linea-fuerte); background: repeating-linear-gradient(135deg, transparent 0 8px, #14121014 8px 14px), var(--fondo); cursor: pointer; font: 700 13px 'Archivo'; color: var(--ink-2); display: grid; place-items: center; }
+.ahora { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid var(--led); z-index: 2; pointer-events: none; }
+.ahora span { position: sticky; left: 0; display: inline-block; transform: translateY(-50%); background: var(--led); color: #fff; font: 800 11px 'Archivo'; padding: 2px 5px; border-radius: 3px; }
+
 /* Hoja de edición */
 .hoja { border: 0; padding: 0; width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; background: var(--fondo); color: var(--ink); }
 .hoja::backdrop { background: #141210a6; }

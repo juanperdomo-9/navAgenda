@@ -98,47 +98,81 @@ function render() { const v = nav(); tira(); ({ hoy, barberos, servicios, client
 addEventListener('hashchange', () => { render(); scrollTo(0, 0); });
 
 /* ═══ HOY: la grilla ═══ */
-let filtro = 'todos';
+const PASO = 30;          // los turnos van cada 30 minutos
+const FILA = 60;         // alto de una fila de 30 min, en px
 function hoy() {
   const hechos = TURNOS.filter((t) => t.estado === 'asistio');
-  const activos = BARBEROS.filter((b) => b.activo);
-  const ver = filtro === 'todos' ? activos : activos.filter((b) => b.id === filtro);
   $('#main').innerHTML = `
-    <div class="titulo"><h1 class="cond">Hoy</h1><p>Miércoles 21 de octubre · Marcá quién vino: suma a la caja y a su tarjeta de cortes.</p></div>
+    <div class="titulo"><h1 class="cond">Hoy</h1><p>Miércoles 21 de octubre · Tocá un turno para marcar si vino: suma a la caja y a su tarjeta de cortes.</p></div>
     <div class="tablero">
       <div class="dato"><small>Facturado</small><b>${pesos(hechos.reduce((a, t) => a + (t.premio ? 0 : t.precio), 0))}</b></div>
       <div class="dato"><small>Cortes</small><b>${hechos.length}</b></div>
       <div class="dato"><small>Faltan</small><b>${TURNOS.filter((t) => t.estado === 'reservado').length}</b></div>
       <div class="dato"><small>No vinieron</small><b>${TURNOS.filter((t) => t.estado === 'no_asistio').length}</b></div>
     </div>
-    <div class="elegir" role="group" aria-label="Qué barbero ver">${[['todos', 'Todos'], ...activos.map((b) => [b.id, b.nombre.split(' ')[0]])].map(([id, n]) => `<button class="chip" type="button" data-filtro="${id}" aria-pressed="${filtro === id}">${esc(n)}</button>`).join('')}</div>
-    <div class="cols ${filtro === 'todos' ? 'todos' : ''}" style="--n:${ver.length}">${ver.map(columna).join('')}</div>`;
+    <p class="leyenda"><span class="k reservado"></span>Reservado <span class="k k-premio"></span>Tiene premio <span class="k asistio"></span>Vino <span class="k no_asistio"></span>No vino <span class="k k-libre"></span>Libre</p>
+    ${grilla()}`;
 }
-function columna(b) {
-  const tramos = b.franjas.filter((f) => f.dias.includes(HOY)).sort((x, y) => min(x.desde) - min(y.desde));
-  const ocup = [...TURNOS.filter((t) => t.b === b.id).map((t) => ({ k: 't', t, d: min(t.hora), h: finDe(t) })), ...BLOQUEOS.filter((x) => x.b === b.id).map((x) => ({ k: 'b', x, d: min(x.desde), h: min(x.hasta) }))].sort((p, q) => p.d - q.d);
-  const items = [];
-  tramos.forEach((f) => {
-    let c = min(f.desde);
-    ocup.filter((o) => o.d < min(f.hasta) && o.h > min(f.desde)).forEach((o) => { if (o.d - c >= 30) items.push({ k: 'l', d: c, h: o.d }); items.push(o); c = Math.max(c, o.h); });
-    if (min(f.hasta) - c >= 30) items.push({ k: 'l', d: c, h: min(f.hasta) });
+function grilla() {
+  const bs = BARBEROS.filter((b) => b.activo);
+  const tramos = (b) => b.franjas.filter((f) => f.dias.includes(HOY)).map((f) => [min(f.desde), min(f.hasta)]);
+  const todos = bs.flatMap(tramos);
+  if (!todos.length) return '<div class="vacio"><b class="cond">Hoy no trabaja nadie</b>Cargá los horarios en Barberos.</div>';
+  const ini = Math.floor(Math.min(...todos.map((t) => t[0])) / 60) * 60, fin = Math.ceil(Math.max(...todos.map((t) => t[1])) / 60) * 60;
+  const filas = (fin - ini) / PASO, y = (m) => ((m - ini) / PASO) * FILA;
+  const horas = Array.from({ length: filas }, (_, k) => ini + k * PASO);
+  const col = (b) => {
+    const tr = tramos(b);
+    const ocup = [...TURNOS.filter((t) => t.b === b.id).map((t) => [min(t.hora), finDe(t)]), ...BLOQUEOS.filter((x) => x.b === b.id).map((x) => [min(x.desde), min(x.hasta)])];
+    const celdas = horas.map((h) => {
+      const trabaja = tr.some(([a, z]) => h >= a && h + PASO <= z);
+      if (!trabaja) return `<div class="celda fuera" style="top:${y(h)}px" aria-hidden="true"></div>`;
+      if (ocup.some(([a, z]) => h < z && a < h + PASO) || h + PASO <= AHORA) return '';
+      return `<button class="celda libre" type="button" style="top:${y(h)}px" data-nuevo="${b.id}|${hhmm(h)}" aria-label="Libre ${hhmm(h)} con ${esc(b.nombre)}: cargar turno"><span>${hhmm(h)}</span><svg class="i" aria-hidden="true"><use href="#i-mas"/></svg></button>`;
+    }).join('');
+    const turnos = TURNOS.filter((t) => t.b === b.id).map((t) => {
+      const c = cli(t.cli), s = srv(t.serv), conPremio = t.estado === 'reservado' && c.premio;
+      const clase = conPremio ? 'con-premio' : t.estado, alto = y(finDe(t)) - y(min(t.hora));
+      const estadoTxt = { reservado: conPremio ? `tiene ${premioTxt()}` : 'reservado', asistio: t.premio ? 'usó el premio' : 'vino', no_asistio: 'no vino' }[t.estado];
+      return `<button class="bloque-t ${clase} ${alto < 50 ? 'corto' : ''}" type="button" data-turno="${t.id}" style="top:${y(min(t.hora)) + 2}px;height:${alto - 4}px" aria-label="${t.hora} ${esc(c.nombre)}, ${esc(s.nombre)}, ${estadoTxt}">
+        <b>${t.hora} ${esc(c.nombre.split(' ')[0])} ${esc(c.nombre.split(' ')[1]?.[0] || '')}.</b><span>${t.estado !== 'reservado' ? `<em>${t.estado === 'asistio' ? (t.premio ? 'Premio' : 'Vino') : 'No vino'}</em>` : ''}${esc(s.nombre)}${conPremio ? ' · <svg class="i"><use href="#i-regalo"/></svg>' : ''}</span></button>`;
+    }).join('');
+    const bloq = BLOQUEOS.filter((x) => x.b === b.id).map((x) => `<button class="bloque-b" type="button" data-desbloq="${b.id}|${x.desde}" style="top:${y(min(x.desde))}px;height:${y(min(x.hasta)) - y(min(x.desde))}px" aria-label="${x.desde} a ${x.hasta} bloqueado: ${esc(x.motivo)}. Desbloquear"><span>${esc(x.motivo)}</span></button>`).join('');
+    return `<div class="col-b" style="height:${filas * FILA}px">${celdas}${bloq}${turnos}</div>`;
+  };
+  const ahora = AHORA > ini && AHORA < fin ? `<div class="ahora" style="top:${y(AHORA)}px"><span>${hhmm(AHORA)}</span></div>` : '';
+  return `<div class="agenda" role="region" aria-label="Grilla del día" tabindex="0" style="--cols:${bs.length}">
+    <div class="ag-cab"><span></span>${bs.map((b) => `<span class="cond">${esc(b.nombre.split(' ')[0])}</span>`).join('')}</div>
+    <div class="ag-cuerpo"><div class="ag-horas" style="height:${filas * FILA}px">${horas.map((h) => `<span style="top:${y(h)}px" class="${h % 60 ? 'media' : ''}">${hhmm(h)}</span>`).join('')}</div>
+      ${bs.map(col).join('')}${ahora}</div></div>`;
+}
+function detalleTurno(t) {
+  const c = cli(t.cli), s = srv(t.serv), b = barb(t.b), conPremio = t.estado === 'reservado' && c.premio;
+  abrirHoja({
+    titulo: `${t.hora} · ${c.nombre}`, ok: t.estado === 'reservado' ? 'Asistió' : 'Listo',
+    cuerpo: `<section class="bloque"><h3 class="cond">${esc(s.nombre)} con ${esc(b.nombre.split(' ')[0])}</h3>
+      <p style="margin-top:12px;font:600 17px/1.5 Archivo">${t.hora} a ${hhmm(finDe(t))} · ${t.premio ? 'gratis (premio)' : pesos(t.precio)}<br>${telFmt(c.tel)} · ${c.visitas} visitas · ${c.ausencias} ausencias</p>
+      ${conPremio ? `<span class="sello" style="margin-top:14px"><svg class="i" aria-hidden="true"><use href="#i-regalo"/></svg>Tiene ${esc(premioTxt())}</span>` : t.estado === 'reservado' && c.cortes === REGLA.cada - 1 ? '<span class="sello completa" style="margin-top:14px">Con este corte completa la tarjeta</span>' : ''}
+      <div class="tarjetita" style="margin-top:14px" role="img" aria-label="${c.cortes} de ${REGLA.cada} cortes">${Array.from({ length: REGLA.cada }, (_, i) => `<i class="${i < c.cortes ? 'x' : ''}"></i>`).join('')}</div></section>
+      ${t.estado === 'reservado' ? '<button class="btn sec" type="button" id="d-falto">No vino</button>' : `<p class="ayuda">Marcado como ${t.estado === 'asistio' ? 'vino' : 'no vino'}.</p><button class="link" type="button" id="d-corregir">Corregir: volver a reservado</button>`}`,
+    alAbrir: () => {
+      $('#d-falto')?.addEventListener('click', () => { cerrarHoja(true); marcar(t, 'no_asistio'); });
+      $('#d-corregir')?.addEventListener('click', () => { cerrarHoja(true); $(`[data-deshacer]`)?.remove(); corregir(t); });
+    },
+    guardar: () => {
+      if (t.estado !== 'reservado') return true;
+      if (conPremio) { setTimeout(() => preguntarPremio(t), 0); return true; }
+      marcar(t, 'asistio'); return true;
+    },
   });
-  const vistos = new Set();
-  const html = items.filter((o) => (o.k === 'l' ? true : !vistos.has(o) && vistos.add(o))).map((o) => {
-    if (o.k === 'b') return `<li class="bloqueo"><span>${corto(o.x.desde)} a ${corto(o.x.hasta)} · ${esc(o.x.motivo)}</span><button class="link" type="button" data-desbloq="${b.id}|${o.x.desde}">Desbloquear</button></li>`;
-    if (o.k === 'l') return o.h <= AHORA ? '' : `<li class="libre"><span>Libre ${corto(hhmm(Math.max(o.d, AHORA - AHORA % 15)))} a ${corto(hhmm(o.h))}</span><button class="link" type="button" data-nuevo="${b.id}|${hhmm(Math.max(o.d, AHORA - AHORA % 15))}"><svg class="i" aria-hidden="true"><use href="#i-mas"/></svg>Turno</button></li>`;
-    const t = o.t, c = cli(t.cli), s = srv(t.serv);
-    const sello = t.estado === 'reservado' && c.premio ? `<span class="sello"><svg class="i" aria-hidden="true"><use href="#i-regalo"/></svg>Tiene ${esc(premioTxt())}</span>`
-      : t.estado === 'reservado' && c.cortes === REGLA.cada - 1 ? '<span class="sello completa">Con este corte completa la tarjeta</span>' : '';
-    const marca = t.estado === 'asistio' ? `<span class="marca">${t.premio ? 'Premio' : 'Asistió'}</span>` : t.estado === 'no_asistio' ? '<span class="marca">No vino</span>' : '';
-    return `<li class="turno ${t.estado}"><span class="h">${t.hora}<small>a ${hhmm(finDe(t))}</small></span>
-      <span><span class="c">${esc(c.nombre)}${marca}</span><br><span class="s">${esc(s.nombre)} · ${t.premio ? 'gratis' : pesos(t.precio)}</span></span>${sello}
-      <span class="acc">${t.estado === 'reservado' ? `<button class="btn chico" type="button" data-asistio="${t.id}">Asistió</button><button class="btn sec chico" type="button" data-falto="${t.id}">No vino</button>`
-        : `<button class="link" type="button" data-deshacer="${t.id}">Corregir</button>`}</span></li>`;
-  }).join('');
-  return `<section class="col"><h2 class="cond">${esc(b.nombre.split(' ')[0])}<small>${tramos.map((f) => `${corto(f.desde)} a ${corto(f.hasta)}`).join(' y ') || 'No trabaja hoy'}</small></h2>
-    <ul class="items">${html || '<li class="vacio">Hoy no trabaja.</li>'}</ul></section>`;
 }
+function preguntarPremio(t) {
+  const c = cli(t.cli);
+  abrirHoja({ titulo: 'Tiene el premio', ok: 'Aplicar premio', cancelar: 'Ahora no', cuerpo: `<p style="font:600 18px/1.4 Archivo">${esc(c.nombre)} completó su tarjeta. ¿Le aplicás <b>${esc(premioTxt())}</b> en este turno?</p><span class="sello" style="justify-self:start"><svg class="i" aria-hidden="true"><use href="#i-regalo"/></svg>${esc(premioTxt())}</span>`,
+    guardar: () => { marcar(t, 'asistio', true); return true; }, alCancelar: () => marcar(t, 'asistio', false) });
+}
+function corregir(t) { const c = cli(t.cli); if (t.estado === 'asistio') { if (t.premio) { c.premio = true; c.usados--; } else c.cortes = Math.max(0, c.cortes - 1); c.visitas--; } else c.ausencias--; t.estado = 'reservado'; t.premio = false; render(); }
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-turno]'); if (b) detalleTurno(TURNOS.find((x) => x.id === b.dataset.turno)); });
 function marcar(t, estado, conPremio = false) {
   const antes = JSON.stringify({ t, c: cli(t.cli) });
   const c = cli(t.cli);
