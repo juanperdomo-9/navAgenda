@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -64,3 +65,17 @@ def db(engine: Engine) -> Iterator[Session]:
         session.close()
         trans.rollback()
         conn.close()
+
+
+@pytest.fixture
+def client(db: Session) -> Iterator[TestClient]:
+    """Cliente HTTP de la API usando la sesión de test (todo se deshace al terminar)."""
+    from app.core.security import limite_login
+    from app.db.session import get_db
+    from app.main import app
+
+    app.dependency_overrides[get_db] = lambda: db
+    limite_login.reiniciar()
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()

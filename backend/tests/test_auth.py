@@ -1,52 +1,9 @@
 """Auth del panel: ingreso, sesión en cookie, bloqueo por intentos, roles y claves temporales."""
 
-from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-
-from app.core.security import COOKIE_SESION, MAX_INTENTOS, hashear_clave, limite_login
-from app.db.session import get_db
-from app.main import app
-from app.models import Barberia, Usuario
-
-CLAVE = "una-clave-larga-1"
-
-
-@pytest.fixture
-def client(db: Session) -> Iterator[TestClient]:
-    app.dependency_overrides[get_db] = lambda: db
-    limite_login.reiniciar()
-    with TestClient(app) as c:
-        yield c
-    app.dependency_overrides.clear()
-
-
-def crear_usuario(db: Session, usuario: str, rol: str = "admin", **extra) -> Usuario:
-    barberia_id = None
-    if rol == "admin":
-        b = Barberia(nombre=f"Barbería {usuario}", slug=f"b-{usuario.lower()}")
-        db.add(b)
-        db.flush()
-        barberia_id = b.id
-    u = Usuario(
-        nombre=usuario.title(),
-        usuario=usuario,
-        password_hash=hashear_clave(CLAVE),
-        rol=rol,
-        barberia_id=barberia_id,
-        **extra,
-    )
-    db.add(u)
-    db.flush()
-    return u
-
-
-def ingresar(client: TestClient, usuario: str, clave: str = CLAVE):
-    return client.post("/auth/ingresar", json={"usuario": usuario, "clave": clave})
-
+from app.core.security import COOKIE_SESION, MAX_INTENTOS, limite_login
+from tests.util import crear_usuario, ingresar
 
 # ——— Ingreso y sesión ———
 
