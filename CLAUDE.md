@@ -218,7 +218,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   facturado, cortes, ausencias, por barbero, por servicio y día por día) en la API y en el panel.
 - Panel del superadmin en `/panel` (entrando como superadmin): barberías con su admin, alta con clave temporal
   (se muestra una vez), resetear clave y pausar/reactivar (`PATCH /super/barberias/{id}`).
-- **Falta para estar al 100%**: (hoy por comandos); secciones de abajo de `/:slug` (precios, semana, mapa) y mapa del portal.
+- **Falta para estar al 100%**: secciones de abajo de `/:slug` (precios, semana, mapa) y mapa del portal.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 
