@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
 <style>
   :root {
     /* Color de la barbería: es el papel de "su rollo". La tinta se elige sola para que contraste. */
@@ -162,11 +163,99 @@
   .fidelidad { padding: 48px var(--gutter) 56px; display: grid; gap: 24px; }
   .fidelidad h2 { font-weight: 900; font-stretch: 62%; text-transform: uppercase; line-height: .96; letter-spacing: -.02em; font-size: clamp(48px, 13vw, 150px); text-wrap: balance; }
   .fidelidad .bajada { font: 600 17px/1.4 'Archivo'; max-width: 36ch; margin-top: 14px; }
-  .carton { background: var(--paper); color: var(--ink); padding: 22px 20px 24px; max-width: 460px; width: 100%; transform: rotate(1.2deg); border-top: 8px solid var(--shop); }
+  .carton { background: var(--paper); color: var(--ink); padding: 22px 20px 24px; max-width: 460px; width: 100%; transform: rotate(1.2deg); }
   .carton h3 { display: flex; justify-content: space-between; gap: 12px; font: 800 12px 'Archivo'; font-stretch: 72%; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 16px; }
   .carton .estado-juego { margin-top: 16px; font: 700 16px/1.35 'Archivo'; min-height: 44px; }
   .carton .otra { margin-top: 6px; min-height: 44px; background: none; border: 0; padding: 0; font: 700 14px 'Archivo'; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; color: var(--ink); }
   @media (min-width: 960px) { .fidelidad { grid-template-columns: 1.1fr .9fr; align-items: center; column-gap: 56px; } }
+
+
+  /* ─── Secciones de la página ─── */
+  .sec { padding: 56px var(--gutter) 60px; }
+  .sec-h { font-weight: 900; font-stretch: 62%; text-transform: uppercase; line-height: .9; letter-spacing: -.02em; font-size: clamp(52px, 15vw, 170px); }
+  .sec-lede { margin-top: 12px; font: 600 17px/1.4 'Archivo'; max-width: 38ch; }
+  .banda { background: var(--ink); color: var(--paper); }
+  .banda :focus-visible { outline-color: var(--roll); }
+
+  /* Barberos: una fila por barbero, el nombre manda */
+  .lineup { list-style: none; padding: 0; margin-top: 28px; border-bottom: 3px solid var(--on-shop); }
+  .lineup li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 16px; padding: 16px 0; border-top: 3px solid var(--on-shop); }
+  .lineup .nom { font-weight: 900; font-stretch: 62%; text-transform: uppercase; line-height: .85; font-size: clamp(48px, 14vw, 128px); letter-spacing: -.02em; }
+  .lineup .det { grid-column: 1; font: 600 15px/1.35 'Archivo'; }
+  .lineup .sacar { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    min-width: 104px; min-height: 76px; padding: 8px 12px; background: var(--screen); color: var(--led); border: 0; border-radius: 8px; cursor: pointer; }
+  .lineup .sacar small { font: 800 11px 'Archivo'; font-stretch: 75%; letter-spacing: .14em; color: #ff8a80; text-transform: uppercase; }
+  .lineup .sacar b { font: 900 34px/1 'Archivo'; font-stretch: 62%; }
+  .lineup .sacar:hover { background: var(--led); color: var(--screen); }
+  .lineup .sacar:hover small { color: var(--screen); }
+  .lineup .sacar:disabled { color: var(--warm-2); cursor: default; }
+  .lineup .sacar:focus-visible { outline: 3px solid var(--on-shop); outline-offset: 3px; }
+  @media (min-width: 960px) {
+    .barberos-sec { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); column-gap: 56px; align-items: start; }
+    .barberos-sec .lineup { margin-top: 0; }
+  }
+
+  /* Lista de precios: ticket de caja */
+  .precios { display: grid; gap: 32px; }
+  .caja { position: relative; background: var(--paper); color: var(--ink); padding: 30px 22px; max-width: 460px; width: 100%; justify-self: center; transform: rotate(-1deg); }
+  .caja::after { content: ''; position: absolute; left: 0; right: 0; bottom: -7px; height: 7px;
+    background: radial-gradient(circle at 7px 0, var(--paper) 5px, transparent 5.5px) 0 0 / 14px 7px repeat-x; }
+  .caja h3 { text-align: center; font: 900 20px 'Archivo'; font-stretch: 70%; text-transform: uppercase; letter-spacing: .06em; }
+  .caja ul { list-style: none; padding: 0; margin-top: 14px; border-top: 2px dashed #14121055; }
+  .caja li button { display: flex; align-items: baseline; gap: 8px; width: 100%; min-height: 52px; padding: 10px 0; background: none; border: 0; border-bottom: 1px dashed #14121030;
+    text-align: left; cursor: pointer; color: inherit; font: 700 16px 'Archivo'; }
+  .caja li button small { font-weight: 500; color: #3d3310; font-size: 13px; white-space: nowrap; }
+  .caja li button .lead { flex: 1; min-width: 10px; border-bottom: 2px dotted #14121055; transform: translateY(-4px); }
+  .caja li button b { font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .caja li button:hover { color: #9e2a1c; }
+  .caja li button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .caja .pie-caja { margin-top: 14px; text-align: center; font: 600 13px 'Archivo'; color: #3d3310; }
+  @media (min-width: 960px) { .precios { grid-template-columns: 1.1fr .9fr; align-items: center; column-gap: 56px; } }
+
+  /* Toda la semana */
+  .dias7 { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 24px calc(var(--gutter) * -1) 0; padding: 4px var(--gutter); scroll-snap-type: x proximity; }
+  .dias7 button { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 64px; min-height: 64px; padding: 6px 10px;
+    background: var(--paper); color: var(--ink); border: 2px solid transparent; border-radius: 6px; cursor: pointer; scroll-snap-align: start; font: 700 13px 'Archivo'; text-transform: capitalize; }
+  .dias7 button b { font: 900 26px/1 'Archivo'; font-stretch: 62%; }
+  .dias7 button[aria-pressed="true"] { background: var(--screen); color: var(--led); }
+  .dias7 button:disabled { opacity: .5; cursor: default; text-decoration: line-through; }
+  .dias7 button:focus-visible { outline: 3px solid var(--on-shop); outline-offset: 2px; }
+  .grilla { margin-top: 20px; display: grid; gap: 18px; }
+  .grilla h3 { font: 900 22px 'Archivo'; font-stretch: 70%; text-transform: uppercase; }
+  .grilla .horas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .grilla .horas button { position: relative; min-width: 76px; min-height: 48px; padding: 0 14px; background: var(--paper); color: var(--ink); border: 0; cursor: pointer;
+    font: 900 22px 'Archivo'; font-stretch: 62%; font-variant-numeric: tabular-nums; }
+  .grilla .horas button::before, .grilla .horas button::after { content: ''; position: absolute; top: 0; bottom: 0; width: 5px;
+    background: radial-gradient(circle at 0 5px, var(--shop) 3px, transparent 3.5px) 0 0 / 5px 10px repeat-y; }
+  .grilla .horas button::before { left: 0; }
+  .grilla .horas button::after { right: 0; transform: scaleX(-1); }
+  .grilla .horas button:hover { background: var(--screen); color: var(--led); }
+  .grilla .horas button:focus-visible { outline: 3px solid var(--on-shop); outline-offset: 2px; }
+  .grilla .nada { font: 600 15px 'Archivo'; }
+  @media (min-width: 960px) { .grilla { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  /* Cómo llegar */
+  .llegar { display: grid; gap: 28px; }
+  .mapa { position: relative; height: 320px; border: 3px solid var(--paper); overflow: hidden; background: #e9e1cf; }
+  .mapa .maplibregl-canvas { filter: grayscale(1) contrast(1.05); }
+  .pin-b { display: flex; flex-direction: column; align-items: center; }
+  .pin-b b { background: var(--screen); color: var(--led); padding: 10px 12px 8px; border-radius: 4px; font: 900 20px/1 'Archivo'; font-stretch: 62%; text-transform: uppercase; box-shadow: 0 3px 0 #0006; }
+  .pin-b::after { content: ''; width: 10px; height: 10px; background: var(--screen); transform: rotate(45deg); margin-top: -6px; }
+  .dir { font-weight: 900; font-stretch: 62%; text-transform: uppercase; line-height: .9; text-wrap: balance; font-size: clamp(40px, 10vw, 84px); }
+  .atencion { margin-top: 18px; display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; font: 600 16px/1.3 'Archivo'; max-width: 360px; }
+  .atencion dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .atencion .hoy { color: var(--roll); }
+  .ir { display: inline-flex; align-items: center; gap: 10px; margin-top: 22px; min-height: 56px; padding: 0 20px; background: var(--roll); color: var(--ink); text-decoration: none;
+    border-radius: 4px; font: 900 20px 'Archivo'; font-stretch: 70%; text-transform: uppercase; }
+  @media (min-width: 960px) { .llegar { grid-template-columns: .9fr 1.1fr; align-items: center; column-gap: 56px; } .mapa { height: 420px; } }
+
+  .pie { padding: 28px var(--gutter) 110px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; font: 600 14px 'Archivo'; }
+  .pie a { color: inherit; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-underline-offset: 3px; }
+  .pie .mark { display: inline-grid; place-items: center; height: 22px; padding: 0 5px; background: var(--ink); color: var(--roll); font: 900 10px/1 'Archivo'; font-stretch: 62%; }
+  @media (min-width: 960px) {
+    .pie { padding-bottom: 32px; }
+    .barberos-sec .sec-h, .precios .sec-h, .llegar .sec-h, .fidelidad h2 { font-size: clamp(64px, 7.4vw, 124px); }
+  }
 
   /* ─── Solo prototipo: probar el color de otras barberías ─── */
   .proto { margin: 24px var(--gutter) 32px; padding: 14px; border: 2px dashed currentColor; font: 600 13px 'Archivo'; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -202,12 +291,13 @@
   .campo.mal .ctrl { border-color: var(--led); }
   .imprimir { margin-top: 20px; }
   .volver { display: block; width: 100%; min-height: 44px; margin-top: 6px; background: none; border: 0; color: var(--warm-2); font: 700 15px 'Archivo'; cursor: pointer; }
-  .ticket { position: relative; margin: -4px 30px 0; background: var(--paper); color: var(--ink); padding: 22px 20px 24px; border-top: 8px solid var(--shop); }
+  .ticket { position: relative; margin: -4px 30px 0; background: var(--paper); color: var(--ink); padding: 0 20px 24px; }
   .ticket.imprimiendo { animation: imprimir 1.1s steps(14) both; }
   @keyframes imprimir { from { clip-path: inset(0 0 100% 0); transform: translateY(-16px); } to { clip-path: inset(0 0 -10px 0); } }
   .ticket::after { content: ''; position: absolute; left: 0; right: 0; bottom: -7px; height: 7px;
     background: radial-gradient(circle at 7px 0, var(--paper) 5px, transparent 5.5px) 0 0 / 14px 7px repeat-x; }
-  .tk-top { display: flex; justify-content: space-between; gap: 12px; font: 800 12px 'Archivo'; font-stretch: 72%; letter-spacing: .12em; text-transform: uppercase; }
+  .tk-top { display: flex; justify-content: space-between; gap: 12px; margin: 0 -20px; padding: 14px 20px 12px; background: var(--shop); color: var(--on-shop);
+    font: 800 12px 'Archivo'; font-stretch: 72%; letter-spacing: .12em; text-transform: uppercase; }
   .tk-hora { font: 900 96px/.85 'Archivo'; font-stretch: 62%; margin-top: 12px; }
   .tk-dia { font: 800 18px 'Archivo'; font-stretch: 80%; text-transform: uppercase; margin-top: 6px; }
   .sello { display: inline-block; margin-top: 12px; padding: 5px 10px 4px; border: 3px solid #1d7a3a; color: #1d7a3a; transform: rotate(-3deg);
@@ -285,6 +375,35 @@
 </div>
 
 
+<section class="sec barberos-sec" aria-labelledby="barb-h">
+  <div>
+    <h2 class="sec-h" id="barb-h">Los barberos</h2>
+    <p class="sec-lede">Elegí con quién. Cada uno tiene su turnero: tocá el horario y es tuyo.</p>
+  </div>
+  <ol class="lineup" id="lineup"></ol>
+</section>
+
+<section class="sec banda" aria-labelledby="precios-h">
+  <div class="precios">
+    <div>
+      <h2 class="sec-h" id="precios-h">Lista de precios</h2>
+      <p class="sec-lede">Tocá un servicio y te mostramos el próximo turno para ese servicio.</p>
+    </div>
+    <div class="caja">
+      <h3 id="caja-b">La Navaja</h3>
+      <ul id="lista-precios"></ul>
+      <p class="pie-caja">Se paga en el local. Sin seña.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" aria-labelledby="semana-h">
+  <h2 class="sec-h" id="semana-h">Toda la semana</h2>
+  <p class="sec-lede">Para elegir con calma: el día y después el horario con cada barbero.</p>
+  <div class="dias7" id="dias7" role="group" aria-label="Día de la semana"></div>
+  <div class="grilla" id="grilla" aria-live="polite"></div>
+</section>
+
 <section class="fidelidad" aria-labelledby="fid-h">
   <div>
     <h2 id="fid-h">Cada <span class="fid-x">5</span> cortes, <span class="fid-premio-h">el próximo gratis</span></h2>
@@ -297,6 +416,25 @@
     <button class="otra" type="button" id="otra-vez">Ver de nuevo</button>
   </div>
 </section>
+
+
+<section class="sec banda" aria-labelledby="llegar-h">
+  <div class="llegar">
+    <div>
+      <h2 class="sec-h" id="llegar-h">Cómo llegar</h2>
+      <p class="dir" id="dir-grande" style="margin-top:18px">Calle 8 e/ 49 y 50</p>
+      <p class="sec-lede" id="dir-barrio">Centro, La Plata</p>
+      <dl class="atencion" id="atencion"></dl>
+      <a class="ir" id="ir" href="#" target="_blank" rel="noopener">Abrir en el mapa <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    </div>
+    <div class="mapa" id="mapa" role="region" aria-label="Mapa con la ubicación de la barbería"></div>
+  </div>
+</section>
+
+<footer class="pie">
+  <a href="../hero/"><span class="mark" aria-hidden="true">Nº</span>Turnos con NavAgenda</a>
+  <a href="../hero/#contacto">¿Tenés una barbería? Sumala</a>
+</footer>
 
 <button class="pegado" id="pegado" type="button" tabindex="-1" aria-hidden="true"><span id="pegado-txt"></span><svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></button>
 
@@ -348,13 +486,15 @@
   </div>
 </dialog>
 
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
   /* ── Datos de ejemplo (La Navaja, La Plata) ── */
-  const B = { nombre: 'La Navaja', direccion: 'Calle 8 e/ 49 y 50', barrio: 'Centro', cierra: 20 };
+  const B = { nombre: 'La Navaja', direccion: 'Calle 8 e/ 49 y 50', barrio: 'Centro', cierra: 20, lat: -34.9195, lng: -57.9530,
+    atencion: [['Lunes a viernes', '10 a 13 y 16 a 20'], ['Sábado', '10 a 15'], ['Domingo', 'Cerrado']] };
   const BARBEROS = [
-    { nombre: 'Martín Sosa', corto: 'Martín', horas: [['16:15', '17:30', '18:45', '19:15'], ['10:00', '11:30', '12:15', '16:30', '17:00'], ['10:30', '12:00', '16:00', '18:00']] },
-    { nombre: 'Lucas Ferreyra', corto: 'Lucas', horas: [['16:45', '18:00', '19:30'], ['11:00', '13:30', '15:00', '18:30'], ['11:30', '14:00', '17:30']] },
-    { nombre: 'Tomás Ibarra', corto: 'Tomás', horas: [['17:00', '17:45', '18:30'], ['10:30', '12:30', '14:45', '16:15'], ['10:00', '13:00', '15:30', '18:15']] },
+    { nombre: 'Martín Sosa', corto: 'Martín', dias: 'Lunes a sábado', horas: [['16:15', '17:30', '18:45', '19:15'], ['10:00', '11:30', '12:15', '16:30', '17:00'], ['10:30', '12:00', '16:00', '18:00']] },
+    { nombre: 'Lucas Ferreyra', corto: 'Lucas', dias: 'Martes a sábado', horas: [['16:45', '18:00', '19:30'], ['11:00', '13:30', '15:00', '18:30'], ['11:30', '14:00', '17:30']] },
+    { nombre: 'Tomás Ibarra', corto: 'Tomás', dias: 'Lunes a sábado', horas: [['17:00', '17:45', '18:30'], ['10:30', '12:30', '14:45', '16:15'], ['10:00', '13:00', '15:30', '18:15']] },
   ];
   const SERVICIOS = [['Corte', 30, 12000], ['Corte + barba', 45, 14500], ['Barba', 20, 7000], ['Perfilado de cejas', 15, 4000]];
   const DIAS = ['hoy', 'mañana'];
@@ -388,6 +528,8 @@
     if (nombre) { $('nombre-b').textContent = nombre; B.nombre = nombre; document.title = `${nombre} · Sacá turno`; $('carton-b').textContent = nombre; }
     ajustarNombre();
     render();
+    pintarSecciones();
+    pintarMapa();
   }
   // El nombre ocupa todo el ancho: el tamaño depende de la palabra más larga (mobile) y del total (desktop)
   function ajustarNombre() {
@@ -426,9 +568,15 @@
       <span class="ini ${i === 0 ? 'todos' : ''}" aria-hidden="true">${i === 0 ? '<svg class="i"><use href="#i-users"/></svg>' : iniciales(b.nombre)}</span>${b.corto}</label>`).join('');
   $('serv').innerHTML = SERVICIOS.map(([n, d, p], i) => `<option value="${i}">${n} · ${d} min · ${pesos(p)}</option>`).join('');
 
+  // Horarios de ejemplo para cualquier día: domingo cerrado, el resto repite un patrón
+  function horasDe(b, offset) {
+    const f = new Date(Date.now() - 3 * 3600e3 + offset * 864e5);
+    if (f.getUTCDay() === 0) return [];
+    return BARBEROS[b].horas[offset % 3];
+  }
   function libres(dia = Math.min(st.dia, 2), barbero = st.barbero) {
-    dia = Math.min(dia, 2);
-    const lista = BARBEROS.flatMap((b, i) => (barbero === -1 || barbero === i) ? b.horas[dia].map((h) => ({ hora: h, b: i })) : []);
+    dia = dia === 2 ? offsetElegido() : dia;
+    const lista = BARBEROS.flatMap((b, i) => (barbero === -1 || barbero === i) ? horasDe(i, dia).map((h) => ({ hora: h, b: i })) : []);
     const min = (h) => { const [a, m] = h.split(':'); return +a * 60 + +m; };
     return lista.sort((x, y) => min(x.hora) - min(y.hora));
   }
@@ -491,12 +639,20 @@
     render();
   });
 
+  function offsetElegido() {
+    if (!$('fecha').value) return 2;
+    const hoy = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+    return Math.max(0, Math.round((new Date($('fecha').value) - new Date(hoy)) / 864e5));
+  }
+  const diaCorto = (offset) => offset === 0 ? 'hoy' : offset === 1 ? 'mañana'
+    : 'el ' + new Date(Date.now() - 3 * 3600e3 + offset * 864e5).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }).replace(',', '');
+
   /* ── Sacar número: datos → ticket impreso ── */
   const sheet = $('sheet');
   let elegido = null;
-  function abrir(slot) {
-    const diaTxt = st.dia < 2 ? DIAS[st.dia] : st.fechaTxt;
-    elegido = { ...slot, dia: st.dia, diaTxt, serv: SERVICIOS[st.serv] };
+  function abrir(slot, offset = st.dia < 2 ? st.dia : offsetElegido()) {
+    const diaTxt = diaCorto(offset);
+    elegido = { ...slot, dia: offset, diaTxt, serv: SERVICIOS[st.serv] };
     const [sn, sd, sp] = elegido.serv;
     $('r-hora').textContent = slot.hora;
     $('sheet-h').textContent = `Con ${BARBEROS[slot.b].nombre} en ${B.nombre}`;
@@ -535,8 +691,7 @@
     return d.length === 10 ? '+549' + d : null;
   }
   function inicioTurno() {
-    const ymd = elegido.dia === 2 && $('fecha').value ? $('fecha').value
-      : new Date(Date.now() - 3 * 3600e3 + elegido.dia * 864e5).toISOString().slice(0, 10);
+    const ymd = new Date(Date.now() - 3 * 3600e3 + elegido.dia * 864e5).toISOString().slice(0, 10);
     const [h, m] = elegido.hora.split(':');
     return new Date(`${ymd}T${h.padStart(2, '0')}:${m}:00-03:00`);
   }
@@ -553,7 +708,7 @@
   function imprimir(nombre) {
     const { hora, b, diaTxt, serv: [sn, sd, sp] } = elegido;
     const barbero = BARBEROS[b];
-    const fechaLarga = cap(inicioTurno().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' }));
+    const fechaLarga = cap(inicioTurno().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' }).replace(',', ''));
     $('tk-barberia').textContent = B.nombre; $('tk-h').textContent = hora; $('tk-dia').textContent = fechaLarga;
     $('tk-barbero').textContent = barbero.nombre; $('tk-serv').textContent = `${sn} · ${sd} min`;
     $('tk-precio').textContent = `${pesos(sp)}, en el local`; $('tk-donde').innerHTML = `<a href="${$('direccion').href}" target="_blank" rel="noopener">${B.direccion}, ${B.barrio}</a>`;
@@ -584,6 +739,71 @@
   $('take').addEventListener('click', () => st.actual && abrir(st.actual));
   $('stubs').addEventListener('click', (e) => { const s = e.target.closest('.stub'); if (s) abrir(st.resto[+s.dataset.i]); });
 
+
+
+  /* ── Barberos, precios, semana y cómo llegar ── */
+  const subirALaMaquina = () => document.querySelector('.turnero').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  function pintarSecciones() {
+    $('lineup').innerHTML = BARBEROS.map((b, i) => {
+      const prox = horasDe(i, 0)[0] ? { hora: horasDe(i, 0)[0], dia: 0 } : horasDe(i, 1)[0] ? { hora: horasDe(i, 1)[0], dia: 1 } : null;
+      return `<li><span class="nom">${b.corto}</span>
+        <span class="det">${b.nombre} · ${b.dias}</span>
+        <button class="sacar" type="button" data-b="${i}" ${prox ? '' : 'disabled'} aria-label="${prox ? `Sacar ${diaCorto(prox.dia)} a las ${prox.hora} con ${b.nombre}` : `${b.nombre} no tiene lugar estos días`}">
+          <small>${prox ? (prox.dia ? 'Mañana' : 'Libre hoy') : 'Sin lugar'}</small><b>${prox ? prox.hora : '--:--'}</b></button></li>`;
+    }).join('');
+    $('caja-b').textContent = B.nombre;
+    $('lista-precios').innerHTML = SERVICIOS.map(([n, d, p], i) =>
+      `<li><button type="button" data-s="${i}">${n} <small>${d} min</small><span class="lead"></span><b>${pesos(p)}</b></button></li>`).join('');
+    $('dir-grande').textContent = B.direccion;
+    $('dir-barrio').textContent = `${B.barrio}, La Plata`;
+    $('ir').href = $('direccion').href;
+    const hoyDia = new Date(Date.now() - 3 * 3600e3).getUTCDay();
+    const filaHoy = hoyDia === 0 ? 2 : hoyDia === 6 ? 1 : 0;
+    $('atencion').innerHTML = B.atencion.map(([d, h], i) => `<dt class="${i === filaHoy ? 'hoy' : ''}">${d}</dt><dd class="${i === filaHoy ? 'hoy' : ''}">${h}</dd>`).join('');
+    pintarSemana();
+  }
+  $('lineup').addEventListener('click', (e) => {
+    const btn = e.target.closest('.sacar'); if (!btn) return;
+    const i = +btn.dataset.b;
+    const dia = horasDe(i, 0).length ? 0 : 1;
+    abrir({ hora: horasDe(i, dia)[0], b: i }, dia);
+  });
+  $('lista-precios').addEventListener('click', (e) => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    st.serv = +btn.dataset.s; $('serv').value = st.serv; render(); subirALaMaquina();
+  });
+
+  let semana = 0;
+  function pintarSemana() {
+    $('dias7').innerHTML = Array.from({ length: 7 }, (_, o) => {
+      const f = new Date(Date.now() - 3 * 3600e3 + o * 864e5);
+      const cerrado = f.getUTCDay() === 0;
+      const nombre = o === 0 ? 'Hoy' : f.toLocaleDateString('es-AR', { weekday: 'short', timeZone: 'UTC' }).replace('.', '');
+      return `<button type="button" data-o="${o}" aria-pressed="${o === semana}" ${cerrado ? 'disabled aria-label="Domingo, cerrado"' : ''}>${nombre}<b>${f.getUTCDate()}</b></button>`;
+    }).join('');
+    $('grilla').innerHTML = BARBEROS.map((b, i) => {
+      const hs = horasDe(i, semana);
+      return `<div><h3>${b.corto}</h3>${hs.length
+        ? `<div class="horas">${hs.map((h) => `<button type="button" data-b="${i}" data-h="${h}" aria-label="${h} con ${b.nombre}, ${diaCorto(semana)}">${h}</button>`).join('')}</div>`
+        : `<p class="nada">Sin lugar ${diaCorto(semana)}.</p>`}</div>`;
+    }).join('');
+  }
+  $('dias7').addEventListener('click', (e) => { const d = e.target.closest('button'); if (!d || d.disabled) return; semana = +d.dataset.o; pintarSemana(); });
+  $('grilla').addEventListener('click', (e) => { const h = e.target.closest('button'); if (h) abrir({ hora: h.dataset.h, b: +h.dataset.b }, semana); });
+
+  // Mapa de la barbería
+  let mapa, marcador;
+  function pintarMapa() {
+    if (!window.maplibregl) { $('mapa').innerHTML = '<p style="padding:24px;font:600 15px Archivo">No pudimos cargar el mapa. La dirección está a la izquierda.</p>'; return; }
+    if (!mapa) {
+      mapa = new maplibregl.Map({ container: 'mapa', style: 'https://tiles.openfreemap.org/styles/positron', center: [B.lng, B.lat], zoom: 15, cooperativeGestures: true, attributionControl: { compact: true } });
+      mapa.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+      const el = document.createElement('div'); el.className = 'pin-b'; el.innerHTML = `<b>${B.nombre}</b>`;
+      marcador = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([B.lng, B.lat]).addTo(mapa);
+    } else {
+      marcador.getElement().querySelector('b').textContent = B.nombre;
+    }
+  }
 
   /* ── Fidelidad: tarjeta de tijeras (la regla la elige cada barbería en su panel) ── */
   const REGLA = { cada: 5, premio: 'Corte gratis', corto: 'Gratis' };

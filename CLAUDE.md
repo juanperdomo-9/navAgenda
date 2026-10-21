@@ -70,6 +70,8 @@ Los barberos **no tienen login propio** en el MVP: son entidades que crea y gest
   - Asistió → suma al total facturado y suma 1 al contador de fidelidad del cliente (por teléfono) en esa barbería.
   - No asistió → no suma nada y queda registrado.
   - El admin puede crear turnos a mano (cliente que llama o pasa por la puerta, con nombre + teléfono) y bloquear horarios.
+  - **Si el cliente del turno tiene el beneficio disponible, la grilla lo avisa en ese mismo turno** (sello bien visible,
+    ej. "Corte gratis"), así el barbero lo aplica al marcar "Asistió". También avisa si con ese corte completa la tarjeta.
 - **Beneficios**: el admin define la regla "cada **X** cortes asistidos → **beneficio**".
   Tipos: % de descuento, monto fijo de descuento, servicio gratis o texto libre.
   Al llegar a X, el cliente tiene el beneficio disponible. El admin lo aplica al marcar el turno y el contador se reinicia.
