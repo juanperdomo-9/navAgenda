@@ -168,8 +168,8 @@ function Datos({ slug, libre, servicios, preferido, barbero, diaTxt, onListo, on
           </label>
         ))}
       </fieldset>
-      <label>Tu nombre<span className="ctrl"><input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="name" autoFocus /></span></label>
-      <label>Tu teléfono<span className="ctrl"><span aria-hidden>+54 9</span><input type="tel" inputMode="tel" value={tel} onChange={(e) => setTel(e.target.value)} autoComplete="tel-national" /></span>
+      <label>Tu nombre<span className="ctrl"><input value={nombre} onChange={(e) => setNombre(e.target.value)} name="na-nombre" autoComplete="off" /></span></label>
+      <label>Tu teléfono<span className="ctrl"><span aria-hidden>+54 9</span><input type="tel" inputMode="tel" value={tel} onChange={(e) => setTel(e.target.value)} name="na-tel" autoComplete="off" /></span>
         <span className="ayuda">Ej.: 221 456 7890, sin 0 ni 15. Lo usamos para sumar tus cortes; no te vamos a escribir.</span></label>
       {error && <p className="error" role="alert">{error}</p>}
       <button type="submit" className="take" disabled={enviando}>{enviando ? 'Confirmando…' : 'Confirmar turno'} <span aria-hidden>→</span></button>
