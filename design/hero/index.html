@@ -193,6 +193,7 @@
   .pin.activo b, .pin:hover b { background: var(--led); color: var(--screen); transform: translateY(-3px); }
   .pin.activo::after, .pin:hover::after { background: var(--led); }
   .pin:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .pin.activo, .pin:hover, .pin:focus-visible { z-index: 3; }
   .rollos { list-style: none; padding: 0; display: grid; gap: 10px; }
   .rollo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px; background: var(--paper); border: 3px solid transparent; }
   .rollo.activo { border-color: var(--ink); }
@@ -269,7 +270,7 @@
       <h2 id="t-title" class="sr">El próximo turno libre</h2>
       <div class="knobs">
         <label class="knob"><svg class="i"><use href="#i-pin"/></svg><b id="zona-txt">Cerca tuyo</b><svg class="i"><use href="#i-down"/></svg>
-          <select id="zona" aria-label="Zona"><option value="cerca">Cerca tuyo</option><option>Palermo</option><option>Belgrano</option><option>San Telmo</option></select></label>
+          <select id="zona" aria-label="Zona"><option value="cerca">Cerca tuyo</option><option>Centro</option><option>Tolosa</option><option>Gonnet</option></select></label>
         <label class="knob"><svg class="i"><use href="#i-scissors"/></svg><b id="serv-txt">Corte</b><svg class="i"><use href="#i-down"/></svg>
           <select id="serv" aria-label="Servicio"><option>Corte</option><option>Corte + barba</option><option>Barba</option></select></label>
       </div>
@@ -371,9 +372,10 @@
 <script>
   /* ── Datos de ejemplo ── */
   const BARBERIAS = [
-    { nombre: 'La Navaja', barrio: 'Palermo', direccion: 'Gorriti 4820', lat: -34.5885, lng: -58.4300, km: 0.8, barberos: ['Martín', 'Tomás', 'Lucas'] },
-    { nombre: 'Barbería del Puerto', barrio: 'San Telmo', direccion: 'Defensa 1150', lat: -34.6205, lng: -58.3715, km: 3.4, barberos: ['Lucía', 'Fede'] },
-    { nombre: 'Tijera Norte', barrio: 'Belgrano', direccion: 'Av. Cabildo 2230', lat: -34.5600, lng: -58.4560, km: 4.1, barberos: ['Dani', 'Nico'] },
+    { nombre: 'La Navaja', barrio: 'Centro', direccion: 'Calle 8 e/ 49 y 50', lat: -34.9195, lng: -57.9530, km: 0.6, barberos: ['Martín', 'Tomás', 'Lucas'] },
+    { nombre: 'Tolosa Cortes', barrio: 'Tolosa', direccion: 'Calle 1 e/ 527 y 528', lat: -34.8965, lng: -57.9700, km: 3.2, barberos: ['Matías', 'Joaquín'] },
+    { nombre: 'Tijera Siete', barrio: 'Centro', direccion: 'Calle 7 e/ 45 y 46', lat: -34.9125, lng: -57.9480, km: 1.1, barberos: ['Nicolás', 'Bruno', 'Ramiro'] },
+    { nombre: 'Gonnet Barber Club', barrio: 'Gonnet', direccion: 'Camino Centenario e/ 501 y 502', lat: -34.8800, lng: -58.0150, km: 7.4, barberos: ['Santiago', 'Emiliano'] },
   ];
   const SERV = { 'Corte': [30, 12000], 'Corte + barba': [45, 14500], 'Barba': [20, 7000] };
   const HORAS = [['16:15', '16:30', '17:00', '17:45', '18:15', '19:00', '19:30'], ['9:30', '10:30', '11:00', '11:45', '13:00', '15:15', '16:00'], ['10:00', '11:00', '12:15', '14:30', '16:45', '18:00', '19:15']];
@@ -561,7 +563,7 @@
   if (window.maplibregl) {
     const mapa = new maplibregl.Map({
       container: 'mapa', style: 'https://tiles.openfreemap.org/styles/positron',
-      center: [-58.42, -34.585], zoom: 12, cooperativeGestures: true, attributionControl: { compact: true },
+      center: [-57.97, -34.91], zoom: 12, cooperativeGestures: true, attributionControl: { compact: true },
     });
     mapa.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     const bounds = new maplibregl.LngLatBounds();
