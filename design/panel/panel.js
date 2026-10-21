@@ -10,8 +10,16 @@ const ini = (n) => n.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCas
 const DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const DIAS_C = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const DIAS_L = ['los lunes', 'los martes', 'los miércoles', 'los jueves', 'los viernes', 'los sábados', 'los domingos'];
-const HOY = 2;          // miércoles
+const HOY = 2;          // hoy es miércoles
 const AHORA = min('16:00');
+const BASE = new Date('2026-10-21T12:00:00');
+let DIA = 0;            // día que muestra la agenda (desplazamiento desde hoy)
+const fechaDe = (off) => new Date(BASE.getTime() + off * 864e5);
+const wdDe = (off) => (HOY + off % 7 + 7) % 7;
+const ymdDe = (off) => fechaDe(off).toISOString().slice(0, 10);
+const delDia = (off = DIA) => TURNOS.filter((t) => t.dia === off);
+const nombreDia = (off) => off === 0 ? 'Hoy' : off === 1 ? 'Mañana' : off === -1 ? 'Ayer' : fechaDe(off).toLocaleDateString('es-AR', { weekday: 'long' });
+const fechaLarga = (off) => fechaDe(off).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '');
 
 /* ── Datos ── */
 const SHOP = { nombre: 'La Navaja', slug: 'la-navaja', color: '#c9a46a', direccion: 'Calle 8 e/ 49 y 50', barrio: 'Centro', descripcion: 'Cortes clásicos y degradés en el centro de La Plata.', cancel: 3 };
@@ -45,7 +53,24 @@ let TURNOS = [
   { id: 't7', b: 'b3', hora: '12:00', cli: 'c3', serv: 's4', precio: 4000, estado: 'asistio', premio: false },
   { id: 't8', b: 'b3', hora: '16:30', cli: 'c2', serv: 's1', precio: 12000, estado: 'reservado', premio: false },
 ];
-let BLOQUEOS = [{ b: 'b3', desde: '13:00', hasta: '14:00', motivo: 'Almuerzo' }];
+TURNOS.forEach((t) => (t.dia = 0));
+(() => {
+  let semilla = 7; const azar = () => ((semilla = (semilla * 9301 + 49297) % 233280) / 233280);
+  for (let off = -7; off <= 21; off++) {
+    if (off === 0 || wdDe(off) === 6) continue;
+    BARBEROS.filter((b) => b.activo).forEach((b) => b.franjas.filter((f) => f.dias.includes(wdDe(off))).forEach((f) => {
+      for (let m = min(f.desde); m + 30 <= min(f.hasta); m += 30) {
+        if (azar() > (off < 0 ? 0.55 : Math.max(0.12, 0.5 - off * 0.03))) continue;
+        const sv = SERVICIOS[Math.floor(azar() * 3)], c = CLIENTES[Math.floor(azar() * CLIENTES.length)];
+        if (m + sv.min > min(f.hasta)) continue;
+        TURNOS.push({ id: `g${off}${b.id}${m}`, dia: off, b: b.id, hora: hhmm(m), cli: c.id, serv: sv.id, precio: sv.precio, premio: false,
+          estado: off < 0 ? (azar() < 0.9 ? 'asistio' : 'no_asistio') : 'reservado' });
+        if (sv.min > 30) m += 30;
+      }
+    }));
+  }
+})();
+let BLOQUEOS = [{ dia: 0, b: 'b3', desde: '13:00', hasta: '14:00', motivo: 'Almuerzo' }];
 const srv = (id) => SERVICIOS.find((s) => s.id === id);
 const barb = (id) => BARBEROS.find((b) => b.id === id);
 const cli = (id) => CLIENTES.find((c) => c.id === id);
@@ -80,7 +105,7 @@ function aviso(txt, deshacer) {
 }
 
 /* ── Navegación ── */
-const VISTAS = [['hoy', 'Hoy', 'i-hoy'], ['barberos', 'Barberos', 'i-barberos'], ['servicios', 'Servicios', 'i-tijera'], ['clientes', 'Clientes', 'i-clientes'], ['numeros', 'Números', 'i-numeros'], ['pagina', 'Mi página', 'i-pagina']];
+const VISTAS = [['hoy', 'Agenda', 'i-hoy'], ['barberos', 'Barberos', 'i-barberos'], ['servicios', 'Servicios', 'i-tijera'], ['clientes', 'Clientes', 'i-clientes'], ['numeros', 'Números', 'i-numeros'], ['pagina', 'Mi página', 'i-pagina']];
 function nav() {
   const v = location.hash.slice(1) || 'hoy';
   const a = (x) => `<a href="#${x[0]}" ${x[0] === v ? 'aria-current="page"' : ''}><svg class="i" aria-hidden="true"><use href="#${x[2]}"/></svg>${x[1]}</a>`;
@@ -89,7 +114,7 @@ function nav() {
   return v;
 }
 function tira() {
-  const prox = TURNOS.filter((t) => t.estado === 'reservado' && min(t.hora) >= AHORA).sort((a, b) => min(a.hora) - min(b.hora))[0];
+  const prox = delDia(0).filter((t) => t.estado === 'reservado' && min(t.hora) >= AHORA).sort((a, b) => min(a.hora) - min(b.hora))[0];
   $('#tira').innerHTML = prox ? `<div><small>Próximo</small>${seg(prox.hora)}</div><div class="quien">${esc(cli(prox.cli).nombre)} con ${esc(barb(prox.b).nombre.split(' ')[0])}<span>${esc(srv(prox.serv).nombre)} · ${pesos(prox.precio)}</span></div>`
     : '<div class="quien">No quedan turnos por hoy.</div>';
   $('#tira').setAttribute('aria-label', prox ? `Próximo turno: ${prox.hora}, ${cli(prox.cli).nombre} con ${barb(prox.b).nombre}` : 'No quedan turnos por hoy');
@@ -101,46 +126,56 @@ addEventListener('hashchange', () => { render(); scrollTo(0, 0); });
 const PASO = 30;          // los turnos van cada 30 minutos
 const FILA = 60;         // alto de una fila de 30 min, en px
 function hoy() {
-  const hechos = TURNOS.filter((t) => t.estado === 'asistio');
+  const hechos = delDia().filter((t) => t.estado === 'asistio');
+  const lunes = DIA - ((wdDe(DIA) + 7) % 7);
   $('#main').innerHTML = `
-    <div class="titulo"><h1 class="cond">Hoy</h1><p>Miércoles 21 de octubre · Tocá un turno para marcar si vino: suma a la caja y a su tarjeta de cortes.</p></div>
+    <div class="titulo"><h1 class="cond">${DIA > 1 || DIA < -1 ? fechaDe(DIA).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' }).replace(/[.,]/g, '') : nombreDia(DIA)}</h1>
+      <div class="navdia"><button class="icono" type="button" data-ir="${DIA - 1}" aria-label="Día anterior"><svg class="i"><use href="#i-izq"/></svg></button>
+        <button class="btn sec chico" type="button" data-ir="0" ${DIA === 0 ? 'disabled' : ''}>Hoy</button>
+        <label class="btn sec chico fecha-btn"><svg class="i" aria-hidden="true"><use href="#i-hoy"/></svg>Fecha<input type="date" id="ir-fecha" value="${ymdDe(DIA)}" aria-label="Ir a una fecha" /></label>
+        <button class="icono" type="button" data-ir="${DIA + 1}" aria-label="Día siguiente"><svg class="i"><use href="#i-der"/></svg></button></div>
+      <p>${fechaLarga(DIA).replace(/^./, (c) => c.toUpperCase())} · Tocá un turno para marcar si vino: suma a la caja y a su tarjeta de cortes.</p></div>
+    <div class="semana-tira" role="group" aria-label="Semana">${Array.from({ length: 7 }, (_, k) => lunes + k).map((o) => { const n = delDia(o).filter((t) => t.estado !== 'cancelado').length, cerrado = !BARBEROS.some((b) => b.activo && b.franjas.some((f) => f.dias.includes(wdDe(o))));
+      return `<button type="button" data-ir="${o}" aria-pressed="${o === DIA}" aria-label="${fechaLarga(o)}: ${cerrado ? 'cerrado' : `${n} turnos`}"><small>${fechaDe(o).toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '')}</small><b>${fechaDe(o).getDate()}</b><span>${cerrado ? 'Cerrado' : `${n} turnos`}</span>${o === 0 ? '<i>hoy</i>' : ''}</button>`; }).join('')}</div>
     <div class="tablero">
       <div class="dato"><small>Facturado</small><b>${pesos(hechos.reduce((a, t) => a + (t.premio ? 0 : t.precio), 0))}</b></div>
       <div class="dato"><small>Cortes</small><b>${hechos.length}</b></div>
-      <div class="dato"><small>Faltan</small><b>${TURNOS.filter((t) => t.estado === 'reservado').length}</b></div>
-      <div class="dato"><small>No vinieron</small><b>${TURNOS.filter((t) => t.estado === 'no_asistio').length}</b></div>
+      <div class="dato"><small>${DIA < 0 ? 'Sin marcar' : 'Faltan'}</small><b>${delDia().filter((t) => t.estado === 'reservado').length}</b></div>
+      <div class="dato"><small>No vinieron</small><b>${delDia().filter((t) => t.estado === 'no_asistio').length}</b></div>
     </div>
     <p class="leyenda"><span class="k reservado"></span>Reservado <span class="k k-premio"></span>Tiene premio <span class="k asistio"></span>Vino <span class="k no_asistio"></span>No vino <span class="k k-libre"></span>Libre</p>
     ${grilla()}`;
 }
 function grilla() {
   const bs = BARBEROS.filter((b) => b.activo);
-  const tramos = (b) => b.franjas.filter((f) => f.dias.includes(HOY)).map((f) => [min(f.desde), min(f.hasta)]);
+  const franco = (b) => b.libres.some((l) => ymdDe(DIA) >= l.desde && ymdDe(DIA) <= l.hasta);
+  const tramos = (b) => franco(b) ? [] : b.franjas.filter((f) => f.dias.includes(wdDe(DIA))).map((f) => [min(f.desde), min(f.hasta)]);
   const todos = bs.flatMap(tramos);
-  if (!todos.length) return '<div class="vacio"><b class="cond">Hoy no trabaja nadie</b>Cargá los horarios en Barberos.</div>';
+  if (!todos.length) return `<div class="vacio"><b class="cond">${DIA === 0 ? 'Hoy no trabaja nadie' : 'Cerrado'}</b>${DIA === 0 ? 'Cargá los horarios en Barberos.' : `Nadie trabaja ${fechaLarga(DIA)}.`}</div>`;
+  const hasta = DIA === 0 ? AHORA : DIA < 0 ? 24 * 60 : 0;
   const ini = Math.floor(Math.min(...todos.map((t) => t[0])) / 60) * 60, fin = Math.ceil(Math.max(...todos.map((t) => t[1])) / 60) * 60;
   const filas = (fin - ini) / PASO, y = (m) => ((m - ini) / PASO) * FILA;
   const horas = Array.from({ length: filas }, (_, k) => ini + k * PASO);
   const col = (b) => {
     const tr = tramos(b);
-    const ocup = [...TURNOS.filter((t) => t.b === b.id).map((t) => [min(t.hora), finDe(t)]), ...BLOQUEOS.filter((x) => x.b === b.id).map((x) => [min(x.desde), min(x.hasta)])];
+    const ocup = [...delDia().filter((t) => t.b === b.id).map((t) => [min(t.hora), finDe(t)]), ...BLOQUEOS.filter((x) => x.b === b.id && x.dia === DIA).map((x) => [min(x.desde), min(x.hasta)])];
     const celdas = horas.map((h) => {
       const trabaja = tr.some(([a, z]) => h >= a && h + PASO <= z);
       if (!trabaja) return `<div class="celda fuera" style="top:${y(h)}px" aria-hidden="true"></div>`;
-      if (ocup.some(([a, z]) => h < z && a < h + PASO) || h + PASO <= AHORA) return '';
+      if (ocup.some(([a, z]) => h < z && a < h + PASO) || h + PASO <= hasta) return '';
       return `<button class="celda libre" type="button" style="top:${y(h)}px" data-nuevo="${b.id}|${hhmm(h)}" aria-label="Libre ${hhmm(h)} con ${esc(b.nombre)}: cargar turno"><span>${hhmm(h)}</span><svg class="i" aria-hidden="true"><use href="#i-mas"/></svg></button>`;
     }).join('');
-    const turnos = TURNOS.filter((t) => t.b === b.id).map((t) => {
+    const turnos = delDia().filter((t) => t.b === b.id).map((t) => {
       const c = cli(t.cli), s = srv(t.serv), conPremio = t.estado === 'reservado' && c.premio;
       const clase = conPremio ? 'con-premio' : t.estado, alto = y(finDe(t)) - y(min(t.hora));
       const estadoTxt = { reservado: conPremio ? `tiene ${premioTxt()}` : 'reservado', asistio: t.premio ? 'usó el premio' : 'vino', no_asistio: 'no vino' }[t.estado];
       return `<button class="bloque-t ${clase} ${alto < 50 ? 'corto' : ''}" type="button" data-turno="${t.id}" style="top:${y(min(t.hora)) + 2}px;height:${alto - 4}px" aria-label="${t.hora} ${esc(c.nombre)}, ${esc(s.nombre)}, ${estadoTxt}">
         <b>${t.hora} ${esc(c.nombre.split(' ')[0])} ${esc(c.nombre.split(' ')[1]?.[0] || '')}.</b><span>${t.estado !== 'reservado' ? `<em>${t.estado === 'asistio' ? (t.premio ? 'Premio' : 'Vino') : 'No vino'}</em>` : ''}${esc(s.nombre)}${conPremio ? ' · <svg class="i"><use href="#i-regalo"/></svg>' : ''}</span></button>`;
     }).join('');
-    const bloq = BLOQUEOS.filter((x) => x.b === b.id).map((x) => `<button class="bloque-b" type="button" data-desbloq="${b.id}|${x.desde}" style="top:${y(min(x.desde))}px;height:${y(min(x.hasta)) - y(min(x.desde))}px" aria-label="${x.desde} a ${x.hasta} bloqueado: ${esc(x.motivo)}. Desbloquear"><span>${esc(x.motivo)}</span></button>`).join('');
-    return `<div class="col-b" style="height:${filas * FILA}px">${celdas}${bloq}${turnos}</div>`;
+    const bloq = BLOQUEOS.filter((x) => x.b === b.id && x.dia === DIA).map((x) => `<button class="bloque-b" type="button" data-desbloq="${b.id}|${x.desde}" style="top:${y(min(x.desde))}px;height:${y(min(x.hasta)) - y(min(x.desde))}px" aria-label="${x.desde} a ${x.hasta} bloqueado: ${esc(x.motivo)}. Desbloquear"><span>${esc(x.motivo)}</span></button>`).join('');
+    return `<div class="col-b" style="height:${filas * FILA}px">${franco(b) ? `<div class="franco">Franco</div>` : ''}${celdas}${bloq}${turnos}</div>`;
   };
-  const ahora = AHORA > ini && AHORA < fin ? `<div class="ahora" style="top:${y(AHORA)}px"><span>${hhmm(AHORA)}</span></div>` : '';
+  const ahora = DIA === 0 && AHORA > ini && AHORA < fin ? `<div class="ahora" style="top:${y(AHORA)}px"><span>${hhmm(AHORA)}</span></div>` : '';
   return `<div class="agenda" role="region" aria-label="Grilla del día" tabindex="0" style="--cols:${bs.length}">
     <div class="ag-cab"><span></span>${bs.map((b) => `<span class="cond">${esc(b.nombre.split(' ')[0])}</span>`).join('')}</div>
     <div class="ag-cuerpo"><div class="ag-horas" style="height:${filas * FILA}px">${horas.map((h) => `<span style="top:${y(h)}px" class="${h % 60 ? 'media' : ''}">${hhmm(h)}</span>`).join('')}</div>
@@ -172,6 +207,8 @@ function preguntarPremio(t) {
     guardar: () => { marcar(t, 'asistio', true); return true; }, alCancelar: () => marcar(t, 'asistio', false) });
 }
 function corregir(t) { const c = cli(t.cli); if (t.estado === 'asistio') { if (t.premio) { c.premio = true; c.usados--; } else c.cortes = Math.max(0, c.cortes - 1); c.visitas--; } else c.ausencias--; t.estado = 'reservado'; t.premio = false; render(); }
+document.addEventListener('click', (e) => { const d = e.target.closest('[data-ir]'); if (d) { DIA = +d.dataset.ir; hoy(); } });
+document.addEventListener('change', (e) => { if (e.target.id === 'ir-fecha' && e.target.value) { DIA = Math.round((new Date(e.target.value + 'T12:00:00') - BASE) / 864e5); hoy(); } });
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-turno]'); if (b) detalleTurno(TURNOS.find((x) => x.id === b.dataset.turno)); });
 function marcar(t, estado, conPremio = false) {
   const antes = JSON.stringify({ t, c: cli(t.cli) });
@@ -198,7 +235,7 @@ document.addEventListener('click', (e) => {
   } else if (d.dataset.falto) marcar(TURNOS.find((x) => x.id === d.dataset.falto), 'no_asistio');
   else if (d.dataset.deshacer) { const t = TURNOS.find((x) => x.id === d.dataset.deshacer); const c = cli(t.cli); if (t.estado === 'asistio') { if (t.premio) { c.premio = true; c.usados--; } else c.cortes = Math.max(0, c.cortes - 1); c.visitas--; } else c.ausencias--; t.estado = 'reservado'; t.premio = false; render(); }
   else if (d.dataset.nuevo) turnoAMano(...d.dataset.nuevo.split('|'));
-  else if (d.dataset.desbloq) { const [b, desde] = d.dataset.desbloq.split('|'); const x = BLOQUEOS.find((y) => y.b === b && y.desde === desde); BLOQUEOS = BLOQUEOS.filter((y) => y !== x); render(); aviso('Horario desbloqueado.', () => { BLOQUEOS.push(x); render(); }); }
+  else if (d.dataset.desbloq) { const [b, desde] = d.dataset.desbloq.split('|'); const x = BLOQUEOS.find((y) => y.b === b && y.desde === desde && y.dia === DIA); BLOQUEOS = BLOQUEOS.filter((y) => y !== x); render(); aviso('Horario desbloqueado.', () => { BLOQUEOS.push(x); render(); }); }
 });
 
 function telefono(v) { let d = v.replace(/\D/g, ''); if (d.startsWith('54')) d = d.slice(2); if (d.startsWith('9') && d.length === 11) d = d.slice(1); if (d.startsWith('0')) d = d.slice(1); return d.length === 10 ? d : null; }
@@ -206,7 +243,7 @@ function turnoAMano(bid, hora) {
   const b = barb(bid);
   abrirHoja({
     titulo: 'Turno a mano', ok: 'Cargar turno',
-    cuerpo: `<section class="bloque"><h3 class="cond">Hoy ${corto(hora)} con ${esc(b.nombre.split(' ')[0])}</h3>
+    cuerpo: `<section class="bloque"><h3 class="cond">${nombreDia(DIA)} ${corto(hora)} con ${esc(b.nombre.split(' ')[0])}</h3>
       <label class="campo">Servicio<select id="t-serv">${SERVICIOS.filter((s) => s.activo && s.barberos.includes(bid)).map((s) => `<option value="${s.id}">${esc(s.nombre)} · ${s.min} min · ${pesos(s.precio)}</option>`).join('')}</select></label>
       <label class="campo" id="c-t-nom">Nombre del cliente<input id="t-nom" autocomplete="off" aria-describedby="e-t-nom" /><span class="err" id="e-t-nom" hidden></span></label>
       <label class="campo" id="c-t-tel">Teléfono<span class="prefijo"><span aria-hidden="true">+54 9</span><input id="t-tel" type="tel" inputmode="tel" autocomplete="off" aria-describedby="a-t-tel e-t-tel" /></span>
@@ -214,7 +251,7 @@ function turnoAMano(bid, hora) {
       <section class="bloque"><h3 class="cond">O bloquear este horario</h3><p class="ayuda" style="margin-top:10px">Para almuerzo o un trámite: deja de aparecer para reservar.</p>
       <button class="btn sec chico" type="button" id="t-bloq" style="margin-top:10px"><svg class="i" aria-hidden="true"><use href="#i-candado"/></svg>Bloquear 30 min</button></section>`,
     alAbrir: () => {
-      $('#t-bloq').onclick = () => { BLOQUEOS.push({ b: bid, desde: hora, hasta: hhmm(min(hora) + 30), motivo: 'Bloqueado' }); cerrarHoja(true); render(); aviso('Horario bloqueado.'); };
+      $('#t-bloq').onclick = () => { BLOQUEOS.push({ dia: DIA, b: bid, desde: hora, hasta: hhmm(min(hora) + 30), motivo: 'Bloqueado' }); cerrarHoja(true); render(); aviso('Horario bloqueado.'); };
     },
     guardar: () => {
       const nom = $('#t-nom').value.trim(), tel = telefono($('#t-tel').value);
@@ -223,7 +260,7 @@ function turnoAMano(bid, hora) {
       let c = CLIENTES.find((x) => x.tel === tel);
       if (!c) { c = { id: 'c' + Date.now(), nombre: nom, tel, visitas: 0, ausencias: 0, cortes: 0, usados: 0, premio: false, bloq: false }; CLIENTES.push(c); }
       const s = srv($('#t-serv').value);
-      TURNOS.push({ id: 't' + Date.now(), b: bid, hora, cli: c.id, serv: s.id, precio: s.precio, estado: 'reservado', premio: false });
+      TURNOS.push({ id: 't' + Date.now(), dia: DIA, b: bid, hora, cli: c.id, serv: s.id, precio: s.precio, estado: 'reservado', premio: false });
       render(); aviso(`Turno cargado: ${corto(hora)} ${c.nombre.split(' ')[0]} con ${b.nombre.split(' ')[0]}.`); return true;
     },
   });
@@ -254,7 +291,7 @@ $('#hoja-form').addEventListener('submit', (e) => { e.preventDefault(); if (actu
 function barberos() {
   const act = BARBEROS.filter((b) => b.activo), bajas = BARBEROS.filter((b) => !b.activo);
   const fila = (b) => {
-    const n = TURNOS.filter((t) => t.b === b.id && t.estado === 'reservado').length;
+    const n = delDia(0).filter((t) => t.b === b.id && t.estado === 'reservado').length;
     const ns = SERVICIOS.filter((s) => s.activo && s.barberos.includes(b.id)).length, tot = SERVICIOS.filter((s) => s.activo).length;
     return `<li class="fila ${b.activo ? '' : 'baja'}"><button type="button" data-barbero="${b.id}" aria-label="Editar a ${esc(b.nombre)}">
       <span class="ini" aria-hidden="true">${ini(b.nombre)}</span>
@@ -290,7 +327,7 @@ function editarBarbero(b) {
     $('#hoja-resumen').textContent = `${resumen(e.franjas)}${horasSemana(e.franjas) ? ` · ${horasSemana(e.franjas)}` : ''}`;
     return !hay;
   }
-  const futuros = b ? TURNOS.filter((t) => t.b === b.id && t.estado === 'reservado') : [];
+  const futuros = b ? TURNOS.filter((t) => t.b === b.id && t.estado === 'reservado' && t.dia >= 0) : [];
   abrirHoja({
     titulo: b ? b.nombre : 'Nuevo barbero', ok: b ? 'Guardar' : 'Guardar y publicar',
     firma: () => JSON.stringify([e, sv]),
@@ -315,7 +352,7 @@ function editarBarbero(b) {
       $('#l-agregar').onclick = () => { const de = $('#l-desde').value, ha = $('#l-hasta').value || de; const er = $('#l-err'); er.hidden = true; if (!de) { $('#l-desde').focus(); return; } if (ha < de) { er.hidden = false; er.textContent = '"Hasta" es antes que "desde".'; return; } e.libres.push({ desde: de, hasta: ha }); $('#l-desde').value = $('#l-hasta').value = ''; pintarLibres(); };
       $('#libres').addEventListener('click', (ev) => { const q = ev.target.closest('[data-libre]'); if (q) { e.libres.splice(+q.dataset.libre, 1); pintarLibres(); } });
       $('#baja')?.addEventListener('click', () => {
-        $('#zona-baja').innerHTML = `<div class="confirmar">¿Dar de baja a ${esc(b.nombre.split(' ')[0])}? Deja de aparecer para reservar y su historial queda guardado.${futuros.length ? ` <b>Tiene ${futuros.length} turno${futuros.length > 1 ? 's' : ''} por atender</b> (${futuros.map((t) => `${t.hora} ${esc(cli(t.cli).nombre.split(' ')[0])}`).join(', ')}): avisales o pasáselos a otro barbero.` : ''}
+        $('#zona-baja').innerHTML = `<div class="confirmar">¿Dar de baja a ${esc(b.nombre.split(' ')[0])}? Deja de aparecer para reservar y su historial queda guardado.${futuros.length ? ` <b>Tiene ${futuros.length} turno${futuros.length > 1 ? 's' : ''} por atender</b> (${futuros.slice(0, 3).map((t) => `${nombreDia(t.dia).toLowerCase()} ${t.hora} ${esc(cli(t.cli).nombre.split(' ')[0])}`).join(', ')}${futuros.length > 3 ? '…' : ''}): avisales o pasáselos a otro barbero.` : ''}
           <div class="botones"><button class="btn peligro chico" type="button" id="baja-si">Dar de baja</button><button class="btn sec chico" type="button" id="baja-no">No</button></div></div>`;
         $('#baja-no').onclick = () => { cerrarHoja(true); editarBarbero(barb(b.id)); };
         $('#baja-si').onclick = () => { b.activo = false; cerrarHoja(true); render(); aviso(`${b.nombre.split(' ')[0]} ya no aparece para reservar.`, () => { b.activo = true; render(); }); };
@@ -409,9 +446,9 @@ document.addEventListener('click', (e) => { const b = e.target.closest('[data-bl
 /* ═══ NÚMEROS ═══ */
 let periodo = 'hoy';
 function numeros() {
-  const hechos = TURNOS.filter((t) => t.estado === 'asistio');
+  const hechos = delDia(0).filter((t) => t.estado === 'asistio');
   const P = {
-    hoy: { tot: hechos.reduce((a, t) => a + (t.premio ? 0 : t.precio), 0), cortes: hechos.length, aus: TURNOS.filter((t) => t.estado === 'no_asistio').length, por: BARBEROS.filter((b) => b.activo).map((b) => [b.nombre.split(' ')[0], hechos.filter((t) => t.b === b.id).reduce((a, t) => a + (t.premio ? 0 : t.precio), 0)]), srv: SERVICIOS.map((s) => [s.nombre, hechos.filter((t) => t.serv === s.id).length]) },
+    hoy: { tot: hechos.reduce((a, t) => a + (t.premio ? 0 : t.precio), 0), cortes: hechos.length, aus: delDia(0).filter((t) => t.estado === 'no_asistio').length, por: BARBEROS.filter((b) => b.activo).map((b) => [b.nombre.split(' ')[0], hechos.filter((t) => t.b === b.id).reduce((a, t) => a + (t.premio ? 0 : t.precio), 0)]), srv: SERVICIOS.map((s) => [s.nombre, hechos.filter((t) => t.serv === s.id).length]) },
     semana: { tot: 486500, cortes: 41, aus: 3, por: [['Martín', 212000], ['Lucas', 151500], ['Tomás', 123000]], srv: [['Corte', 22], ['Corte + barba', 11], ['Barba', 5], ['Perfilado de cejas', 3]] },
     mes: { tot: 1982500, cortes: 167, aus: 12, por: [['Martín', 846000], ['Lucas', 611500], ['Tomás', 525000]], srv: [['Corte', 88], ['Corte + barba', 47], ['Barba', 21], ['Perfilado de cejas', 11]] },
   }[periodo];

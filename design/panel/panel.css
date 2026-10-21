@@ -153,6 +153,19 @@ main { padding: 24px var(--g) 110px; max-width: 1180px; width: 100%; display: gr
 .ahora { position: absolute; left: 0; right: 0; height: 0; border-top: 2px solid var(--led); z-index: 2; pointer-events: none; }
 .ahora span { position: sticky; left: 0; display: inline-block; transform: translateY(-50%); background: var(--led); color: #fff; font: 800 11px 'Archivo'; padding: 2px 5px; border-radius: 3px; }
 
+.semana-tira { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.semana-tira button { position: relative; display: grid; justify-items: center; gap: 2px; padding: 8px 2px; min-height: 76px; border: 2px solid var(--linea-fuerte); border-radius: 6px; background: var(--papel); cursor: pointer; }
+.semana-tira small { font: 800 11px 'Archivo'; font-stretch: 75%; letter-spacing: .08em; text-transform: uppercase; }
+.semana-tira b { font: 900 26px/1 'Archivo'; font-stretch: 62%; }
+.semana-tira span { font: 600 11px 'Archivo'; color: var(--ink-2); white-space: nowrap; }
+.semana-tira i { position: absolute; top: -8px; left: 50%; translate: -50% 0; padding: 0 5px; background: var(--led); color: #fff; border-radius: 3px; font: 800 10px/16px 'Archivo'; font-style: normal; text-transform: uppercase; }
+.semana-tira button[aria-pressed="true"] { background: var(--screen); border-color: var(--screen); color: var(--roll); }
+.semana-tira button[aria-pressed="true"] span { color: var(--warm-2); }
+.fecha-btn { position: relative; }
+.fecha-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.navdia .btn:disabled { opacity: .45; cursor: default; }
+.franco { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; background: repeating-linear-gradient(135deg, #14121008 0 6px, #14121014 6px 12px); font: 900 22px 'Archivo'; font-stretch: 62%; text-transform: uppercase; color: var(--ink-2); }
+
 /* Hoja de edición */
 .hoja { border: 0; padding: 0; width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; background: var(--fondo); color: var(--ink); }
 .hoja::backdrop { background: #141210a6; }
