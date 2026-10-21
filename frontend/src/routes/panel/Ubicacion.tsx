@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { cargarMapLibre, ESTILO_MAPA, LA_PLATA } from '@/lib/mapa'
 
-const LA_PLATA: [number, number] = [-57.9545, -34.9214]
 
 /** El admin toca el mapa donde está su local (MapLibre + OpenFreeMap). */
 export function Ubicacion({ lat, lng, onCambiar }: { lat: string | null; lng: string | null; onCambiar: (lat: string, lng: string) => void }) {
@@ -11,10 +11,10 @@ export function Ubicacion({ lat, lng, onCambiar }: { lat: string | null; lng: st
   useEffect(() => {
     let mapa: { remove: () => void } | undefined
     let vivo = true
-    Promise.all([import('maplibre-gl'), import('maplibre-gl/dist/maplibre-gl.css')]).then(([{ default: ml }]) => {
+    cargarMapLibre().then((ml) => {
       if (!vivo || !ref.current) return
       const punto: [number, number] | null = lat && lng ? [+lng, +lat] : null
-      const m = new ml.Map({ container: ref.current, style: 'https://tiles.openfreemap.org/styles/positron', center: punto ?? LA_PLATA, zoom: punto ? 16 : 13, attributionControl: { compact: true } })
+      const m = new ml.Map({ container: ref.current, style: ESTILO_MAPA, center: punto ?? LA_PLATA, zoom: punto ? 16 : 13, attributionControl: { compact: true } })
       m.addControl(new ml.NavigationControl({ showCompass: false }), 'top-right')
       const marca = new ml.Marker({ color: '#ff2b1c' })
       if (punto) marca.setLngLat(punto).addTo(m)

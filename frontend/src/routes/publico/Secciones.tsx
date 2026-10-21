@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, Gift } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
+import { cargarMapLibre, ESTILO_MAPA } from '@/lib/mapa'
 import { hoyMas, horaAR, pesos, ZONA } from './comun'
 
 type Tramo = { dia_semana: number; desde: string; hasta: string }
@@ -192,9 +193,9 @@ function Mapa({ lat, lng, nombre }: { lat: number; lng: number; nombre: string }
   useEffect(() => {
     let mapa: { remove: () => void } | undefined
     let vivo = true
-    Promise.all([import('maplibre-gl'), import('maplibre-gl/dist/maplibre-gl.css')]).then(([{ default: ml }]) => {
+    cargarMapLibre().then((ml) => {
       if (!vivo || !ref.current) return
-      const m = new ml.Map({ container: ref.current, style: 'https://tiles.openfreemap.org/styles/positron', center: [lng, lat], zoom: 15, cooperativeGestures: true, attributionControl: { compact: true } })
+      const m = new ml.Map({ container: ref.current, style: ESTILO_MAPA, center: [lng, lat], zoom: 15, cooperativeGestures: true, attributionControl: { compact: true } })
       m.addControl(new ml.NavigationControl({ showCompass: false }), 'top-right')
       const el = document.createElement('div'); el.className = 'pin-b'
       const b = document.createElement('b'); b.textContent = nombre; el.appendChild(b)

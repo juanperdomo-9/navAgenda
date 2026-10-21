@@ -52,7 +52,9 @@ SLUGS_RESERVADOS = (
     "assets",
     "static",
     "health",
+    "sumar",
 )
+ESTADOS_SOLICITUD = ("pendiente", "creada", "descartada")
 TIPOS_BENEFICIO = ("descuento_pct", "descuento_monto", "servicio_gratis", "texto")
 
 
@@ -264,6 +266,22 @@ class Turno(Base):
     )
     token_acceso_hash: Mapped[str | None] = mapped_column(Text, unique=True)
     origen: Mapped[str] = mapped_column(Text, nullable=False, server_default="web")
+    creado_en: Mapped[datetime] = _creado_en()
+
+
+class Solicitud(Base):
+    """Pedido para sumar una barbería ("Quiero sumar mi barbería"). La da de alta el superadmin."""
+
+    __tablename__ = "solicitudes"
+    __table_args__ = (CheckConstraint(_in("estado", ESTADOS_SOLICITUD), name="estado_valido"),)
+
+    id: Mapped[UUID] = _id()
+    barberia: Mapped[str] = mapped_column(Text, nullable=False)
+    nombre: Mapped[str] = mapped_column(Text, nullable=False)
+    telefono: Mapped[str] = mapped_column(Text, nullable=False)
+    barrio: Mapped[str | None] = mapped_column(Text)
+    mensaje: Mapped[str | None] = mapped_column(Text)
+    estado: Mapped[str] = mapped_column(Text, nullable=False, server_default="pendiente")
     creado_en: Mapped[datetime] = _creado_en()
 
 

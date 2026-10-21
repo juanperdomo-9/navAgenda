@@ -95,7 +95,7 @@ Los barberos **no tienen login propio** en el MVP: son entidades que crea y gest
 Es **el link que comparte cada barbería** (Instagram, WhatsApp, Google) y donde se sacan los turnos con cada barbero.
 Es la pantalla más importante del producto: tiene que funcionar perfecta en el celular.
 La ruta va en la raíz (`/la-navaja`), así que hay slugs reservados que ninguna barbería puede usar:
-`panel`, `super`, `t`, `api`, `buscar`, `mapa`, `mis-turnos`, `ingresar`, `dev`, `assets`, `static`, `health`.
+`panel`, `super`, `t`, `api`, `buscar`, `mapa`, `mis-turnos`, `ingresar`, `dev`, `assets`, `static`, `health`, `sumar`.
 - Portada con logo, nombre, dirección, barberos y servicios con precios.
 - Flujo de reserva: elegir barbero (o "cualquiera" = el primero libre) → servicio → día → horario → nombre + teléfono → confirmar.
   La máquina muestra de entrada el próximo turno libre: con un toque se saca. Si no hay lugar, ofrece el próximo disponible real.
@@ -196,7 +196,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Crear el superadmin: `cd backend && uv run python -m app.cli crear-superadmin <usuario> "<nombre>"` (pide la clave)
 
 ## Estado actual y próximos pasos (actualizado 2026-10-21)
-- **Backend listo para salir** (112 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
+- **Backend listo para salir** (116 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
   horarios libres cada 30 min, API pública (`/p/{slug}`, `/p/{slug}/libres`, `/p/{slug}/turnos`, `/t/{token}`),
   agenda (`/panel/agenda`, asistió/no vino con tarjeta de cortes, corregir, turno a mano), clientes y números.
   Primera barbería real: `uv run python -m app.cli cargar-inspirationmen`.
@@ -218,7 +218,10 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   facturado, cortes, ausencias, por barbero, por servicio y día por día) en la API y en el panel.
 - Panel del superadmin en `/panel` (entrando como superadmin): barberías con su admin, alta con clave temporal
   (se muestra una vez), resetear clave y pausar/reactivar (`PATCH /super/barberias/{id}`).
-- **Falta para estar al 100%**: mapa del portal `/` (buscador por zona). Inspirationmen tiene que marcar su ubicación en Mi página.
+- Portal `/`: próximo libre, "Cerca tuyo" (mapa de todas + "Usar mi ubicación" ordena por cercanía), listado de todas
+  las barberías con filtro, "¿Tenés una barbería?" → `/sumar` (formulario → solicitudes en el panel del superadmin,
+  con "Crear barbería" precargado) y pie con crédito a jpweb.com.ar.
+- **Pendiente**: Inspirationmen tiene que marcar su ubicación en Mi página. Publicar (repo en GitHub → DEPLOY.md).
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

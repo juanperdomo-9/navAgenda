@@ -7,6 +7,7 @@ import { Hoja } from './Agenda'
 type Admin = { id: string; nombre: string; usuario: string; ultimo_ingreso: string | null; debe_cambiar_clave: boolean }
 type Barberia = { id: string; nombre: string; slug: string; barrio: string | null; activa: boolean; admins: Admin[]; barberos: number }
 type Clave = { titulo: string; usuario: string; clave: string }
+type Pedido = { id: string; barberia: string; nombre: string; telefono: string; barrio: string | null; mensaje: string | null; creado_en: string }
 
 const aSlug = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 const cuando = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', timeZone: 'America/Argentina/Buenos_Aires' }) : 'nunca')
@@ -16,7 +17,8 @@ const errMsg = (e: unknown) => (e instanceof ApiError ? e.message : 'No se pudo 
 export function Super() {
   const qc = useQueryClient()
   const bs = useQuery({ queryKey: ['s-barberias'], queryFn: () => api<Barberia[]>('/super/barberias') })
-  const [nueva, setNueva] = useState(false)
+  const [nueva, setNueva] = useState<Pedido | true | null>(null)
+  const ps = useQuery({ queryKey: ['s-pedidos'], queryFn: () => api<Pedido[]>('/super/solicitudes') })
   const [clave, setClave] = useState<Clave | null>(null)
   const [aviso, setAviso] = useState('')
   const refrescar = () => qc.invalidateQueries({ queryKey: ['s-barberias'] })
@@ -36,6 +38,10 @@ export function Super() {
     } catch (e) { setAviso(errMsg(e)) }
   }
 
+  async function marcar(p: Pedido, estado: 'creada' | 'descartada') {
+    try { await api(`/super/solicitudes/${p.id}`, { method: 'PATCH', body: JSON.stringify({ estado }) }); qc.invalidateQueries({ queryKey: ['s-pedidos'] }) } catch (e) { setAviso(errMsg(e)) }
+  }
+
   const ls = bs.data ?? []
   return (
     <main>
@@ -43,6 +49,19 @@ export function Super() {
         <p>{ls.length ? `${ls.filter((b) => b.activa).length} online de ${ls.length}.` : ''} Cada una tiene su admin, que entra con usuario y clave.</p></div>
       <button type="button" className="btn" onClick={() => { setNueva(true); setClave(null) }}><Plus className="i" aria-hidden />Nueva barbería</button>
       {clave && <ClaveTemporal {...clave} onCerrar={() => setClave(null)} />}
+      {!!ps.data?.length && (
+        <section className="bloque" style={{ marginTop: 22 }}><h3 className="cond">Quieren sumarse ({ps.data.length})</h3>
+          <ul className="lista">{ps.data.map((p) => (
+            <li key={p.id} className="cliente">
+              <span><span className="n cond">{p.barberia}</span>
+                <span className="r" style={{ display: 'block' }}>{p.nombre} · <a href={`https://wa.me/${p.telefono.replace('+', '')}`} target="_blank" rel="noopener">{p.telefono}</a>{p.barrio ? ` · ${p.barrio}` : ''} · {cuando(p.creado_en)}</span>
+                {p.mensaje && <span className="r" style={{ display: 'block' }}>“{p.mensaje}”</span>}</span>
+              <span className="acc" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px' }}>
+                <button className="link" type="button" onClick={() => { setNueva(p); setClave(null) }}>Crear barbería</button>
+                <button className="link rojo" type="button" onClick={() => marcar(p, 'descartada')}>Descartar</button>
+              </span>
+            </li>))}</ul>
+        </section>)}
       {aviso && <p role="status" className="vacio" style={{ padding: 12, marginTop: 14 }}>{aviso}</p>}
       {bs.isPending ? <p style={{ marginTop: 16 }}>Cargando…</p> : bs.isError ? <p role="alert" className="err">{bs.error.message}</p>
         : <ul className="lista">{ls.map((b) => (
@@ -56,7 +75,8 @@ export function Super() {
               <button className={`link ${b.activa ? 'rojo' : ''}`} type="button" onClick={() => pausar(b)}>{b.activa ? 'Pausar' : 'Reactivar'}</button>
             </span>
           </li>))}</ul>}
-      {nueva && <NuevaBarberia onCerrar={() => setNueva(false)} onListo={(c) => { setNueva(false); setClave(c); refrescar() }} />}
+      {nueva && <NuevaBarberia pedido={nueva === true ? undefined : nueva} onCerrar={() => setNueva(null)}
+        onListo={(c) => { if (nueva !== true) marcar(nueva, 'creada'); setNueva(null); setClave(c); refrescar() }} />}
     </main>
   )
 }
@@ -78,8 +98,8 @@ function ClaveTemporal({ titulo, usuario, clave, onCerrar }: Clave & { onCerrar:
   )
 }
 
-function NuevaBarberia({ onCerrar, onListo }: { onCerrar: () => void; onListo: (c: Clave) => void }) {
-  const [f, setF] = useState({ nombre: '', slug: '', direccion: '', barrio: '', admin_nombre: '', admin_usuario: '' })
+function NuevaBarberia({ pedido, onCerrar, onListo }: { pedido?: Pedido; onCerrar: () => void; onListo: (c: Clave) => void }) {
+  const [f, setF] = useState({ nombre: pedido?.barberia ?? '', slug: aSlug(pedido?.barberia ?? ''), direccion: '', barrio: pedido?.barrio ?? '', admin_nombre: pedido?.nombre ?? '', admin_usuario: aSlug(pedido?.barberia ?? '') })
   const [tocado, setTocado] = useState({ slug: false, admin_usuario: false })
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
