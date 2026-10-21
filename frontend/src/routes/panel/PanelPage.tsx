@@ -1,20 +1,22 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, ExternalLink, Globe, LogOut, Scissors, Users } from 'lucide-react'
+import { CalendarDays, ChartColumn, Contact, ExternalLink, Globe, LogOut, Scissors, Users } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { api, ApiError, type UsuarioPanel } from '@/lib/api'
 import { Agenda } from './Agenda'
+import { Clientes, Numeros } from './Numeros'
 import { Barberos, MiPagina, Servicios } from './Vistas'
 import './panel.css'
 
 type Config = { nombre: string; slug: string }
-const NAV = [['agenda', 'Agenda', CalendarDays], ['barberos', 'Barberos', Users], ['servicios', 'Servicios', Scissors], ['pagina', 'Mi página', Globe]] as const
+const NAV = [['agenda', 'Agenda', CalendarDays], ['barberos', 'Barberos', Users], ['servicios', 'Servicios', Scissors], ['clientes', 'Clientes', Contact], ['numeros', 'Números', ChartColumn], ['pagina', 'Mi página', Globe]] as const
+type Vista = (typeof NAV)[number][0]
 
 /** Panel de la barbería (diseño: design/panel). Verifica la sesión y muestra la Agenda. */
 export function PanelPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const [vista, setVista] = useState<'agenda' | 'barberos' | 'servicios' | 'pagina'>('agenda')
+  const [vista, setVista] = useState<Vista>('agenda')
   const yo = useQuery({ queryKey: ['yo'], queryFn: () => api<UsuarioPanel>('/auth/yo'), retry: false })
   const admin = yo.data?.rol === 'admin' && !yo.data.debe_cambiar_clave
   const cfg = useQuery({ queryKey: ['p-config'], queryFn: () => api<Config>('/panel/barberia'), enabled: admin })
@@ -45,11 +47,11 @@ export function PanelPage() {
             <button type="button" className="ver-pagina" onClick={salir} style={{ background: 'none', cursor: 'pointer' }}>Salir</button>
           </header>
           {yo.data.debe_cambiar_clave ? <CambiarClave nombre={yo.data.nombre} onListo={() => qc.invalidateQueries({ queryKey: ['yo'] })} />
-            : admin ? (vista === 'agenda' ? <Agenda /> : vista === 'barberos' ? <Barberos /> : vista === 'servicios' ? <Servicios /> : <MiPagina />)
+            : admin ? { agenda: <Agenda />, barberos: <Barberos />, servicios: <Servicios />, clientes: <Clientes />, numeros: <Numeros />, pagina: <MiPagina /> }[vista]
             : <main><div className="titulo"><h1 className="cond">Hola, {yo.data.nombre.split(' ')[0]}</h1><p>Sos superadmin. Las barberías se crean con la API /super o con los comandos de DEPLOY.md.</p></div></main>}
         </div>
       </div>
-      {admin && <nav className="abajo" aria-label="Panel" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>{NAV.map(([k, t, I]) => <a key={k} href="#" aria-current={vista === k ? 'page' : undefined} onClick={(e) => { e.preventDefault(); setVista(k); scrollTo(0, 0) }}><I className="i" aria-hidden />{k === 'pagina' ? 'Página' : t}</a>)}</nav>}
+      {admin && <nav className="abajo" aria-label="Panel" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>{NAV.map(([k, t, I]) => <a key={k} href="#" aria-current={vista === k ? 'page' : undefined} onClick={(e) => { e.preventDefault(); setVista(k); scrollTo(0, 0) }}><I className="i" aria-hidden />{k === 'pagina' ? 'Página' : t}</a>)}</nav>}
     </div>
   )
 }

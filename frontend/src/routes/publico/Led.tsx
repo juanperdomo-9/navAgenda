@@ -1,9 +1,9 @@
 /** Display de 7 segmentos (mismo dibujo que el prototipo). El cero de adelante queda apagado. */
-const SEG: Record<string, string> = {
+export const SEG: Record<string, string> = {
   a: 'M14 4h52l-8 8H22z', b: 'M68 6l8 8v42l-8 4-8-8V14z', c: 'M68 64l8 4v42l-8 8-8-8V72z', d: 'M22 112h36l8 8H14z',
   e: 'M12 64l8 8v38l-8 8-8-8V68z', f: 'M12 6l8 8v38l-8 8-8-4V14z', g: 'M20 58h40l6 4-6 4H20l-6-4z',
 }
-const MAPA = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abcdfg']
+export const MAPA = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abcdfg']
 
 function Digito({ n }: { n: number | null }) {
   return (
