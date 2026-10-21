@@ -44,7 +44,6 @@ export function Secciones({ p, servicio, setServicio, nombreDe, onElegir, subir 
   p: PaginaBarberia; servicio: string; setServicio: (id: string) => void; nombreDe: (id: string) => string
   onElegir: (l: Libre) => void; subir: () => void
 }) {
-  const serv = p.servicios.find((s) => s.id === servicio)
   const libresDe = (o: number) => ({
     queryKey: ['libres', p.slug, servicio, hoyMas(o), null],
     queryFn: () => api<Libre[]>(`/p/${p.slug}/libres?servicio_id=${servicio}&fecha=${hoyMas(o)}`),
@@ -88,12 +87,12 @@ export function Secciones({ p, servicio, setServicio, nombreDe, onElegir, subir 
         <section className="sec precios" aria-labelledby="precios-h">
           <div>
             <h2 className="sec-h" id="precios-h">Lista de precios</h2>
-            <p className="sec-lede">Tocá un servicio y te mostramos el próximo turno para ese servicio.</p>
+            <p className="sec-lede">Tocá un servicio y te lo dejamos elegido para cuando saques el turno.</p>
           </div>
           <div className="caja">
             <h3>{p.nombre}</h3>
             <ul>{p.servicios.map((s) => (
-              <li key={s.id}><button type="button" aria-pressed={s.id === servicio} onClick={() => { setServicio(s.id); subir() }}>
+              <li key={s.id}><button type="button" onClick={() => { setServicio(s.id); subir() }}>
                 {s.nombre} <small>{s.duracion_min} min</small><span className="lead" /><b>{pesos(s.precio)}</b></button></li>))}</ul>
             <p className="pie-caja">Se paga en el local. Sin seña.</p>
           </div>
@@ -102,7 +101,7 @@ export function Secciones({ p, servicio, setServicio, nombreDe, onElegir, subir 
 
       <section className="sec" aria-labelledby="semana-h">
         <h2 className="sec-h" id="semana-h">Toda la semana</h2>
-        <p className="sec-lede">Para elegir con calma: el día y después el horario con cada barbero{serv ? ` (${serv.nombre})` : ''}.</p>
+        <p className="sec-lede">Para elegir con calma: el día y después el horario con cada barbero.</p>
         <div className="dias7" role="group" aria-label="Día de la semana">
           {Array.from({ length: 7 }, (_, o) => {
             const f = hoyMas(o), cerrado = !abierto(o)

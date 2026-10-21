@@ -195,3 +195,15 @@
 
 /* Opciones de los desplegables nativos: siempre tinta sobre papel (en páginas oscuras heredaban texto claro) */
 .pb select option, .portal select option { color: #141210; background: #fffdf3; }
+
+/* Servicio: se elige en la hoja de datos, junto con nombre y teléfono */
+.hoja-p .servs { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.hoja-p .servs legend { font: 700 14px var(--type-archivo); margin-bottom: 6px; padding: 0; }
+.hoja-p .serv { position: relative; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 14px; border: 2px solid var(--borde); border-radius: 6px; cursor: pointer; color: var(--warm); }
+.hoja-p .serv input { position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; }
+.hoja-p .serv span { flex: 1; min-width: 0; font: 700 16px/1.25 var(--type-archivo); }
+.hoja-p .serv span small { display: block; font: 500 13px var(--type-archivo); color: var(--warm-2); }
+.hoja-p .serv b { font: 900 18px var(--type-archivo); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hoja-p .serv:has(input:checked) { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+.hoja-p .serv:has(input:checked) small { color: #3d3310; }
+.hoja-p .serv:has(input:focus-visible) { outline: 3px solid var(--roll); outline-offset: 2px; }

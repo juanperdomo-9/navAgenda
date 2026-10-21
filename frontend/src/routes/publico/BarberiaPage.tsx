@@ -30,13 +30,14 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   const inicial = con ? p.barberos.find((b) => sinTildes(b.nombre).replace(/\s+/g, '-') === sinTildes(con)) ?? p.barberos.find((b) => sinTildes(b.nombre.split(' ')[0]) === sinTildes(con)) : undefined
   const [barbero, setBarbero] = useState<string | null>(inicial?.id ?? null)
   const servicios = p.servicios.filter((s) => !barbero || p.barberos.find((b) => b.id === barbero)?.servicio_ids.includes(s.id))
-  const [servicio, setServicio] = useState(servicios[0]?.id ?? '')
+  // El servicio se elige al confirmar (junto con nombre y teléfono). Los horarios se calculan con el
+  // más corto que haga el barbero (a igual duración, el más barato); `preferido` viene de la lista de precios.
+  const servicio = [...servicios].sort((a, b) => a.duracion_min - b.duracion_min || a.precio - b.precio)[0]?.id ?? ''
+  const [preferido, setPreferido] = useState<string | null>(null)
   const [dia, setDia] = useState(0)
   const [fecha, setFecha] = useState('')
   const ymd = fecha || hoyMas(dia)
   const diaTxt = fecha ? new Date(fecha + 'T12:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' }).replace(',', '') : dia === 0 ? 'hoy' : 'mañana'
-
-  useEffect(() => { if (servicios.length && !servicios.some((s) => s.id === servicio)) setServicio(servicios[0].id) }, [barbero]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const libres = useQuery({
     queryKey: ['libres', p.slug, servicio, ymd, barbero],
@@ -50,7 +51,6 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
     const [n, ap] = (p.barberos.find((b) => b.id === id)?.nombre ?? '').split(' ')
     return p.barberos.filter((b) => b.nombre.split(' ')[0] === n).length > 1 && ap ? `${n} ${ap[0]}.` : n
   }
-  const serv = p.servicios.find((s) => s.id === servicio)
 
   const [elegido, setElegido] = useState<Libre | null>(null)
   const hoja = useRef<HTMLDialogElement>(null)
@@ -59,7 +59,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   const maq = useRef<HTMLElement>(null)
   const subir = () => maq.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })
   // Desde la lista de precios: si el barbero elegido no hace ese servicio, pasa a "cualquiera"
-  const elegirServicio = (id: string) => { if (barbero && !p.barberos.find((b) => b.id === barbero)?.servicio_ids.includes(id)) setBarbero(null); setServicio(id) }
+  const elegirServicio = (id: string) => { if (barbero && !p.barberos.find((b) => b.id === barbero)?.servicio_ids.includes(id)) setBarbero(null); setPreferido(id) }
   const palabras = p.nombre.split(/\s+/)
   return (
     <div className={`pb ${tinta(p.color_acento) === '#fffdf3' ? 'oscura' : ''}`} style={estiloBarberia(p.color_acento)}>
@@ -87,13 +87,6 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
               ))}
             </div>
           </fieldset>
-          <label className="knob">
-            <b>{serv?.nombre ?? 'Sin servicios'}</b>
-            <span>{serv ? pesos(serv.precio) : ''}</span>
-            <select value={servicio} onChange={(e) => setServicio(e.target.value)} aria-label="Servicio">
-              {servicios.map((s) => <option key={s.id} value={s.id}>{s.nombre} · {s.duracion_min} min · {pesos(s.precio)}</option>)}
-            </select>
-          </label>
           <div className="dias" role="group" aria-label="Día">
             <button type="button" aria-pressed={!fecha && dia === 0} onClick={() => { setFecha(''); setDia(0) }}>Hoy</button>
             <button type="button" aria-pressed={!fecha && dia === 1} onClick={() => { setFecha(''); setDia(1) }}>Mañana</button>
@@ -101,7 +94,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
           </div>
           <Led hora={prox ? horaAR(prox.inicio).replace(/^0/, '') : null} />
           <p className="who" aria-live="polite">
-            {libres.isPending ? 'Buscando…' : prox ? <>{diaTxt.charAt(0).toUpperCase() + diaTxt.slice(1)} con {nombreDe(prox.barbero_id)}{!barbero && ' · el primero libre'}<small>{serv?.nombre} · {serv?.duracion_min} min · {serv && pesos(serv.precio)}</small></>
+            {libres.isPending ? 'Buscando…' : prox ? <>{diaTxt.charAt(0).toUpperCase() + diaTxt.slice(1)} con {nombreDe(prox.barbero_id)}{!barbero && ' · el primero libre'}<small>Desde {pesos(Math.min(...servicios.map((s) => s.precio)))} · el servicio lo elegís al confirmar</small></>
               : <>Sin lugar {diaTxt}<small>Probá otro día{barbero ? ' o con otro barbero' : ''}</small></>}
           </p>
           {prox ? (
@@ -126,8 +119,8 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
       )}
       <Secciones p={p} servicio={servicio} setServicio={elegirServicio} nombreDe={nombreDe} onElegir={setElegido} subir={subir} />
       <dialog ref={hoja} className="hoja-p" onClose={() => setElegido(null)} aria-label="Tus datos">
-        {elegido && serv && (
-          <Datos slug={p.slug} libre={elegido} servicio={serv} barbero={nombreDe(elegido.barbero_id)} diaTxt={diaDe(elegido.inicio)}
+        {elegido && (
+          <Datos slug={p.slug} libre={elegido} servicios={p.servicios.filter((s) => p.barberos.find((b) => b.id === elegido.barbero_id)?.servicio_ids.includes(s.id))} preferido={preferido} barbero={nombreDe(elegido.barbero_id)} diaTxt={diaDe(elegido.inicio)}
             onListo={(token) => { guardarTicket(token); navigate(`/t/${token}`) }} onCerrar={() => setElegido(null)} />
         )}
       </dialog>
@@ -136,9 +129,11 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   )
 }
 
-function Datos({ slug, libre, servicio, barbero, diaTxt, onListo, onCerrar }: {
-  slug: string; libre: Libre; servicio: Pagina['servicios'][number]; barbero: string; diaTxt: string; onListo: (t: string) => void; onCerrar: () => void
+function Datos({ slug, libre, servicios, preferido, barbero, diaTxt, onListo, onCerrar }: {
+  slug: string; libre: Libre; servicios: Pagina['servicios']; preferido: string | null; barbero: string; diaTxt: string; onListo: (t: string) => void; onCerrar: () => void
 }) {
+  const [sid, setSid] = useState(servicios.find((s) => s.id === preferido)?.id ?? servicios[0]?.id ?? '')
+  const servicio = servicios.find((s) => s.id === sid) ?? servicios[0]
   const guardado = useMemo(() => { try { return JSON.parse(localStorage.getItem('navagenda-yo') || 'null') } catch { return null } }, [])
   const [nombre, setNombre] = useState(guardado?.nombre ?? '')
   const [tel, setTel] = useState(guardado?.tel ?? '')
@@ -147,6 +142,7 @@ function Datos({ slug, libre, servicio, barbero, diaTxt, onListo, onCerrar }: {
 
   async function confirmar(e: FormEvent) {
     e.preventDefault()
+    if (!servicio) return setError('Elegí qué te hacés.')
     if (nombre.trim().length < 2) return setError('Poné tu nombre, así te llaman cuando sea tu turno.')
     if (tel.replace(/\D/g, '').length < 10) return setError('Revisá el teléfono: con código de área, sin 0 ni 15. Ej.: 221 456 7890.')
     setEnviando(true); setError('')
@@ -162,7 +158,16 @@ function Datos({ slug, libre, servicio, barbero, diaTxt, onListo, onCerrar }: {
   return (
     <form onSubmit={confirmar} noValidate>
       <button type="button" className="cerrar" onClick={onCerrar} aria-label="Cerrar">×</button>
-      <div className="res"><b>{horaAR(libre.inicio).replace(/^0/, '')}</b><span>Con {barbero}</span><small>{diaTxt.charAt(0).toUpperCase() + diaTxt.slice(1)} · {servicio.nombre} · {pesos(servicio.precio)}</small></div>
+      <div className="res"><b>{horaAR(libre.inicio).replace(/^0/, '')}</b><span>Con {barbero}</span><small>{diaTxt.charAt(0).toUpperCase() + diaTxt.slice(1)}</small></div>
+      <fieldset className="servs">
+        <legend>¿Qué te hacés?</legend>
+        {servicios.map((s) => (
+          <label key={s.id} className="serv">
+            <input type="radio" name="servicio" value={s.id} checked={s.id === sid} onChange={() => { setSid(s.id); setError('') }} />
+            <span>{s.nombre}<small>{s.duracion_min} min</small></span><b>{pesos(s.precio)}</b>
+          </label>
+        ))}
+      </fieldset>
       <label>Tu nombre<span className="ctrl"><input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="name" autoFocus /></span></label>
       <label>Tu teléfono<span className="ctrl"><span aria-hidden>+54 9</span><input type="tel" inputMode="tel" value={tel} onChange={(e) => setTel(e.target.value)} autoComplete="tel-national" /></span>
         <span className="ayuda">Ej.: 221 456 7890, sin 0 ni 15. Lo usamos para sumar tus cortes; no te vamos a escribir.</span></label>

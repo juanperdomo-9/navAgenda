@@ -97,7 +97,8 @@ Es la pantalla más importante del producto: tiene que funcionar perfecta en el 
 La ruta va en la raíz (`/la-navaja`), así que hay slugs reservados que ninguna barbería puede usar:
 `panel`, `super`, `t`, `api`, `buscar`, `mapa`, `mis-turnos`, `ingresar`, `dev`, `assets`, `static`, `health`, `sumar`.
 - Portada con logo, nombre, dirección, barberos y servicios con precios.
-- Flujo de reserva: elegir barbero (o "cualquiera" = el primero libre) → servicio → día → horario → nombre + teléfono → confirmar.
+- Flujo de reserva: elegir barbero (o "cualquiera" = el primero libre) → día → horario → **servicio + nombre + teléfono
+  en la misma hoja** → confirmar (decisión de Juan, 2026-10-21). Los horarios se calculan con el servicio más corto del barbero.
   La máquina muestra de entrada el próximo turno libre: con un toque se saca. Si no hay lugar, ofrece el próximo disponible real.
 - **Link por barbero**: `navagenda.com.ar/la-navaja?con=martin` abre la página con ese barbero ya elegido (para que cada
   barbero comparta el suyo). Sin tildes ni mayúsculas en el parámetro.
