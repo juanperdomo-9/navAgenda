@@ -203,3 +203,11 @@ def test_superadmin_lista_con_admins_y_pausa_una_barberia(client, db):
         is False
     )
     assert client.get("/p/pausable").status_code == 404
+
+
+def test_arranque_inicial_crea_superadmin_e_inspirationmen_una_sola_vez(db):
+    from app.cli import preparar_inicial
+
+    avisos = preparar_inicial(db)
+    assert len(avisos) == 2 and "juan" in avisos[0] and "inspirationmen" in avisos[1]
+    assert preparar_inicial(db) == []
