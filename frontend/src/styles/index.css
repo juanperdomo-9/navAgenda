@@ -46,6 +46,19 @@
   --color-st-bloqueo: var(--st-bloqueo);
 
   --font-display: var(--type-display);
+  --font-archivo: var(--type-archivo);
+  --color-roll: var(--t-roll);
+  --color-roll-hi: var(--t-roll-hi);
+  --color-papel: var(--t-papel);
+  --color-fondo: var(--t-fondo);
+  --color-tinta: var(--t-tinta);
+  --color-tinta-2: var(--t-tinta-2);
+  --color-linea: var(--t-linea);
+  --color-linea-fuerte: var(--t-linea-fuerte);
+  --color-led: var(--t-led);
+  --color-pantalla: var(--t-pantalla);
+  --color-calido: var(--t-calido);
+  --color-mal: var(--t-mal);
   --font-sans: var(--type-sans);
 
   --radius-sm: var(--r-sm);
@@ -146,6 +159,13 @@
   &:focus-visible {
     box-shadow: var(--focus-ring);
   }
+}
+@utility cond {
+  font-family: var(--type-archivo);
+  font-weight: 900;
+  font-stretch: 62%;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
 }
 @utility tap {
   min-height: var(--tap-min);

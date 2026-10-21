@@ -195,6 +195,21 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Datos de ejemplo: `cd backend && uv run python -m app.db.seed` (8 barberías de La Plata, un admin por barbería con usuario = slug)
 - Crear el superadmin: `cd backend && uv run python -m app.cli crear-superadmin <usuario> "<nombre>"` (pide la clave)
 
+## Estado actual y próximos pasos (actualizado 2026-10-21)
+- **Backend listo**: esquema + migraciones, auth del panel, API del panel (`/panel/*`: barberos, horarios, días libres,
+  servicios, configuración) con 73 tests. Falta: cálculo de horarios disponibles (tarea 5), API pública de reserva (6),
+  turnos/grilla (7), fidelidad (8), números (9).
+- **Diseño aprobado en prototipos** (fuente de verdad visual para portar a React):
+  - `design/hero/` portal · `design/barberia/` página de la barbería · `design/panel/` panel completo
+    (`ingresar.html`, `index.html` + `panel.css` + `panel.js`: Agenda con grilla cada 30 min y todos los días, Barberos con
+    franjas, Servicios, Clientes, Números, Mi página).
+- **React**: tokens del turnero agregados (`--t-*` en tokens.css, utilidades `bg-roll`, `text-tinta`, `cond`, etc.),
+  cliente `src/lib/api.ts` (proxy de Vite `/api` → backend :8000) y `/panel/ingresar` + `/panel` conectados a la API real.
+- **Siguiente paso**: portar las vistas del panel de `design/panel/panel.js` a React (Barberos → Servicios → Mi página
+  cierran la tarea 4), usando TanStack Query contra `/panel/*`. Después tarea 5 (disponibilidad cada 30 min, con tests).
+- Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
+  entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
+
 ## Orden de tareas
 1. ✅ Sistema de diseño (tokens y componentes base) y estructura del proyecto
 2. ✅ Esquema de base y migraciones (Alembic sobre Supabase), con datos de ejemplo (1 barbería, 3 barberos, 4 servicios)

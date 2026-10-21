@@ -3,6 +3,8 @@ import { createBrowserRouter, type RouteObject } from 'react-router'
 import { Spinner } from '@/components/ui'
 import { HomePage } from '@/routes/HomePage'
 import { NotFoundPage } from '@/routes/NotFoundPage'
+import { IngresarPage } from '@/routes/panel/IngresarPage'
+import { PanelPage } from '@/routes/panel/PanelPage'
 
 function Cargando() {
   return (
@@ -14,7 +16,9 @@ function Cargando() {
 
 const routes: RouteObject[] = [
   { path: '/', element: <HomePage /> },
-  // Próximas tareas: /buscar, /b/:slug, /turno/:token, /admin, /super
+  { path: '/panel/ingresar', element: <IngresarPage /> },
+  { path: '/panel', element: <PanelPage /> },
+  // Próximas tareas: /:slug (página de la barbería), /t/:token (ticket), vistas del panel, /super
   { path: '*', element: <NotFoundPage /> },
 ]
 
