@@ -5,6 +5,8 @@ import { HomePage } from '@/routes/HomePage'
 import { NotFoundPage } from '@/routes/NotFoundPage'
 import { IngresarPage } from '@/routes/panel/IngresarPage'
 import { PanelPage } from '@/routes/panel/PanelPage'
+import { BarberiaPage } from '@/routes/publico/BarberiaPage'
+import { TicketPage } from '@/routes/publico/TicketPage'
 
 function Cargando() {
   return (
@@ -19,6 +21,9 @@ const routes: RouteObject[] = [
   { path: '/panel/ingresar', element: <IngresarPage /> },
   { path: '/panel', element: <PanelPage /> },
   // Próximas tareas: /:slug (página de la barbería), /t/:token (ticket), vistas del panel, /super
+  { path: '/t/:token', element: <TicketPage /> },
+  // La página de cada barbería vive en la raíz: navagenda.com.ar/inspirationmen
+  { path: '/:slug', element: <BarberiaPage /> },
   { path: '*', element: <NotFoundPage /> },
 ]
 

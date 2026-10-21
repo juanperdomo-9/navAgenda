@@ -206,6 +206,10 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
     franjas, Servicios, Clientes, Números, Mi página).
 - **React**: tokens del turnero agregados (`--t-*` en tokens.css, utilidades `bg-roll`, `text-tinta`, `cond`, etc.),
   cliente `src/lib/api.ts` (proxy de Vite `/api` → backend :8000) y `/panel/ingresar` + `/panel` conectados a la API real.
+- **Página de la barbería real** en React: `/:slug` (máquina con barbero, servicio, día, LED y talones; reserva con
+  nombre + teléfono) y `/t/:token` (ticket: confirmación, cancelar, calendario, WhatsApp, tarjeta de tijeras). Probada
+  de punta a punta con Inspirationmen. Faltan las secciones de abajo (precios, semana, mapa, fidelidad animada).
+- Superadmin local de desarrollo: `juan` (lo crea el seed). En producción: `uv run python -m app.cli crear-superadmin`.
 - **Siguiente paso**: portar las vistas del panel de `design/panel/panel.js` a React (Barberos → Servicios → Mi página
   cierran la tarea 4), usando TanStack Query contra `/panel/*`. Después tarea 5 (disponibilidad cada 30 min, con tests).
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,

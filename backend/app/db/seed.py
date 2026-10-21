@@ -267,6 +267,21 @@ def main() -> None:
 
     with Session(get_engine()) as db, db.begin():
         creadas = sembrar(db)
+        # Superadmin de desarrollo (mismo usuario que en producción, clave de desarrollo)
+        if get_settings().es_produccion is False and not db.scalar(
+            select(Usuario).where(Usuario.usuario == "juan")
+        ):
+            db.add(
+                Usuario(
+                    nombre="Juan Perdomo",
+                    usuario="juan",
+                    rol="superadmin",
+                    password_hash=hashear_clave(
+                        os.environ.get("SEED_CLAVE_ADMIN", CLAVE_ADMIN_DEV)
+                    ),
+                )
+            )
+            print("Superadmin de desarrollo 'juan' creado (clave de desarrollo, ver este archivo).")
     if creadas:
         print(f"Listo: {len(creadas)} barberías de ejemplo en La Plata.")
         print(
