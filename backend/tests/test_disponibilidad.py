@@ -183,3 +183,22 @@ def test_aislamiento_otra_barberia_no_ve_nada(db, b):
     db.flush()
     assert horarios_libres(db, otra.id, b["corte"].id, MIE, None, ANTES) == []
     assert horarios_libres(db, otra.id, b["corte"].id, MIE, b["agus"].id, ANTES) == []
+
+
+def test_inspirationmen_se_carga_con_su_horario(db):
+    from app.db import inspirationmen
+
+    clave = inspirationmen.cargar(db)
+    assert clave and inspirationmen.cargar(db) is None
+    bid = db.scalar(
+        __import__("sqlalchemy").select(Barberia.id).where(Barberia.slug == "inspirationmen")
+    )
+    vip = db.scalar(
+        __import__("sqlalchemy")
+        .select(Servicio)
+        .where(Servicio.barberia_id == bid, Servicio.nombre == "Peinado y corte VIP")
+    )
+    lunes = date(2026, 10, 26)
+    # 3 barberos x 12 a 18 cada 30 min = 3 x 12
+    assert len(horarios_libres(db, bid, vip.id, lunes, None, ANTES)) == 36
+    assert horarios_libres(db, bid, vip.id, lunes + timedelta(days=6), None, ANTES) == []  # domingo

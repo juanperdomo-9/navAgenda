@@ -1,5 +1,7 @@
 """Comandos de administración.
 
+Cargar la primera barbería: uv run python -m app.cli cargar-inspirationmen
+
 Crear el superadmin (pide la clave por consola, no queda en el historial):
     uv run python -m app.cli crear-superadmin <usuario> "<nombre>"
 """
@@ -38,13 +40,29 @@ def crear_superadmin(usuario: str, nombre: str) -> int:
     return 0
 
 
+def cargar_inspirationmen() -> int:
+    from app.db import inspirationmen
+
+    with Session(get_engine()) as db, db.begin():
+        clave = inspirationmen.cargar(db)
+    if clave is None:
+        print("Inspirationmen ya estaba cargada: no se cambió nada.")
+    else:
+        print("Listo: Inspirationmen cargada (navagenda.com.ar/inspirationmen).")
+        print(f"Admin: usuario 'inspirationmen', clave temporal {clave} (se cambia al entrar).")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="app.cli")
     sub = parser.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("crear-superadmin", help="Crea el usuario superadmin")
     p.add_argument("usuario")
     p.add_argument("nombre")
+    sub.add_parser("cargar-inspirationmen", help="Carga la barbería Inspirationmen")
     args = parser.parse_args()
+    if args.cmd == "cargar-inspirationmen":
+        return cargar_inspirationmen()
     if args.cmd == "crear-superadmin":
         return crear_superadmin(args.usuario, args.nombre)
     return 1
