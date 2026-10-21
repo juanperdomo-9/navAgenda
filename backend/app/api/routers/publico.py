@@ -66,6 +66,49 @@ def _barberia(db, slug: str) -> Barberia:
     return b
 
 
+# ─── Portal: todas las barberías con su próximo turno libre ───
+
+
+@router.get("/p")
+def portal(db: DB):
+    hoy = datetime.now(ZONA_AR).date()
+    salida = []
+    for b in db.scalars(select(Barberia).where(Barberia.activa).order_by(Barberia.nombre)):
+        servicios = db.scalars(
+            select(Servicio)
+            .where(Servicio.barberia_id == b.id, Servicio.activo)
+            .order_by(Servicio.precio)
+        ).all()
+        if not servicios:
+            continue
+        prox = None
+        for d in range(7):  # el primer horario libre de la semana, con el servicio más barato
+            libres = horarios_libres(db, b.id, servicios[0].id, hoy + timedelta(days=d))
+            if libres:
+                prox = libres[0].inicio
+                break
+        salida.append(
+            {
+                "nombre": b.nombre,
+                "slug": b.slug,
+                "color_acento": b.color_acento,
+                "direccion": b.direccion,
+                "barrio": b.barrio,
+                "lat": b.lat,
+                "lng": b.lng,
+                "precio_desde": servicios[0].precio,
+                "proximo_libre": prox,
+            }
+        )
+    salida.sort(
+        key=lambda x: (
+            x["proximo_libre"] is None,
+            x["proximo_libre"] or datetime.max.replace(tzinfo=UTC),
+        )
+    )
+    return salida
+
+
 # ─── Página de la barbería ───
 
 

@@ -132,3 +132,9 @@ def test_no_se_cancela_fuera_de_termino(client, ins, db):
 
 def test_token_invalido(client):
     assert client.get("/t/no-existe").status_code == 404
+
+
+def test_portal_lista_barberias_con_proximo_libre(client, ins):
+    lista = client.get("/p").json()
+    ins_ = next(x for x in lista if x["slug"] == "inspirationmen")
+    assert ins_["precio_desde"] == 20000 and ins_["proximo_libre"]

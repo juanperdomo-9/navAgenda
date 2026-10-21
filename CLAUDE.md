@@ -210,8 +210,11 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   nombre + teléfono) y `/t/:token` (ticket: confirmación, cancelar, calendario, WhatsApp, tarjeta de tijeras). Probada
   de punta a punta con Inspirationmen. Faltan las secciones de abajo (precios, semana, mapa, fidelidad animada).
 - Superadmin local de desarrollo: `juan` (lo crea el seed). En producción: `uv run python -m app.cli crear-superadmin`.
-- **Siguiente paso**: portar las vistas del panel de `design/panel/panel.js` a React (Barberos → Servicios → Mi página
-  cierran la tarea 4), usando TanStack Query contra `/panel/*`. Después tarea 5 (disponibilidad cada 30 min, con tests).
+- **En React y conectado**: portal `/` (próximo libre de todas + listado), `/:slug`, `/t/:token`, `/panel/ingresar`,
+  `/panel` (Agenda completa + cambio de clave temporal). Deploy listo: `render.yaml` + `DEPLOY.md`.
+- **Falta para estar al 100%** (en este orden): en el panel, Barberos (franjas), Servicios y Mi página (color y regla de
+  fidelidad) — la API ya existe; después Clientes y Números (falta API: listado de clientes y totales por período);
+  panel de superadmin (hoy por comandos); secciones de abajo de `/:slug` (precios, semana, mapa) y mapa del portal.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

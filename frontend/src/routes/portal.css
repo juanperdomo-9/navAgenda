@@ -1,0 +1,35 @@
+/* Portal NavAgenda (portado de design/hero). Reusa .pb-bar, .maq, .take y el LED de barberia.css. */
+.portal { --shop: #f6d13a; --on-shop: #141210; --ink: #141210; --paper: #fffdf3; --led: #ff2b1c; --led-off: #2e0f0b; --screen: #120c0b;
+  --bezel: #2a2220; --warm: #f3e9dc; --warm-2: #cdbfae; --roll: #f6d13a; --borde: #96503f;
+  min-height: 100dvh; background: var(--roll); color: var(--ink); font-family: var(--type-archivo); }
+.portal .cond { font-weight: 900; font-stretch: 62%; text-transform: uppercase; }
+.portal .logo { display: inline-flex; align-items: center; gap: 8px; font-size: 21px; }
+.portal .mark { background: var(--ink); color: var(--roll); padding: 4px 6px; font-size: 12px; }
+.portal .mis { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; background: var(--paper); border: 2px solid var(--ink); color: var(--ink); font: 800 14px var(--type-archivo); text-decoration: none; }
+.portal-hero { display: grid; padding: 0 16px 28px; max-width: 1200px; margin: 0 auto; }
+.portal h1 { font-size: clamp(56px, 27vw, 300px); line-height: .8; letter-spacing: -.035em; }
+.sinfila { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; font: 800 15px var(--type-archivo); font-stretch: 75%; text-transform: uppercase; letter-spacing: .06em; }
+.sinfila span::before { content: '▸ '; }
+.portal .cap { font: 800 12px var(--type-archivo); font-stretch: 72%; letter-spacing: .14em; text-transform: uppercase; color: var(--led); }
+.portal .take { text-decoration: none; }
+.rollos-sec { padding: 40px 16px 48px; border-top: 3px solid var(--ink); max-width: 1200px; margin: 0 auto; }
+.rollos-sec h2 { font-size: clamp(48px, 14vw, 120px); line-height: .85; }
+.rollos { list-style: none; padding: 0; display: grid; gap: 10px; margin-top: 20px; }
+.rollo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px; background: var(--paper); color: var(--ink); text-decoration: none; border: 3px solid transparent; }
+.rollo:hover { border-color: var(--ink); }
+.rollo .mini { background: var(--screen); color: var(--led); border-radius: 6px; padding: 7px 10px 6px; min-width: 78px; text-align: center; display: grid; }
+.rollo .mini small { font: 700 10px var(--type-archivo); letter-spacing: .14em; color: #ff8a80; text-transform: uppercase; }
+.rollo .mini b { font: 900 28px/1 var(--type-archivo); font-stretch: 62%; }
+.rollo .txt { display: grid; gap: 2px; min-width: 0; }
+.rollo .txt b { font: 800 19px var(--type-archivo); font-stretch: 85%; }
+.rollo .txt b::before { content: ''; display: inline-block; width: 12px; height: 12px; margin-right: 8px; border-radius: 50%; background: var(--c); border: 1.5px solid var(--ink); vertical-align: 1px; }
+.rollo .txt span { display: flex; align-items: center; gap: 4px; font: 500 14px var(--type-archivo); color: #3d3310; }
+.portal .i { width: 1.1em; height: 1.1em; flex: none; }
+.portal-pie { border-top: 3px solid var(--ink); font: 600 14px var(--type-archivo); }
+.portal-pie a { color: inherit; min-height: 44px; display: inline-flex; align-items: center; }
+@media (min-width: 960px) {
+  .portal-hero { grid-template-columns: 1fr 420px; column-gap: 48px; align-items: end; min-height: calc(100dvh - 70px); }
+  .portal h1 { font-size: clamp(150px, 16vw, 280px); }
+  .portal .maq { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+  .rollos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
