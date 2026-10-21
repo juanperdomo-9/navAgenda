@@ -73,6 +73,9 @@ Los barberos **no tienen login propio** en el MVP: son entidades que crea y gest
 - **Beneficios**: el admin define la regla "cada **X** cortes asistidos → **beneficio**".
   Tipos: % de descuento, monto fijo de descuento, servicio gratis o texto libre.
   Al llegar a X, el cliente tiene el beneficio disponible. El admin lo aplica al marcar el turno y el contador se reinicia.
+  **Cada barbería elige X y el premio desde su panel.** Para el cliente se ve como un **juego**: una tarjeta con X tijeras
+  que se van tachando (trazo de marcador) con cada corte asistido, y al completarla se destapa el premio con un sello.
+  Aparece en el ticket, en "Mis turnos" y en la página de la barbería (sección "Cada X cortes, …").
 - **Clientes**: listado (por teléfono) con cantidad de visitas, ausencias y beneficios usados. Botón para bloquear un teléfono.
 - **Dashboard general**: facturación del día, la semana y el mes, cortes por barbero, tasa de ausencias y servicios más vendidos.
 - **Configuración**: nombre, logo, color de acento (con aviso si no cumple contraste AA), dirección, ciudad, barrio, ubicación en el mapa (el admin marca un punto), descripción, horas mínimas de anticipación para cancelar.
@@ -90,8 +93,18 @@ Es la pantalla más importante del producto: tiene que funcionar perfecta en el 
 La ruta va en la raíz (`/la-navaja`), así que hay slugs reservados que ninguna barbería puede usar:
 `panel`, `super`, `t`, `api`, `buscar`, `mapa`, `mis-turnos`, `ingresar`, `dev`, `assets`, `static`, `health`.
 - Portada con logo, nombre, dirección, barberos y servicios con precios.
-- Flujo de reserva: elegir servicio → elegir barbero (o "el primero disponible") → elegir día y horario → nombre + teléfono → confirmar.
+- Flujo de reserva: elegir barbero (o "cualquiera" = el primero libre) → servicio → día → horario → nombre + teléfono → confirmar.
+  La máquina muestra de entrada el próximo turno libre: con un toque se saca. Si no hay lugar, ofrece el próximo disponible real.
+- **Link por barbero**: `navagenda.com.ar/la-navaja?con=martin` abre la página con ese barbero ya elegido (para que cada
+  barbero comparta el suyo). Sin tildes ni mayúsculas en el parámetro.
+- El teléfono y el nombre quedan recordados en el dispositivo ("¿No sos vos?" para cambiarlos).
+- Prototipo vivo: `design/barberia/index.html`.
 - Pantalla de confirmación con el link privado del turno, botón "agregar al calendario" y progreso del beneficio ("te faltan 2 cortes para tu corte gratis").
+- **Personalización (requisito permanente):** cada barbería personaliza su página desde el panel (Configuración).
+  Ya existe: color de acento (es el fondo de "su rollo"; la tinta se elige sola para mantener contraste AA) y nombre.
+  A sumar después: logo, foto de portada del local, fotos de los barberos, texto de bienvenida, links a Instagram/WhatsApp,
+  orden de barberos y servicios. Siempre dentro del sistema "El turnero": la máquina (display LED + botón) y el flujo de
+  reserva son iguales en todas las barberías para que sacar turno funcione igual en todas.
 
 Convenciones de la base: IDs UUID, fechas `timestamptz` (UTC), estados y tipos como texto con CHECK.
 Las tablas hijas llevan `barberia_id` con FKs compuestas `(id, barberia_id)`: la base rechaza mezclar datos de dos barberías.
