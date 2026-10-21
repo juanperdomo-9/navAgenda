@@ -20,6 +20,7 @@ from app.models import (
     BarberoServicio,
     Cliente,
     Fidelidad,
+    HorarioBarbero,
     ReglaBeneficio,
     Servicio,
     Turno,
@@ -131,6 +132,11 @@ def pagina(slug: str, db: DB):
     regla = db.scalar(
         select(ReglaBeneficio).where(ReglaBeneficio.barberia_id == b.id, ReglaBeneficio.activa)
     )
+    horarios = db.scalars(
+        select(HorarioBarbero)
+        .where(HorarioBarbero.barbero_id.in_([x.id for x in barberos]))
+        .order_by(HorarioBarbero.dia_semana, HorarioBarbero.desde)
+    ).all()
     return {
         "nombre": b.nombre,
         "slug": b.slug,
@@ -149,6 +155,11 @@ def pagina(slug: str, db: DB):
                 "nombre": x.nombre,
                 "foto_url": x.foto_url,
                 "servicio_ids": [s for bb, s in hace if bb == x.id],
+                "horarios": [
+                    {"dia_semana": h.dia_semana, "desde": h.desde, "hasta": h.hasta}
+                    for h in horarios
+                    if h.barbero_id == x.id
+                ],
             }
             for x in barberos
         ],

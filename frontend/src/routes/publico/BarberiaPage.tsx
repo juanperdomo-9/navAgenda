@@ -5,14 +5,10 @@ import { api, ApiError } from '@/lib/api'
 import { NotFoundPage } from '@/routes/NotFoundPage'
 import { estiloBarberia, guardarTicket, horaAR, hoyMas, pesos } from './comun'
 import { Led } from './Led'
+import { diaDe, Secciones, type Libre, type PaginaBarberia } from './Secciones'
 import './barberia.css'
 
-type Pagina = {
-  nombre: string; slug: string; color_acento: string; direccion: string | null; barrio: string | null; ciudad: string | null
-  barberos: { id: string; nombre: string; servicio_ids: string[] }[]
-  servicios: { id: string; nombre: string; precio: number; duracion_min: number }[]
-}
-type Libre = { inicio: string; fin: string; barbero_id: string }
+type Pagina = PaginaBarberia & { color_acento: string }
 
 const sinTildes = (t: string) => t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
 const iniciales = (n: string) => n.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
@@ -60,6 +56,10 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   const hoja = useRef<HTMLDialogElement>(null)
   useEffect(() => { if (elegido) hoja.current?.showModal(); else hoja.current?.close() }, [elegido])
 
+  const maq = useRef<HTMLElement>(null)
+  const subir = () => maq.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })
+  // Desde la lista de precios: si el barbero elegido no hace ese servicio, pasa a "cualquiera"
+  const elegirServicio = (id: string) => { if (barbero && !p.barberos.find((b) => b.id === barbero)?.servicio_ids.includes(id)) setBarbero(null); setServicio(id) }
   const palabras = p.nombre.split(/\s+/)
   return (
     <div className="pb" style={estiloBarberia(p.color_acento)}>
@@ -75,7 +75,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
             </a>
           )}
         </div>
-        <section className="maq" aria-label="Sacá tu turno">
+        <section className="maq" aria-label="Sacá tu turno" ref={maq}>
           <fieldset>
             <legend>¿Con quién?</legend>
             <div className="chips">
@@ -124,9 +124,10 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
           </div>
         </section>
       )}
+      <Secciones p={p} servicio={servicio} setServicio={elegirServicio} nombreDe={nombreDe} onElegir={setElegido} subir={subir} />
       <dialog ref={hoja} className="hoja-p" onClose={() => setElegido(null)} aria-label="Tus datos">
         {elegido && serv && (
-          <Datos slug={p.slug} libre={elegido} servicio={serv} barbero={nombreDe(elegido.barbero_id)} diaTxt={diaTxt}
+          <Datos slug={p.slug} libre={elegido} servicio={serv} barbero={nombreDe(elegido.barbero_id)} diaTxt={diaDe(elegido.inicio)}
             onListo={(token) => { guardarTicket(token); navigate(`/t/${token}`) }} onCerrar={() => setElegido(null)} />
         )}
       </dialog>

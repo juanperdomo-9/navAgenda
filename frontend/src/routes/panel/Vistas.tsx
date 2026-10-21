@@ -3,6 +3,7 @@ import { Copy, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, ApiError } from '@/lib/api'
 import { Hoja } from './Agenda'
+import { Ubicacion } from './Ubicacion'
 
 type Tramo = { dia_semana: number; desde: string; hasta: string }
 type Barbero = { id: string; nombre: string; activo: boolean; horarios: Tramo[]; servicio_ids: string[] }
@@ -222,7 +223,7 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
 }
 
 /* ═══ MI PÁGINA ═══ */
-type Config = { nombre: string; slug: string; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number }
+type Config = { nombre: string; slug: string; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null }
 type Regla = { cada_x_cortes: number; tipo: string; valor: number | null; servicio_id: string | null; descripcion: string } | null
 const PRESETS = ['#c9a46a', '#c47f57', '#d4a24c', '#1f3a5f', '#2f6b4f', '#7a1f2b', '#141210']
 function lum(hex: string) { const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] }
@@ -249,7 +250,7 @@ export function MiPagina() {
   async function guardar() {
     if (!ok) return setMsg('Con ese color no se lee bien el texto. Probá otro.')
     try {
-      await api('/panel/barberia', { method: 'PATCH', body: JSON.stringify({ nombre: f!.nombre, color_acento: f!.color_acento, direccion: f!.direccion, barrio: f!.barrio, descripcion: f!.descripcion, horas_min_cancelacion: f!.horas_min_cancelacion }) })
+      await api('/panel/barberia', { method: 'PATCH', body: JSON.stringify({ nombre: f!.nombre, color_acento: f!.color_acento, direccion: f!.direccion, barrio: f!.barrio, descripcion: f!.descripcion, horas_min_cancelacion: f!.horas_min_cancelacion, lat: f!.lat, lng: f!.lng }) })
       await api('/panel/fidelidad', { method: 'PUT', body: JSON.stringify({ cada_x_cortes: r.cada, tipo: r.tipo, valor: r.valor ? +r.valor : null, servicio_id: r.tipo === 'servicio_gratis' ? r.servicio : null, descripcion: `Cada ${r.cada} cortes: ${premio}` }) })
       qc.invalidateQueries({ queryKey: ['p-config'] }); qc.invalidateQueries({ queryKey: ['p-regla'] }); setMsg('Tu página se actualizó.')
     } catch (e) { setMsg(errMsg(e)) }
@@ -272,6 +273,8 @@ export function MiPagina() {
           <section className="bloque"><h3 className="cond">Datos</h3>
             <label className="campo">Nombre<input value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} /></label>
             <div className="fila2"><label className="campo">Dirección<input value={f.direccion ?? ''} onChange={(e) => setF({ ...f, direccion: e.target.value })} /></label><label className="campo">Barrio<input value={f.barrio ?? ''} onChange={(e) => setF({ ...f, barrio: e.target.value })} /></label></div>
+            <div className="campo">Ubicación en el mapa<span className="ayuda">{f.lat ? 'Listo. Si no es ahí, tocá el lugar correcto.' : 'Tocá el mapa donde está tu local, así aparece en tu página.'}</span>
+              <Ubicacion lat={f.lat} lng={f.lng} onCambiar={(lat, lng) => setF((x) => x && { ...x, lat, lng })} /></div>
             <label className="campo">Descripción<textarea maxLength={600} value={f.descripcion ?? ''} onChange={(e) => setF({ ...f, descripcion: e.target.value })} /></label>
             <label className="campo">Pueden cancelar hasta<select value={f.horas_min_cancelacion} onChange={(e) => setF({ ...f, horas_min_cancelacion: +e.target.value })}>{[0, 1, 2, 3, 6, 12, 24].map((h) => <option key={h} value={h}>{h ? `${h} h antes` : 'el último momento'}</option>)}</select></label></section>
           <section className="bloque"><h3 className="cond">Tarjeta de cortes</h3><p className="ayuda" style={{ marginTop: 10 }}>Así la ven tus clientes en su ticket: una tijera tachada por cada corte.</p>

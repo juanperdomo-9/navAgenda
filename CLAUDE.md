@@ -208,7 +208,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   cliente `src/lib/api.ts` (proxy de Vite `/api` → backend :8000) y `/panel/ingresar` + `/panel` conectados a la API real.
 - **Página de la barbería real** en React: `/:slug` (máquina con barbero, servicio, día, LED y talones; reserva con
   nombre + teléfono) y `/t/:token` (ticket: confirmación, cancelar, calendario, WhatsApp, tarjeta de tijeras). Probada
-  de punta a punta con Inspirationmen. Faltan las secciones de abajo (precios, semana, mapa, fidelidad animada).
+  de punta a punta con Inspirationmen. Abajo: barberos con su próximo libre, lista de precios, toda la semana, tarjeta de tijeras animada y cómo llegar (mapa MapLibre si la barbería marcó su punto en Mi página).
 - Superadmin local de desarrollo: `juan` (lo crea el seed). En producción: `uv run python -m app.cli crear-superadmin`.
 - **En React y conectado**: portal `/` (próximo libre de todas + listado), `/:slug`, `/t/:token`, `/panel/ingresar`,
   `/panel` (Agenda completa + cambio de clave temporal). Deploy listo: `render.yaml` + `DEPLOY.md`.
@@ -218,7 +218,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   facturado, cortes, ausencias, por barbero, por servicio y día por día) en la API y en el panel.
 - Panel del superadmin en `/panel` (entrando como superadmin): barberías con su admin, alta con clave temporal
   (se muestra una vez), resetear clave y pausar/reactivar (`PATCH /super/barberias/{id}`).
-- **Falta para estar al 100%**: secciones de abajo de `/:slug` (precios, semana, mapa) y mapa del portal.
+- **Falta para estar al 100%**: mapa del portal `/` (buscador por zona). Inspirationmen tiene que marcar su ubicación en Mi página.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

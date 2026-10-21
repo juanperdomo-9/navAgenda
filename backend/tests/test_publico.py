@@ -63,6 +63,8 @@ def test_pagina_publica(ins):
     assert (
         p["nombre"] == "Inspirationmen" and len(p["barberos"]) == 3 and p["fidelidad"]["cada"] == 5
     )
+    # Lun a vie 12 a 18 y sábado 10 a 20: 6 tramos por barbero
+    assert len(p["barberos"][0]["horarios"]) == 6
 
 
 def test_barberia_inexistente(client):
