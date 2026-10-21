@@ -37,6 +37,22 @@ from app.db.session import Base
 ESTADOS_TURNO = ("reservado", "asistio", "no_asistio", "cancelado")
 ORIGENES_TURNO = ("web", "manual")
 ROLES = ("superadmin", "admin")
+# La página de cada barbería vive en la raíz (navagenda.com.ar/<slug>):
+# estos slugs son rutas de la app y ninguna barbería los puede usar.
+SLUGS_RESERVADOS = (
+    "panel",
+    "super",
+    "t",
+    "api",
+    "buscar",
+    "mapa",
+    "mis-turnos",
+    "ingresar",
+    "dev",
+    "assets",
+    "static",
+    "health",
+)
 TIPOS_BENEFICIO = ("descuento_pct", "descuento_monto", "servicio_gratis", "texto")
 
 
@@ -58,10 +74,15 @@ def _in(col: str, valores: tuple[str, ...]) -> str:
     return f"{col} IN ({', '.join(repr(v) for v in valores)})"
 
 
+def _not_in(col: str, valores: tuple[str, ...]) -> str:
+    return f"{col} NOT IN ({', '.join(repr(v) for v in valores)})"
+
+
 class Barberia(Base):
     __tablename__ = "barberias"
     __table_args__ = (
         CheckConstraint(r"slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'", name="slug_valido"),
+        CheckConstraint(_not_in("slug", SLUGS_RESERVADOS), name="slug_no_reservado"),
         CheckConstraint(r"color_acento ~ '^#[0-9a-f]{6}$'", name="color_acento_hex"),
         CheckConstraint("(lat IS NULL) = (lng IS NULL)", name="ubicacion_completa"),
         CheckConstraint("horas_min_cancelacion >= 0", name="horas_cancelacion_no_negativas"),
@@ -102,6 +123,14 @@ class Usuario(Base):
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     rol: Mapped[str] = mapped_column(Text, nullable=False)
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+    # Clave temporal (creada o reseteada por el superadmin): hay que cambiarla al entrar.
+    debe_cambiar_clave: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    # Contra fuerza bruta: tras varios intentos fallidos la cuenta se bloquea un rato.
+    intentos_fallidos: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    bloqueado_hasta: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ultimo_ingreso: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     creado_en: Mapped[datetime] = _creado_en()
 
 

@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.db.seed import BARBERIAS as BARBERIAS_EJEMPLO
 from app.db.seed import SLUG, sembrar
 from app.models import (
     Barberia,
@@ -220,18 +221,30 @@ def test_descuento_porcentual_fuera_de_rango_se_rechaza(db: Session):
 # ——— Datos de ejemplo ———
 
 
-def test_seed_crea_la_barberia_de_ejemplo_y_es_idempotente(db: Session):
-    barberia = sembrar(db)
-    assert barberia is not None
-    bid = barberia.id
-    assert (
-        db.scalar(select(func.count()).select_from(Barbero).where(Barbero.barberia_id == bid)) == 3
+def test_seed_crea_las_barberias_de_la_plata_y_es_idempotente(db: Session):
+    creadas = sembrar(db)
+    assert len(creadas) == len(BARBERIAS_EJEMPLO) >= 8
+    assert all(b.ciudad == "La Plata" for b in creadas)
+
+    navaja = next(b for b in creadas if b.slug == SLUG)
+    bid = navaja.id
+    barberos = select(func.count()).select_from(Barbero).where(Barbero.barberia_id == bid)
+    servicios = select(func.count()).select_from(Servicio).where(Servicio.barberia_id == bid)
+    asignados = (
+        select(func.count()).select_from(BarberoServicio).where(BarberoServicio.barberia_id == bid)
     )
-    assert (
-        db.scalar(select(func.count()).select_from(Servicio).where(Servicio.barberia_id == bid))
-        == 4
-    )
-    assert db.scalar(select(func.count()).select_from(BarberoServicio)) == 12
+    assert db.scalar(barberos) == 3
+    assert db.scalar(servicios) == 4
+    assert db.scalar(asignados) == 12  # cada barbero hace todos los servicios
     assert db.scalar(select(func.count()).select_from(HorarioBarbero)) > 0
-    assert sembrar(db) is None
+    # Un admin por barbería, con usuario = slug
+    assert db.scalar(
+        select(func.count()).select_from(Usuario).where(Usuario.rol == "admin")
+    ) == len(creadas)
+
+    assert sembrar(db) == []
     assert db.scalar(select(func.count()).select_from(Barberia).where(Barberia.slug == SLUG)) == 1
+
+
+def test_slug_reservado_se_rechaza(db: Session):
+    insertar_falla(db, Barberia(nombre="Panel", slug="panel"))

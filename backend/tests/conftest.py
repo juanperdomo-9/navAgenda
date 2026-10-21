@@ -5,6 +5,7 @@ Al empezar la sesión se recrea el esquema con las migraciones de Alembic, y cad
 dentro de una transacción que se deshace al final: los tests no se ensucian entre sí.
 """
 
+import os
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -16,6 +17,9 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+
+# Clave fija para firmar sesiones en los tests (no es un secreto real).
+os.environ.setdefault("JWT_SECRET", "clave-solo-para-tests-" + "x" * 32)
 
 BACKEND = Path(__file__).resolve().parents[1]
 

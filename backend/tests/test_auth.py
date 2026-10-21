@@ -1,0 +1,226 @@
+"""Auth del panel: ingreso, sesión en cookie, bloqueo por intentos, roles y claves temporales."""
+
+from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.core.security import COOKIE_SESION, MAX_INTENTOS, hashear_clave, limite_login
+from app.db.session import get_db
+from app.main import app
+from app.models import Barberia, Usuario
+
+CLAVE = "una-clave-larga-1"
+
+
+@pytest.fixture
+def client(db: Session) -> Iterator[TestClient]:
+    app.dependency_overrides[get_db] = lambda: db
+    limite_login.reiniciar()
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+def crear_usuario(db: Session, usuario: str, rol: str = "admin", **extra) -> Usuario:
+    barberia_id = None
+    if rol == "admin":
+        b = Barberia(nombre=f"Barbería {usuario}", slug=f"b-{usuario.lower()}")
+        db.add(b)
+        db.flush()
+        barberia_id = b.id
+    u = Usuario(
+        nombre=usuario.title(),
+        usuario=usuario,
+        password_hash=hashear_clave(CLAVE),
+        rol=rol,
+        barberia_id=barberia_id,
+        **extra,
+    )
+    db.add(u)
+    db.flush()
+    return u
+
+
+def ingresar(client: TestClient, usuario: str, clave: str = CLAVE):
+    return client.post("/auth/ingresar", json={"usuario": usuario, "clave": clave})
+
+
+# ——— Ingreso y sesión ———
+
+
+def test_ingreso_correcto_deja_cookie_httponly_y_devuelve_el_usuario(client, db):
+    crear_usuario(db, "navaja")
+    res = ingresar(client, "navaja")
+    assert res.status_code == 200
+    assert res.json()["rol"] == "admin"
+    cookie = res.headers["set-cookie"]
+    assert COOKIE_SESION in cookie and "HttpOnly" in cookie and "SameSite=lax" in cookie
+    assert "password_hash" not in res.json()
+
+
+def test_el_usuario_no_distingue_mayusculas(client, db):
+    crear_usuario(db, "Navaja")
+    assert ingresar(client, "  NAVAJA ").status_code == 200
+
+
+def test_clave_incorrecta_y_usuario_inexistente_dan_el_mismo_mensaje(client, db):
+    crear_usuario(db, "navaja")
+    mal = ingresar(client, "navaja", "otra-clave")
+    nadie = ingresar(client, "no-existe")
+    assert mal.status_code == nadie.status_code == 401
+    assert mal.json() == nadie.json() == {"detail": "Usuario o clave incorrectos."}
+
+
+def test_usuario_dado_de_baja_no_entra(client, db):
+    crear_usuario(db, "navaja", activo=False)
+    assert ingresar(client, "navaja").status_code == 401
+
+
+def test_yo_requiere_sesion_y_salir_la_borra(client, db):
+    crear_usuario(db, "navaja")
+    assert client.get("/auth/yo").status_code == 401
+    ingresar(client, "navaja")
+    assert client.get("/auth/yo").json()["usuario"] == "navaja"
+    client.post("/auth/salir")
+    assert client.get("/auth/yo").status_code == 401
+
+
+def test_cookie_manipulada_no_sirve(client, db):
+    crear_usuario(db, "navaja")
+    client.cookies.set(COOKIE_SESION, "eyJhbGciOiJIUzI1NiJ9.e30.firma-falsa")
+    assert client.get("/auth/yo").status_code == 401
+
+
+def test_dar_de_baja_corta_la_sesion_abierta(client, db):
+    u = crear_usuario(db, "navaja")
+    ingresar(client, "navaja")
+    u.activo = False
+    db.flush()
+    assert client.get("/auth/yo").status_code == 401
+
+
+# ——— Fuerza bruta ———
+
+
+def test_tras_varios_intentos_fallidos_la_cuenta_se_bloquea(client, db):
+    crear_usuario(db, "navaja")
+    for _ in range(MAX_INTENTOS):
+        assert ingresar(client, "navaja", "mal").status_code == 401
+    # Bloqueada: ni siquiera la clave correcta entra
+    res = ingresar(client, "navaja")
+    assert res.status_code == 423
+    assert "bloqueamos" in res.json()["detail"]
+
+
+def test_el_bloqueo_vence_y_un_ingreso_correcto_reinicia_el_contador(client, db):
+    u = crear_usuario(db, "navaja")
+    u.bloqueado_hasta = datetime.now(UTC) - timedelta(minutes=1)
+    u.intentos_fallidos = MAX_INTENTOS - 1
+    db.flush()
+    assert ingresar(client, "navaja").status_code == 200
+    db.refresh(u)
+    assert u.intentos_fallidos == 0 and u.bloqueado_hasta is None
+
+
+def test_limite_de_intentos_por_ip(client, db):
+    for _ in range(limite_login.maximo):
+        ingresar(client, "cualquiera", "mal")
+    assert ingresar(client, "cualquiera", "mal").status_code == 429
+
+
+# ——— Roles ———
+
+
+def test_admin_no_puede_usar_endpoints_de_superadmin(client, db):
+    crear_usuario(db, "navaja")
+    ingresar(client, "navaja")
+    assert client.get("/super/barberias").status_code == 403
+
+
+def test_superadmin_crea_barberia_con_admin_y_clave_temporal(client, db):
+    crear_usuario(db, "juan", rol="superadmin")
+    ingresar(client, "juan")
+    res = client.post(
+        "/super/barberias",
+        json={
+            "nombre": "Barbería Nueva",
+            "slug": "barberia-nueva",
+            "barrio": "Tolosa",
+            "admin_nombre": "Pablo",
+            "admin_usuario": "pablo",
+        },
+    )
+    assert res.status_code == 201
+    datos = res.json()
+    assert datos["barberia"]["slug"] == "barberia-nueva"
+    temporal = datos["clave_temporal"]
+
+    # El dueño entra con la temporal, pero no puede usar el panel hasta cambiarla
+    client.post("/auth/salir")
+    yo = ingresar(client, "pablo", temporal).json()
+    assert yo["debe_cambiar_clave"] is True and yo["rol"] == "admin"
+    cambio = client.post(
+        "/auth/cambiar-clave", json={"clave_actual": temporal, "clave_nueva": "mi-clave-nueva-123"}
+    )
+    assert cambio.status_code == 204
+    assert client.get("/auth/yo").json()["debe_cambiar_clave"] is False
+
+
+def test_superadmin_no_puede_usar_un_slug_reservado(client, db):
+    crear_usuario(db, "juan", rol="superadmin")
+    ingresar(client, "juan")
+    res = client.post(
+        "/super/barberias",
+        json={
+            "nombre": "Panel",
+            "slug": "panel",
+            "admin_nombre": "Xavier",
+            "admin_usuario": "xx-admin",
+        },
+    )
+    assert res.status_code == 422
+    assert "ruta de NavAgenda" in str(res.json())
+
+
+def test_superadmin_no_repite_slug_ni_usuario(client, db):
+    crear_usuario(db, "juan", rol="superadmin")
+    crear_usuario(db, "navaja")  # crea la barbería b-navaja y el usuario navaja
+    ingresar(client, "juan")
+    base = {"nombre": "Otra", "admin_nombre": "Xavier"}
+    assert (
+        client.post(
+            "/super/barberias", json={**base, "slug": "b-navaja", "admin_usuario": "nuevo"}
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            "/super/barberias", json={**base, "slug": "otra", "admin_usuario": "NAVAJA"}
+        ).status_code
+        == 409
+    )
+
+
+def test_superadmin_resetea_la_clave_de_un_admin_bloqueado(client, db):
+    crear_usuario(db, "juan", rol="superadmin")
+    admin = crear_usuario(db, "navaja", bloqueado_hasta=datetime.now(UTC) + timedelta(minutes=10))
+    ingresar(client, "juan")
+    res = client.post(f"/super/usuarios/{admin.id}/resetear-clave")
+    assert res.status_code == 200
+    temporal = res.json()["clave_temporal"]
+    client.post("/auth/salir")
+    assert ingresar(client, "navaja", temporal).json()["debe_cambiar_clave"] is True
+    # Con la clave temporal todavía no puede usar endpoints con rol
+    assert client.get("/super/barberias").status_code == 403
+
+
+def test_cambiar_clave_exige_la_actual(client, db):
+    crear_usuario(db, "navaja")
+    ingresar(client, "navaja")
+    res = client.post(
+        "/auth/cambiar-clave", json={"clave_actual": "mal", "clave_nueva": "otra-clave-larga"}
+    )
+    assert res.status_code == 400

@@ -10,6 +10,9 @@ Sin seña: la reserva se confirma al instante.
 
 Modelo de negocio: suscripción mensual por barbería (multi-barbería desde el día uno).
 
+**Ciudad principal: La Plata** (casco urbano y alrededores: Tolosa, Gonnet, City Bell, Los Hornos, etc.).
+Las direcciones usan el formato platense ("Calle 8 e/ 49 y 50").
+
 ## Stack
 - Backend: Python 3.12 (FastAPI), SQLAlchemy 2, Alembic para migraciones, pytest. Dependencias con `uv`.
 - Frontend: React + TypeScript (Vite), Tailwind CSS v4 con tokens en variables CSS, Radix UI como primitivas accesibles, lucide-react, TanStack Query, react-router, react-hook-form + zod, date-fns + @date-fns/tz. Tests con Vitest.
@@ -40,7 +43,12 @@ Los barberos **no tienen login propio** en el MVP: son entidades que crea y gest
 - Usuario + contraseña. Usuario único global, sin distinción de mayúsculas.
 - Contraseñas hasheadas (argon2). Sesión con JWT en cookie httpOnly.
 - El usuario admin de cada barbería lo crea el superadmin; no se registra solo. El superadmin resetea contraseñas de admins.
-- Límite de intentos fallidos para evitar fuerza bruta.
+- Límite de intentos fallidos para evitar fuerza bruta: 5 claves mal bloquean la cuenta 15 min,
+  más un tope de 20 intentos por IP cada 15 min (en memoria; alcanza para una instancia).
+- Cookie `navagenda_sesion`: httpOnly, SameSite=Lax, Secure en producción, 12 h.
+- Las claves temporales (alta de barbería o reseteo) obligan a cambiarla antes de usar el panel.
+- Endpoints: `/auth/ingresar`, `/auth/salir`, `/auth/yo`, `/auth/cambiar-clave`, `/super/barberias`,
+  `/super/usuarios/{id}/resetear-clave`.
 
 ## Alcance del MVP
 
@@ -49,7 +57,7 @@ Los barberos **no tienen login propio** en el MVP: son entidades que crea y gest
 - Resultados en lista + **mapa** con la ubicación de cada barbería y cuál queda más cerca.
 - **Horarios libres de todas**: elegís día y hora (y zona) y muestra qué barberías y barberos tienen lugar.
 - Cada resultado lleva a la página pública de la barbería.
-- El portal usa el acento de la plataforma (dorado); cada `/b/:slug` usa el acento de su barbería.
+- El portal usa la identidad de la plataforma ("El turnero"); la página de cada barbería usa su color de acento.
 
 ### Panel del admin de barbería (todo vive acá)
 - **Barberos**: crear, editar y dar de baja (foto, nombre, horarios laborales por día de la semana, días libres).
@@ -76,7 +84,11 @@ Los barberos **no tienen login propio** en el MVP: son entidades que crea y gest
 - Detalle por servicio.
 - Comparativa rápida entre barberos en el dashboard general.
 
-### Página pública de la barbería `/b/:slug`
+### Página pública de la barbería `navagenda.com.ar/:slug` (objetivo principal)
+Es **el link que comparte cada barbería** (Instagram, WhatsApp, Google) y donde se sacan los turnos con cada barbero.
+Es la pantalla más importante del producto: tiene que funcionar perfecta en el celular.
+La ruta va en la raíz (`/la-navaja`), así que hay slugs reservados que ninguna barbería puede usar:
+`panel`, `super`, `t`, `api`, `buscar`, `mapa`, `mis-turnos`, `ingresar`, `dev`, `assets`, `static`, `health`.
 - Portada con logo, nombre, dirección, barberos y servicios con precios.
 - Flujo de reserva: elegir servicio → elegir barbero (o "el primero disponible") → elegir día y horario → nombre + teléfono → confirmar.
 - Pantalla de confirmación con el link privado del turno, botón "agregar al calendario" y progreso del beneficio ("te faltan 2 cortes para tu corte gratis").
@@ -129,7 +141,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   Inter/Poppins/Montserrat, testimonios en grilla, emojis como íconos, 3D de stock,
   secciones todas iguales.
 - Voz: voseo, corta y concreta ("Sacá número", "Sin fila. Sin cuenta. Sin seña").
-- Cada barbería conserva su color de acento en su página (`/b/:slug`) y en su ticket.
+- Cada barbería conserva su color de acento en su página (`/:slug`) y en su ticket.
 - Panel admin: pendiente de definir dentro de esta dirección (más sobrio, el display LED como métrica).
 - **Mobile first**: el cliente reserva desde el celular y el barbero mira su grilla desde el celular.
 - Accesible: contraste AA, foco visible (amarillo dentro del display), objetivos táctiles ≥ 44px,
@@ -160,12 +172,13 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Base local: `docker compose up -d` (Postgres 17 en localhost:5433, bases `navagenda` y `navagenda_test`)
 - Backend: `cd backend && uv sync && uv run uvicorn app.main:app --reload` (http://localhost:8000/health), `uv run pytest`
 - Migraciones: `cd backend && uv run alembic upgrade head` (usa `DATABASE_URL`; sin definir, la base local)
-- Datos de ejemplo: `cd backend && uv run python -m app.db.seed`
+- Datos de ejemplo: `cd backend && uv run python -m app.db.seed` (8 barberías de La Plata, un admin por barbería con usuario = slug)
+- Crear el superadmin: `cd backend && uv run python -m app.cli crear-superadmin <usuario> "<nombre>"` (pide la clave)
 
 ## Orden de tareas
 1. ✅ Sistema de diseño (tokens y componentes base) y estructura del proyecto
 2. ✅ Esquema de base y migraciones (Alembic sobre Supabase), con datos de ejemplo (1 barbería, 3 barberos, 4 servicios)
-3. Auth del panel (admin y superadmin) con usuario y contraseña, y roles
+3. ✅ Auth del panel (admin y superadmin) con usuario y contraseña, y roles (backend; la pantalla de login va con el panel en la tarea 4)
 4. ABM de barberos, servicios y horarios
 5. Cálculo de horarios disponibles (con tests)
 6. Página pública de la barbería y flujo de reserva sin cuenta (nombre + teléfono, link privado)
