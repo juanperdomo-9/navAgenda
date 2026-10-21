@@ -64,7 +64,9 @@ Los barberos **no tienen login propio** en el MVP: son entidades que crea y gest
   **Al crear un barbero se genera automáticamente todo lo suyo**: su grilla, su dashboard, su disponibilidad en la página pública y su asignación a los servicios. No hace falta configurar nada más.
   Al dar de baja un barbero se conserva su historial (baja lógica) y deja de aparecer para reservar.
 - **Navegación por barbero**: dentro del panel, un selector o pestañas por barbero que abren su grilla y su dashboard. También hay una vista "todos" con la grilla del día de todos los barberos lado a lado.
-- **Servicios**: nombre, precio, duración (ej.: corte 30 min, corte + barba 45 min). Opcional: qué barberos lo hacen.
+- **Servicios**: nombre, precio, duración (ej.: corte 30 min, corte + barba 45 min) y qué barberos lo hacen.
+  **Se editan en cualquier momento** (todos sus datos) y se dan de baja sin perder el historial.
+  Cambiar el precio no toca los turnos ya reservados.
 - **Grilla por barbero**: vista de día y de semana, con un barbero por columna (o selector de barbero en mobile).
   Cada turno muestra cliente, servicio, precio y estado, con botones **Asistió / No asistió**.
   - Asistió → suma al total facturado y suma 1 al contador de fidelidad del cliente (por teléfono) en esa barbería.

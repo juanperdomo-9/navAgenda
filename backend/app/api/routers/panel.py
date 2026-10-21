@@ -16,6 +16,7 @@ from app.schemas.panel import (
     BarberoCambios,
     BarberoNuevo,
     BarberoOut,
+    BarberosDelServicio,
     BloqueoNuevo,
     BloqueoOut,
     ConfigBarberia,
@@ -198,6 +199,21 @@ def cambiar_servicio(servicio_id: UUID, datos: ServicioCambios, admin: Admin, db
     s = _servicio(db, admin, servicio_id)
     for campo, valor in datos.model_dump(exclude_unset=True).items():
         setattr(s, campo, valor.strip() if isinstance(valor, str) else valor)
+    db.commit()
+    return svc.servicio_out(db, s)
+
+
+@router.put("/servicios/{servicio_id}/barberos", response_model=ServicioOut)
+def cambiar_barberos_del_servicio(
+    servicio_id: UUID, datos: BarberosDelServicio, admin: Admin, db: DB
+):
+    s = _servicio(db, admin, servicio_id)
+    try:
+        svc.asignar_barberos(db, s, datos.barbero_ids)
+    except svc.BarberoAjeno:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Alguno de esos barberos no es de tu barbería."
+        ) from None
     db.commit()
     return svc.servicio_out(db, s)
 

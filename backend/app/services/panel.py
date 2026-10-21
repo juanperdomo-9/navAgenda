@@ -123,6 +123,27 @@ def asignar_servicios(db: Session, b: Barbero, servicio_ids: list[UUID]) -> None
 # ─── Servicios ───
 
 
+class BarberoAjeno(Exception):
+    """Se pidió asignar un barbero que no es de esta barbería (o no existe)."""
+
+
+def asignar_barberos(db: Session, s: Servicio, barbero_ids: list[UUID]) -> None:
+    """Qué barberos hacen este servicio (el mismo vínculo que se edita desde el barbero)."""
+    ids = set(barbero_ids)
+    propios = set(
+        db.scalars(
+            select(Barbero.id).where(Barbero.barberia_id == s.barberia_id, Barbero.id.in_(ids))
+        ).all()
+    )
+    if propios != ids:
+        raise BarberoAjeno
+    db.execute(delete(BarberoServicio).where(BarberoServicio.servicio_id == s.id))
+    db.add_all(
+        BarberoServicio(barbero_id=bid, servicio_id=s.id, barberia_id=s.barberia_id) for bid in ids
+    )
+    db.flush()
+
+
 def crear_servicio(
     db: Session, barberia_id: UUID, nombre: str, precio: int, duracion: int
 ) -> Servicio:

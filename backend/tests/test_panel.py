@@ -187,6 +187,38 @@ def test_cambiar_precio_y_dar_de_baja_un_servicio(client, admin):
     assert estado[s["id"]] is False
 
 
+def test_editar_un_servicio_completo(client, admin):
+    s = client.get("/panel/servicios").json()[0]
+    res = client.patch(
+        f"/panel/servicios/{s['id']}",
+        json={"nombre": "Corte clásico", "precio": 12500, "duracion_min": 35},
+    )
+    assert res.status_code == 200
+    assert (res.json()["nombre"], res.json()["precio"], res.json()["duracion_min"]) == (
+        "Corte clásico",
+        12500,
+        35,
+    )
+
+
+def test_elegir_que_barberos_hacen_un_servicio(client, admin):
+    martin = crear_barbero(client).json()
+    crear_barbero(client, nombre="Lucas Ferreyra")
+    s = client.get("/panel/servicios").json()[0]
+    res = client.put(f"/panel/servicios/{s['id']}/barberos", json={"barbero_ids": [martin["id"]]})
+    assert res.status_code == 200 and res.json()["barbero_ids"] == [martin["id"]]
+    # Se ve igual desde el barbero
+    assert s["id"] in client.get(f"/panel/barberos/{martin['id']}").json()["servicio_ids"]
+
+
+def test_no_puedo_asignar_a_mi_servicio_un_barbero_de_otra_barberia(client, admin, otra):
+    s = client.get("/panel/servicios").json()[0]
+    res = client.put(
+        f"/panel/servicios/{s['id']}/barberos", json={"barbero_ids": [str(otra["barbero"].id)]}
+    )
+    assert res.status_code == 422
+
+
 # ——— Configuración de la página ———
 
 

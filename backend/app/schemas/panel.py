@@ -77,6 +77,10 @@ class ServiciosDelBarbero(BaseModel):
     servicio_ids: list[UUID] = Field(max_length=100)
 
 
+class BarberosDelServicio(BaseModel):
+    barbero_ids: list[UUID] = Field(max_length=100)
+
+
 class BarberoOut(BaseModel):
     id: UUID
     nombre: str
