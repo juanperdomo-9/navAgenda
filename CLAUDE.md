@@ -116,6 +116,9 @@ Las tablas hijas llevan `barberia_id` con FKs compuestas `(id, barberia_id)`: la
 ## Reglas de negocio clave
 - Nunca dos turnos superpuestos para el mismo barbero. Validarlo en el backend y con constraint en la base (EXCLUDE con btree_gist).
 - Los horarios disponibles salen de: horario laboral del barbero − turnos existentes − bloqueos − duración del servicio.
+- **Los turnos arrancan cada 30 minutos** (10:00, 10:30, 11:00…): así se ofrecen al cliente y así se dibuja la grilla del panel
+  (una fila cada 30 min, una columna por barbero, como la grilla de canchas de HayCanchas). Un servicio de 45 min ocupa
+  una fila y media y el próximo turno libre arranca en la siguiente media hora.
 - El precio se guarda en el turno al reservar (si después cambia el precio del servicio, los turnos viejos no cambian).
 - Solo el estado "asistió" cuenta para facturación y fidelidad.
 - Cada barbería ve únicamente sus datos (aislamiento por `barberia_id` en todas las consultas del panel).
