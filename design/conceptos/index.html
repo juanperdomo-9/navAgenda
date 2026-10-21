@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NavAgenda · 3 conceptos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Archivo+Black&family=Big+Shoulders+Display:wght@500;800;900&family=Courier+Prime:wght@400;700&family=Rozha+One&display=swap" />
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html { -webkit-font-smoothing: antialiased; }
+  body { background: #111; color: #eee; font-family: 'Archivo', sans-serif; }
+  .label {
+    position: sticky; top: 0; z-index: 20; display: flex; justify-content: space-between; gap: 16px;
+    padding: 10px 20px; font: 600 13px/1.3 'Archivo', sans-serif; background: #111; color: #bbb; border-bottom: 1px solid #2a2a2a;
+  }
+  .label b { color: #fff; }
+  section { position: relative; min-height: 100vh; overflow: hidden; }
+
+  /* ═════════ 1 · REVISTA ═════════ */
+  .rev { background: #efe6d6; color: #1a1714; padding: 28px clamp(16px, 4vw, 56px) 56px; }
+  .rev-top { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #1a1714; padding-bottom: 8px;
+    font: 700 12px/1 'Archivo'; font-stretch: 75%; text-transform: uppercase; letter-spacing: .08em; }
+  .rev-mast { font-family: 'Rozha One', serif; font-size: clamp(40px, 18.5vw, 280px); line-height: .78; letter-spacing: -.035em;
+    margin: 18px 0 0 -.05em; white-space: nowrap; }
+  .rev-mast span { color: #d23a1e; }
+  .rev-grid { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 24px; }
+  @media (min-width: 900px) { .rev-grid { grid-template-columns: 1.25fr 1fr; gap: 40px; } }
+  .rev-photo { position: relative; aspect-ratio: 4/5; max-height: 72vh; background-color: #2b2724;
+    background-image: radial-gradient(circle, #8a8178 28%, transparent 30%); background-size: 7px 7px;
+    filter: contrast(1.1); }
+  .rev-photo::after { content: '[foto: retrato de Martín Sosa, blanco y negro con grano]'; position: absolute; inset: auto 12px 12px;
+    font: 500 11px/1.3 'Archivo'; color: #efe6d6; background: #1a1714; padding: 4px 8px; width: max-content; max-width: calc(100% - 24px); }
+  .rev-cover-line { position: absolute; left: -6px; top: 38%; background: #d23a1e; color: #efe6d6; padding: 10px 16px 12px;
+    font-family: 'Rozha One', serif; font-size: clamp(28px, 4.4vw, 54px); line-height: .95; max-width: 85%; transform: rotate(-2deg); }
+  .rev-kick { font: 800 14px/1.2 'Archivo'; font-stretch: 70%; text-transform: uppercase; letter-spacing: .06em; color: #d23a1e; }
+  .rev-h { font-family: 'Rozha One', serif; font-size: clamp(34px, 4vw, 56px); line-height: .98; margin-top: 8px; letter-spacing: -.01em; }
+  .rev-p { font: 400 17px/1.5 'Archivo'; font-stretch: 92%; margin-top: 14px; max-width: 38ch; columns: 1; }
+  .rev-index { margin-top: 28px; border-top: 2px solid #1a1714; }
+  .rev-index h3 { font: 900 13px/1 'Archivo'; font-stretch: 65%; text-transform: uppercase; letter-spacing: .12em; padding: 12px 0 6px; }
+  .rev-row { display: flex; align-items: baseline; gap: 8px; padding: 9px 0; border-bottom: 1px solid #1a171433; cursor: pointer;
+    font: 600 18px/1.2 'Archivo'; font-stretch: 85%; text-decoration: none; color: inherit; transition: color .2s; }
+  .rev-row .t { font: 800 22px/1 'Archivo'; font-stretch: 62%; font-variant-numeric: tabular-nums; min-width: 3.2ch; }
+  .rev-row .dots { flex: 1; border-bottom: 2px dotted #1a171466; transform: translateY(-4px); }
+  .rev-row .pg { font: 400 italic 16px 'Rozha One', serif; }
+  .rev-row:hover { color: #d23a1e; }
+  .rev-row:hover .dots { border-color: #d23a1e; }
+
+  /* ═════════ 2 · CARTELERA ═════════ */
+  .car { background: #0b0908; color: #f5ecd8; padding: 32px clamp(16px, 4vw, 56px) 56px; }
+  .marquee { position: relative; padding: 26px clamp(18px, 3vw, 40px) 30px; background: #1b1512; border-radius: 6px;
+    box-shadow: 0 30px 60px -20px #000; }
+  .bulbs { position: absolute; inset: 8px; pointer-events: none; border-radius: 4px;
+    --b: radial-gradient(circle, #ffd25a 0 3px, #ffd25a55 4px, transparent 7px);
+    background: var(--b) top left / 22px 14px repeat-x, var(--b) bottom left / 22px 14px repeat-x,
+                var(--b) top left / 14px 22px repeat-y, var(--b) top right / 14px 22px repeat-y;
+    animation: chase 1.2s steps(2) infinite; }
+  @keyframes chase { 50% { filter: brightness(.45); } }
+  .car-hoy { font-family: 'Big Shoulders Display'; font-weight: 900; text-transform: uppercase; color: #ffd25a;
+    font-size: clamp(56px, 13vw, 200px); line-height: .82; letter-spacing: -.01em; text-shadow: 0 0 24px #ffb70044; }
+  .car-hoy small { display: block; font-size: .32em; color: #f5ecd8; letter-spacing: .04em; font-weight: 800; }
+  .board { margin-top: 22px; padding: 14px; border-radius: 4px;
+    background: repeating-linear-gradient(180deg, #2a221e 0 5px, #1b1512 5px 9px); }
+  .board-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .board-row + .board-row { margin-top: 10px; }
+  .tile { display: inline-grid; place-items: center; min-width: 30px; height: 44px; padding: 0 6px; background: #f5ecd8; color: #111;
+    font: 800 30px/1 'Big Shoulders Display'; border-radius: 2px; box-shadow: 0 2px 0 #0008; transform-origin: top;
+    animation: hang .5s cubic-bezier(.2,.9,.3,1.4) both; }
+  .tile.sep { background: transparent; min-width: 12px; padding: 0; }
+  @media (max-width: 600px) { .tile { min-width: 22px; height: 34px; font-size: 22px; padding: 0 4px; } .board-row { gap: 6px; } .funcion { gap: 2px; padding: 3px; } }
+  .tile.free { cursor: pointer; }
+  .funcion { display: inline-flex; gap: 3px; padding: 4px; border-radius: 3px; cursor: pointer; transition: background .2s; }
+  .funcion:hover, .funcion.on { background: #ffd25a; }
+  .funcion.lleno { opacity: .35; pointer-events: none; }
+  @keyframes hang { from { transform: rotateX(-90deg); opacity: 0; } }
+  .car-grid { display: grid; gap: 32px; margin-top: 40px; align-items: start; }
+  @media (min-width: 900px) { .car-grid { grid-template-columns: 1fr 1fr 1.1fr; } }
+  .poster { position: relative; aspect-ratio: 2/3; padding: 18px; background: linear-gradient(180deg, #b3121f, #4a0710);
+    display: flex; flex-direction: column; justify-content: flex-end; box-shadow: 0 24px 48px -16px #000; }
+  .poster:nth-child(1) { transform: rotate(-3deg); }
+  .poster:nth-child(2) { transform: rotate(2.5deg) translateY(36px); background: linear-gradient(180deg, #2a2a2a, #0b0908); }
+  .poster .ph { position: absolute; inset: 18px 18px 40%; background: #00000055;
+    display: grid; place-items: center; font: 500 11px 'Archivo'; color: #f5ecd899; text-align: center; padding: 8px; }
+  .poster .en { font: 600 13px 'Archivo'; letter-spacing: .2em; text-transform: uppercase; }
+  .poster .who { font: 900 clamp(44px, 5vw, 64px)/.85 'Big Shoulders Display'; text-transform: uppercase; }
+  .poster .what { font: 800 20px 'Big Shoulders Display'; color: #ffd25a; text-transform: uppercase; margin-top: 6px; }
+  .poster .cred { font: 400 10px/1.4 'Archivo'; font-stretch: 70%; opacity: .7; margin-top: 10px; text-transform: uppercase; letter-spacing: .06em; }
+  .ticket { position: relative; display: flex; background: #f5ecd8; color: #1b1512; font-family: 'Courier Prime', monospace;
+    transform: rotate(-1.5deg); margin-top: 20px; }
+  .ticket .main { flex: 1; padding: 20px; border-right: 2px dashed #1b151266; }
+  .ticket .stub { width: 92px; padding: 20px 12px; writing-mode: vertical-rl; font-weight: 700; letter-spacing: .1em; text-align: center; }
+  .ticket h4 { font: 900 34px/.9 'Big Shoulders Display'; text-transform: uppercase; color: #b3121f; }
+  .ticket p { font-size: 14px; margin-top: 8px; }
+  .car-copy { font: 500 18px/1.45 'Archivo'; max-width: 30ch; color: #f5ecd8cc; }
+  .car-copy b { color: #ffd25a; }
+
+  /* ═════════ 3 · TURNERO ═════════ */
+  .tur { background: #f6d13a; color: #141210; padding: 24px clamp(16px, 4vw, 56px) 80px; }
+  .tur-grid { display: grid; gap: 28px; align-items: start; }
+  @media (min-width: 900px) { .tur-grid { grid-template-columns: 1.15fr 1fr; gap: 56px; } }
+  .tur-h { font: 400 clamp(64px, 12.5vw, 196px)/.8 'Archivo Black', sans-serif; letter-spacing: -.045em; margin-left: -.04em; }
+  .tur-h em { font-style: normal; display: block; -webkit-text-stroke: 3px #141210; color: transparent; }
+  .tur-sub { font: 600 20px/1.35 'Archivo'; font-stretch: 85%; max-width: 32ch; margin-top: 22px; }
+  .display { background: #120c0b; border-radius: 10px; padding: 18px 20px 22px; box-shadow: inset 0 0 0 6px #2a2220, 0 30px 50px -24px #0009; }
+  .display .cap { display: flex; justify-content: space-between; font: 700 12px 'Archivo'; font-stretch: 70%; letter-spacing: .14em;
+    text-transform: uppercase; color: #ff2b1c; opacity: .85; }
+  .display .num { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+  .seg svg { width: clamp(88px, 13vw, 160px); height: auto; overflow: visible; }
+  .seg .on { fill: #ff2b1c; filter: drop-shadow(0 0 6px #ff2b1caa); }
+  .seg .off { fill: #2c0d0a; }
+  .roll { position: relative; margin: 26px auto 0; width: min(100%, 360px); }
+  .slot { height: 16px; background: #120c0b; border-radius: 0 0 6px 6px; position: relative; z-index: 2; box-shadow: 0 6px 10px -4px #0008; }
+  .tk { position: relative; background: #fffdf3; padding: 26px 22px 30px; margin: -4px 12px 0; font-family: 'Courier Prime', monospace;
+    color: #141210; cursor: grab; touch-action: none; user-select: none; transition: transform .45s cubic-bezier(.2,.8,.2,1);
+    --perf: radial-gradient(circle at 6px 0, transparent 5px, #fffdf3 5.5px); }
+  .tk::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px;
+    background: radial-gradient(circle at 6px 0, #fffdf3 4px, transparent 4.5px) 0 0 / 12px 6px repeat-x; }
+  .tk .n { font: 400 96px/.85 'Archivo Black'; letter-spacing: -.04em; }
+  .tk .l { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+  .tk hr { border: 0; border-top: 2px dashed #14121055; margin: 14px 0; }
+  .tk .r { display: flex; justify-content: space-between; font-size: 15px; margin-top: 4px; }
+  .tk.torn { transform: translateY(60px) rotate(-4deg); cursor: default; }
+  .tk.torn .tear-hint { opacity: 0; }
+  .tear-hint { font: 700 13px 'Archivo'; text-align: center; margin-top: 14px; letter-spacing: .04em; transition: opacity .3s; }
+  .done { text-align: center; font: 700 16px/1.4 'Archivo'; margin-top: 80px; opacity: 0; transition: opacity .4s .3s; }
+  .tk.torn ~ .done { opacity: 1; }
+  .tur-rolls { display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap; }
+  .tur-rolls span { padding: 8px 12px; font: 800 13px 'Archivo'; font-stretch: 75%; text-transform: uppercase; letter-spacing: .06em; border: 2px solid #141210; }
+  .note { position: absolute; right: 16px; bottom: 14px; font: 500 11px 'Archivo'; opacity: .6; }
+</style>
+</head>
+<body>
+
+<!-- 1 · REVISTA -->
+<div class="label"><span><b>1 · La revista de barrio</b> — el más seguro</span><span>Firma: el índice de horarios</span></div>
+<section class="rev">
+  <div class="rev-top"><span>Nº 01 · Octubre 2026</span><span>La revista de las barberías de Buenos Aires</span><span>Precio: gratis</span></div>
+  <h1 class="rev-mast">Nav<span>a</span>genda</h1>
+  <div class="rev-grid">
+    <div class="rev-photo">
+      <div class="rev-cover-line">Martín Sosa y el degradé que no se negocia</div>
+    </div>
+    <div>
+      <p class="rev-kick">Tapa · Palermo</p>
+      <h2 class="rev-h">Cortes con nombre y apellido.</h2>
+      <p class="rev-p">Cada barbería de la ciudad, con sus barberos, sus precios y los horarios que le quedan hoy. Elegís, dejás tu nombre y tu teléfono, y listo: nadie te pide una cuenta.</p>
+      <nav class="rev-index" aria-label="Horarios libres hoy">
+        <h3>En este número · libres hoy</h3>
+        <a class="rev-row" href="#"><span class="t">15:30</span><span>La Navaja, con Tomás</span><span class="dots"></span><span class="pg">pág. 3</span></a>
+        <a class="rev-row" href="#"><span class="t">16:15</span><span>La Navaja, con Martín</span><span class="dots"></span><span class="pg">pág. 4</span></a>
+        <a class="rev-row" href="#"><span class="t">17:00</span><span>Barbería del Puerto</span><span class="dots"></span><span class="pg">pág. 7</span></a>
+        <a class="rev-row" href="#"><span class="t">18:45</span><span>La Navaja, con Lucas</span><span class="dots"></span><span class="pg">pág. 5</span></a>
+      </nav>
+    </div>
+  </div>
+  <p class="note">Boceto · barberías y barberos de ejemplo</p>
+</section>
+
+<!-- 2 · CARTELERA -->
+<div class="label"><span><b>2 · La cartelera de Corrientes</b> — intermedio</span><span>Firma: armar la cartelera letra por letra</span></div>
+<section class="car">
+  <div class="marquee">
+    <div class="bulbs" aria-hidden="true"></div>
+    <h1 class="car-hoy"><small>NavAgenda presenta</small>Hoy en Palermo</h1>
+    <div class="board" id="board" aria-label="Funciones de hoy"></div>
+  </div>
+  <div class="car-grid">
+    <div class="poster"><div class="ph">[foto de Martín en duotono rojo]</div><span class="en">Martín Sosa en</span><span class="who">Corte + barba</span><span class="what">45 minutos · $ 14.500</span><span class="cred">La Navaja presenta · una producción de Gorriti 4820 · apto todo público</span></div>
+    <div class="poster"><div class="ph">[foto de Lucas en duotono negro]</div><span class="en">Lucas Ferreyra en</span><span class="who">El degradé</span><span class="what">30 minutos · $ 12.000</span><span class="cred">Funciones de martes a sábado · sin reserva previa no se garantiza butaca</span></div>
+    <div>
+      <p class="car-copy">Elegís la función, dejás tu nombre y tu teléfono, y la butaca es tuya. <b>Sin cuenta, sin seña.</b></p>
+      <div class="ticket"><div class="main"><h4>Corte + barba</h4><p>Mié 21 oct · 16:15<br />Sala Martín Sosa · La Navaja</p><p>Admite 1 (una) persona</p></div><div class="stub">Nº 048 · 16:15</div></div>
+    </div>
+  </div>
+  <p class="note">Boceto · barberías y barberos de ejemplo</p>
+</section>
+
+<!-- 3 · TURNERO -->
+<div class="label"><span><b>3 · El turnero</b> — el más arriesgado</span><span>Firma: tirá del ticket para sacar tu número</span></div>
+<section class="tur">
+  <div class="tur-grid">
+    <div>
+      <h1 class="tur-h">Sacá<em>número.</em></h1>
+      <p class="tur-sub">Elegís barbería, barbero y horario. Te damos tu número y te esperamos. Así de simple, como en la carnicería del barrio, pero sin hacer la fila.</p>
+      <div class="tur-rolls"><span style="background:#f6d13a">La Navaja</span><span style="background:#f4a6b8">Del Puerto</span><span style="background:#8cc8e8">Tijera Norte</span></div>
+    </div>
+    <div>
+      <div class="display">
+        <div class="cap"><span>La Navaja · ahora atendiendo</span><span>Próximo libre 16:15</span></div>
+        <div class="num seg" id="led" aria-label="47"></div>
+      </div>
+      <div class="roll">
+        <div class="slot"></div>
+        <div class="tk" id="tk" role="button" tabindex="0" aria-label="Tirá del ticket para confirmar tu turno">
+          <div class="l">Tu número</div>
+          <div class="n">48</div>
+          <hr />
+          <div class="r"><span>Martín Sosa</span><span>16:15</span></div>
+          <div class="r"><span>Corte + barba</span><span>$ 14.500</span></div>
+          <div class="r"><span>Mié 21 oct</span><span>La Navaja</span></div>
+          <p class="tear-hint">↓ Tirá del ticket para confirmar</p>
+        </div>
+        <p class="done">Listo, el 48 es tuyo.<br />Guardá este ticket: es tu link para ver o cancelar.</p>
+      </div>
+    </div>
+  </div>
+  <p class="note">Boceto · barberías y barberos de ejemplo</p>
+</section>
+
+<script>
+  // Cartelera: las funciones se "cuelgan" letra por letra
+  const funciones = [['15:30', 0], ['16:15', 1], ['17:00', 0], ['18:45', 1], ['19:30', 1]];
+  const board = document.getElementById('board');
+  const row1 = document.createElement('div'); row1.className = 'board-row';
+  'FUNCIONES'.split('').forEach((c, i) => { const t = document.createElement('span'); t.className = 'tile'; t.textContent = c; t.style.animationDelay = i * 40 + 'ms'; row1.append(t); });
+  const row2 = document.createElement('div'); row2.className = 'board-row';
+  let d = 400;
+  funciones.forEach(([h, libre]) => {
+    const f = document.createElement('span'); f.className = 'funcion' + (libre ? '' : ' lleno'); f.title = libre ? 'Libre' : 'Agotada';
+    h.split('').forEach((c) => { const t = document.createElement('span'); t.className = 'tile' + (c === ':' ? ' sep' : ''); t.textContent = c; t.style.animationDelay = (d += 45) + 'ms'; f.append(t); });
+    f.onclick = () => { document.querySelectorAll('.funcion').forEach((x) => x.classList.remove('on')); f.classList.add('on'); };
+    row2.append(f);
+  });
+  board.append(row1, row2);
+
+  // Turnero: display de 7 segmentos dibujado a mano
+  const SEG = { a: 'M14 4h52l-8 8H22z', b: 'M68 6l8 8v42l-8 4-8-8V14z', c: 'M68 64l8 4v42l-8 8-8-8V72z', d: 'M22 112h36l8 8H14z',
+    e: 'M12 64l8 8v38l-8 8-8-8V68z', f: 'M12 6l8 8v38l-8 8-8-4V14z', g: 'M20 58h40l6 4-6 4H20l-6-4z' };
+  const MAP = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abcdfg'];
+  function digito(n) {
+    return '<svg viewBox="0 0 80 124">' + Object.entries(SEG).map(([k, p]) => `<path d="${p}" class="${MAP[n].includes(k) ? 'on' : 'off'}"/>`).join('') + '</svg>';
+  }
+  const led = document.getElementById('led');
+  const pintar = (num) => { led.innerHTML = String(num).padStart(2, '0').split('').map((x) => digito(+x)).join(''); led.setAttribute('aria-label', num); };
+  pintar(47);
+
+  // Tirá del ticket: arrastrar hacia abajo (o Enter) lo corta por la perforación
+  const tk = document.getElementById('tk');
+  let y0 = null;
+  const cortar = () => { tk.classList.add('torn'); tk.style.transform = ''; setTimeout(() => pintar(48), 500); };
+  tk.addEventListener('pointerdown', (e) => { if (tk.classList.contains('torn')) return; y0 = e.clientY; tk.setPointerCapture(e.pointerId); tk.style.transition = 'none'; });
+  tk.addEventListener('pointermove', (e) => { if (y0 === null) return; const dy = Math.max(0, e.clientY - y0); tk.style.transform = `translateY(${Math.min(dy, 90) * 0.6}px)`; });
+  tk.addEventListener('pointerup', (e) => { if (y0 === null) return; const dy = e.clientY - y0; y0 = null; tk.style.transition = '';
+    if (dy > 60) cortar(); else tk.style.transform = ''; });
+  tk.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cortar(); } });
+</script>
+</body>
+</html>

@@ -105,22 +105,37 @@ Las tablas hijas llevan `barberia_id` con FKs compuestas `(id, barberia_id)`: la
 - `reglas_beneficio`: id, barberia_id, cada_x_cortes, tipo, valor, servicio_id (para servicio gratis), descripcion, activa — una sola activa por barbería
 - `fidelidad`: cliente_id, barberia_id, cortes_acumulados, beneficios_disponibles
 
-## Diseño: 100% profesional y premium
-El sistema de diseño ya está definido (tarea 1) y vive en `frontend/src/styles/tokens.css` y `frontend/src/components/ui/`.
-Usarlo en toda la app: no hardcodear colores, tamaños ni sombras fuera de los tokens.
-Muestra viva de todos los componentes en `/dev/design-system` (solo en desarrollo).
+## Diseño: "El turnero"
+Dirección aprobada por Juan el 2026-10-20 (reemplaza la estética oscura/dorada de la tarea 1).
+La web es el turnero del barrio: "Sacá número". Prototipo vivo en `design/hero/index.html`
+(se sirve con `python -m http.server 5180 --directory design`). Las pantallas reales se construyen
+a partir de ese prototipo; los tokens de `frontend/src/styles/tokens.css` se migran a esta dirección
+cuando se porte (tarea 6/6b).
 
-Dirección visual:
-- Estética de barbería de alta gama: oscura, elegante y sobria. Nada de plantilla genérica.
-- Paleta: carbón cálido `#0E0D0C`, superficies grafito, texto marfil `#F2ECE1` y acento dorado viejo `#C9A46A` (configurable por barbería; preset cobre `#C47F57`).
-- Tipografía: **Bodoni Moda** (display) + **Manrope** (interfaz, con cifras tabulares).
-- Mucho aire, jerarquía clara, bordes finos, sombras suaves y microanimaciones sutiles (hover, transiciones de paso en la reserva, skeleton loaders).
-- Fotos de barberos en círculo o con recorte cuidado. Íconos de línea consistentes (lucide).
-- La página pública y el portal deben sentirse como la web de una marca, no como un formulario.
-- Panel admin y dashboards: limpios, tipo SaaS premium (también oscuros), con tarjetas de métricas, gráficos (Recharts) y grilla legible de un vistazo, con colores por estado del turno.
+Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conciso.
+
+- Paleta: amarillo de rollo de turnos `#F6D13A`, tinta `#141210`, papel de ticket `#FFFDF3`,
+  display `#120C0B` con LED rojo `#FF2B1C` (apagado `#2E0F0B`). Sin grises sobre el amarillo:
+  el texto secundario usa tinta gastada `#3D3310`.
+- Tipografía: **Archivo** (variable): titulares en el ancho más angosto (`font-stretch: 62%`, peso 900,
+  mayúsculas) a tamaños extremos; interfaz en Archivo normal. Los números del display son
+  **7 segmentos dibujados en SVG** (no una fuente).
+- Elemento firma: el display LED muestra el próximo horario libre y sus segmentos se encienden de a uno
+  al cambiar; el cero de adelante queda apagado. La confirmación es un **ticket impreso**, que además
+  es el link privado del turno. La fidelidad se muestra como **perforaciones** en el ticket.
+- Talones con bordes perforados para horarios alternativos. Nada de tarjetas genéricas.
+- Prohibido (patrones genéricos de IA): hero centrado con título + subtítulo + 2 botones, grillas de
+  3 tarjetas con ícono, gradientes violeta/azul, glassmorphism, sombras suaves en todo,
+  Inter/Poppins/Montserrat, testimonios en grilla, emojis como íconos, 3D de stock,
+  secciones todas iguales.
+- Voz: voseo, corta y concreta ("Sacá número", "Sin fila. Sin cuenta. Sin seña").
+- Cada barbería conserva su color de acento en su página (`/b/:slug`) y en su ticket.
+- Panel admin: pendiente de definir dentro de esta dirección (más sobrio, el display LED como métrica).
 - **Mobile first**: el cliente reserva desde el celular y el barbero mira su grilla desde el celular.
-- Accesible: contraste AA, foco visible, objetivos táctiles de al menos 44px.
+- Accesible: contraste AA, foco visible (amarillo dentro del display), objetivos táctiles ≥ 44px,
+  respeta reduced motion, cambios anunciados con aria-live.
 - Estados vacíos, errores y confirmaciones diseñados (nada de alerts del navegador).
+- Proceso: ante una pantalla nueva, armar primero el hero, pasarle `/impeccable critique` y corregir.
 
 ## Fuera del MVP (no construir todavía)
 - Pagos o señas online

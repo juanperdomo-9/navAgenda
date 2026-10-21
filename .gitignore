@@ -26,3 +26,5 @@ Thumbs.db
 # Herramientas locales
 .impeccable/review/
 .impeccable/config.local.json
+.playwright-mcp/
+.impeccable/critique/
