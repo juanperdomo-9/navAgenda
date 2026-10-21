@@ -181,3 +181,25 @@ def test_cambiar_clave_exige_la_actual(client, db):
         "/auth/cambiar-clave", json={"clave_actual": "mal", "clave_nueva": "otra-clave-larga"}
     )
     assert res.status_code == 400
+
+
+def test_superadmin_lista_con_admins_y_pausa_una_barberia(client, db):
+    crear_usuario(db, "juan", rol="superadmin")
+    ingresar(client, "juan")
+    client.post(
+        "/super/barberias",
+        json={
+            "nombre": "Pausable",
+            "slug": "pausable",
+            "admin_nombre": "Ana",
+            "admin_usuario": "ana",
+        },
+    )
+    b = next(x for x in client.get("/super/barberias").json() if x["slug"] == "pausable")
+    assert b["admins"][0]["usuario"] == "ana" and b["barberos"] == 0
+    assert client.get("/p/pausable").status_code == 200
+    assert (
+        client.patch(f"/super/barberias/{b['id']}", json={"activa": False}).json()["activa"]
+        is False
+    )
+    assert client.get("/p/pausable").status_code == 404

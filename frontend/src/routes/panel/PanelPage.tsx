@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, ChartColumn, Contact, ExternalLink, Globe, LogOut, Scissors, Users } from 'lucide-react'
+import { CalendarDays, ChartColumn, Contact, ExternalLink, Globe, LogOut, Scissors, Store, Users } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { api, ApiError, type UsuarioPanel } from '@/lib/api'
 import { Agenda } from './Agenda'
 import { Clientes, Numeros } from './Numeros'
+import { Super } from './Super'
 import { Barberos, MiPagina, Servicios } from './Vistas'
 import './panel.css'
 
@@ -37,6 +38,7 @@ export function PanelPage() {
       <div className="app">
         <nav className="lado" aria-label="Panel">
           <div className="b"><span>Panel de</span><b className="cond">{nombre}</b></div>
+          {yo.data.rol === 'superadmin' && !yo.data.debe_cambiar_clave && <a href="#" aria-current="page" onClick={(e) => e.preventDefault()}><Store className="i" aria-hidden />Barberías</a>}
           {admin && NAV.map(([k, t, I]) => <a key={k} href="#" aria-current={vista === k ? 'page' : undefined} onClick={(e) => { e.preventDefault(); setVista(k) }}><I className="i" aria-hidden />{t}</a>)}
           {cfg.data && <a href={`/${cfg.data.slug}`} target="_blank" rel="noopener"><ExternalLink className="i" aria-hidden />Ver mi página</a>}
           <a href="#" className="salir" onClick={(e) => { e.preventDefault(); salir() }}><LogOut className="i" aria-hidden />Salir</a>
@@ -48,7 +50,7 @@ export function PanelPage() {
           </header>
           {yo.data.debe_cambiar_clave ? <CambiarClave nombre={yo.data.nombre} onListo={() => qc.invalidateQueries({ queryKey: ['yo'] })} />
             : admin ? { agenda: <Agenda />, barberos: <Barberos />, servicios: <Servicios />, clientes: <Clientes />, numeros: <Numeros />, pagina: <MiPagina /> }[vista]
-            : <main><div className="titulo"><h1 className="cond">Hola, {yo.data.nombre.split(' ')[0]}</h1><p>Sos superadmin. Las barberías se crean con la API /super o con los comandos de DEPLOY.md.</p></div></main>}
+            : <Super />}
         </div>
       </div>
       {admin && <nav className="abajo" aria-label="Panel" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>{NAV.map(([k, t, I]) => <a key={k} href="#" aria-current={vista === k ? 'page' : undefined} onClick={(e) => { e.preventDefault(); setVista(k); scrollTo(0, 0) }}><I className="i" aria-hidden />{k === 'pagina' ? 'Página' : t}</a>)}</nav>}

@@ -3,21 +3,56 @@
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import DB, Superadmin
 from app.core.security import clave_temporal, hashear_clave
-from app.models import Barberia, Usuario
-from app.schemas.superadmin import BarberiaCreada, BarberiaResumen, ClaveReseteada, NuevaBarberia
+from app.models import Barberia, Barbero, Usuario
+from app.schemas.superadmin import (
+    BarberiaConAdmins,
+    BarberiaCreada,
+    BarberiaResumen,
+    ClaveReseteada,
+    EstadoBarberia,
+    NuevaBarberia,
+)
 from app.services.auth import buscar_por_usuario
 
 router = APIRouter(prefix="/super", tags=["superadmin"])
 
 
-@router.get("/barberias", response_model=list[BarberiaResumen])
+@router.get("/barberias", response_model=list[BarberiaConAdmins])
 def listar_barberias(_: Superadmin, db: DB):
-    return db.scalars(select(Barberia).order_by(Barberia.nombre)).all()
+    admins: dict = {}
+    for u in db.scalars(select(Usuario).where(Usuario.rol == "admin").order_by(Usuario.nombre)):
+        admins.setdefault(u.barberia_id, []).append(u)
+    barberos = dict(
+        db.execute(
+            select(Barbero.barberia_id, func.count())
+            .where(Barbero.activo)
+            .group_by(Barbero.barberia_id)
+        ).all()
+    )
+    return [
+        BarberiaConAdmins(
+            **BarberiaResumen.model_validate(b).model_dump(),
+            admins=admins.get(b.id, []),
+            barberos=barberos.get(b.id, 0),
+        )
+        for b in db.scalars(select(Barberia).order_by(Barberia.nombre))
+    ]
+
+
+@router.patch("/barberias/{barberia_id}", response_model=BarberiaResumen)
+def cambiar_estado(barberia_id: UUID, datos: EstadoBarberia, _: Superadmin, db: DB):
+    """Pausar una barbería (ej.: no pagó) la saca del portal y de su link; no borra nada."""
+    b = db.get(Barberia, barberia_id)
+    if not b:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe esa barbería.")
+    b.activa = datos.activa
+    db.commit()
+    return b
 
 
 @router.post("/barberias", response_model=BarberiaCreada, status_code=status.HTTP_201_CREATED)

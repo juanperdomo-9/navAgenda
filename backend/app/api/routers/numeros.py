@@ -117,9 +117,7 @@ def numeros(
 
     por_b = {b.id: {"id": b.id, "nombre": b.nombre, "facturado": 0, "cortes": 0} for b in barberos}
     por_s: dict[UUID, int] = {}
-    por_dia = {
-        (desde + timedelta(days=i)).isoformat(): 0 for i in range((hasta - desde).days + 1)
-    }
+    por_dia = {(desde + timedelta(days=i)).isoformat(): 0 for i in range((hasta - desde).days + 1)}
     tot = cortes = aus = premios = 0
     for t in turnos:
         if t.estado == "no_asistio":

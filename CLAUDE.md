@@ -196,7 +196,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Crear el superadmin: `cd backend && uv run python -m app.cli crear-superadmin <usuario> "<nombre>"` (pide la clave)
 
 ## Estado actual y próximos pasos (actualizado 2026-10-21)
-- **Backend listo para salir** (111 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
+- **Backend listo para salir** (112 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
   horarios libres cada 30 min, API pública (`/p/{slug}`, `/p/{slug}/libres`, `/p/{slug}/turnos`, `/t/{token}`),
   agenda (`/panel/agenda`, asistió/no vino con tarjeta de cortes, corregir, turno a mano), clientes y números.
   Primera barbería real: `uv run python -m app.cli cargar-inspirationmen`.
@@ -216,7 +216,9 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   (links por barbero `?con=nombre-apellido`, color con contraste, datos, tarjeta de cortes).
 - Clientes (`/panel/clientes`: visitas, ausencias, premios, tarjeta y bloqueo) y Números (`/panel/numeros?desde&hasta[&barbero_id]`:
   facturado, cortes, ausencias, por barbero, por servicio y día por día) en la API y en el panel.
-- **Falta para estar al 100%**: panel de superadmin (hoy por comandos); secciones de abajo de `/:slug` (precios, semana, mapa) y mapa del portal.
+- Panel del superadmin en `/panel` (entrando como superadmin): barberías con su admin, alta con clave temporal
+  (se muestra una vez), resetear clave y pausar/reactivar (`PATCH /super/barberias/{id}`).
+- **Falta para estar al 100%**: (hoy por comandos); secciones de abajo de `/:slug` (precios, semana, mapa) y mapa del portal.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 
