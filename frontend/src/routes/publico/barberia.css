@@ -192,3 +192,6 @@
   .pb .sec-h, .fidelidad h2 { font-size: clamp(64px, 7.4vw, 124px); }
 }
 @media (prefers-reduced-motion: reduce) { .tijera .raya path { transition: none; } .premio.ganado { animation: none; transform: rotate(-3deg); } }
+
+/* Opciones de los desplegables nativos: siempre tinta sobre papel (en páginas oscuras heredaban texto claro) */
+.pb select option, .portal select option { color: #141210; background: #fffdf3; }

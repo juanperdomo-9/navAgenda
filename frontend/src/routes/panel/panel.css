@@ -289,3 +289,4 @@ main { padding: 24px var(--g) 110px; max-width: 1180px; width: 100%; display: gr
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
 }
+.pa select option { color: #141210; background: #fffdf3; }

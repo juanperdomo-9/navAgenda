@@ -5,7 +5,7 @@
  */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light; /* "El turnero" es claro: los desplegables nativos se dibujan claros */
 
   /* Fondo y superficies: carbón cálido en capas */
   --bg: #0e0d0c;
