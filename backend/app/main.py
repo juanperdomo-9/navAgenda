@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routers import auth, health, panel, superadmin
+from app.api.routers import auth, health, panel, publico, superadmin
 from app.core.config import get_settings
 
 
@@ -19,6 +19,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(superadmin.router)
     app.include_router(panel.router)
+    app.include_router(publico.router)
     # Próximas tareas: public (portal, página de la barbería y reservas)
     return app
 
