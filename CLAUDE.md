@@ -215,7 +215,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 2. ✅ Esquema de base y migraciones (Alembic sobre Supabase), con datos de ejemplo (1 barbería, 3 barberos, 4 servicios)
 3. ✅ Auth del panel (admin y superadmin) con usuario y contraseña, y roles (backend; la pantalla de login va con el panel en la tarea 4)
 4. ABM de barberos, servicios y horarios
-5. Cálculo de horarios disponibles (con tests)
+5. ✅ Cálculo de horarios disponibles (con tests)
 6. Página pública de la barbería y flujo de reserva sin cuenta (nombre + teléfono, link privado)
 6b. Portal NavAgenda: buscador, mapa y "horarios libres de todas"
 7. Grilla por barbero con asistió / no asistió
