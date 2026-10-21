@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { api, ApiError } from '@/lib/api'
 import { NotFoundPage } from '@/routes/NotFoundPage'
-import { estiloBarberia, guardarTicket, horaAR, hoyMas, pesos } from './comun'
+import { estiloBarberia, guardarTicket, horaAR, hoyMas, pesos, tinta } from './comun'
 import { Led } from './Led'
 import { diaDe, Secciones, type Libre, type PaginaBarberia } from './Secciones'
 import './barberia.css'
@@ -62,7 +62,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   const elegirServicio = (id: string) => { if (barbero && !p.barberos.find((b) => b.id === barbero)?.servicio_ids.includes(id)) setBarbero(null); setServicio(id) }
   const palabras = p.nombre.split(/\s+/)
   return (
-    <div className="pb" style={estiloBarberia(p.color_acento)}>
+    <div className={`pb ${tinta(p.color_acento) === '#fffdf3' ? 'oscura' : ''}`} style={estiloBarberia(p.color_acento)}>
       <header className="pb-bar">
         <a href="/"><span className="mark">Nº</span>Turnos con NavAgenda</a>
       </header>

@@ -44,7 +44,7 @@ def cargar(db: Session) -> str | None:
     b = Barberia(
         nombre="Inspirationmen",
         slug=SLUG,
-        color_acento="#c9a46a",
+        color_acento="#0f0f0e",  # como su web (agus-martin-academy)
         direccion="Diagonal 74, frente a Oblicus Gym",
         ciudad="La Plata",
         horas_min_cancelacion=3,

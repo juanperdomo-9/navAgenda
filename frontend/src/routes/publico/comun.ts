@@ -13,7 +13,7 @@ function lum(hex: string) {
   const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
   return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
 }
-const tinta = (hex: string) => ((lum(hex) + 0.05) / (lum('#141210') + 0.05) >= (lum('#fffdf3') + 0.05) / (lum(hex) + 0.05) ? '#141210' : '#fffdf3')
+export const tinta = (hex: string) => ((lum(hex) + 0.05) / (lum('#141210') + 0.05) >= (lum('#fffdf3') + 0.05) / (lum(hex) + 0.05) ? '#141210' : '#fffdf3')
 
 /** Variables CSS del color de la barbería: su "rollo", la tinta que contrasta y la versión que se ve sobre el display. */
 export function estiloBarberia(hex: string): CSSProperties {

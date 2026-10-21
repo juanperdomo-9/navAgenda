@@ -99,6 +99,8 @@
 .pb .sec-h { font-weight: 900; font-stretch: 62%; text-transform: uppercase; line-height: .9; letter-spacing: -.02em; font-size: clamp(52px, 15vw, 170px); }
 .pb .sec-lede { margin-top: 12px; font: 600 17px/1.4 var(--type-archivo); max-width: 38ch; }
 .pb .banda { background: var(--ink); color: var(--paper); }
+/* Si la barbería eligió un fondo oscuro, las franjas negras se separan con un filete */
+.pb.oscura .banda { border-block: 3px solid var(--on-shop); }
 .pb .banda :focus-visible { outline-color: var(--roll); }
 
 .lineup { list-style: none; padding: 0; margin-top: 28px; border-bottom: 3px solid var(--on-shop); }
