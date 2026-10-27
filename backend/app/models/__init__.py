@@ -28,8 +28,8 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB, ExcludeConstraint
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
-from sqlalchemy.dialects.postgresql import ExcludeConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
@@ -264,6 +264,8 @@ class Turno(Base):
     beneficio_aplicado: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
+    # Lo que se cobró al marcar "asistió" (con el premio aplicado). Null = el precio.
+    cobrado: Mapped[int | None] = mapped_column(Integer)
     token_acceso_hash: Mapped[str | None] = mapped_column(Text, unique=True)
     origen: Mapped[str] = mapped_column(Text, nullable=False, server_default="web")
     creado_en: Mapped[datetime] = _creado_en()
@@ -318,6 +320,7 @@ class ReglaBeneficio(Base):
         ),
         CheckConstraint("cada_x_cortes >= 1", name="cada_x_positivo"),
         CheckConstraint(_in("tipo", TIPOS_BENEFICIO), name="tipo_valido"),
+        CheckConstraint("modo IN ('fijo', 'ruleta')", name="modo_valido"),
         CheckConstraint(
             "(tipo <> 'descuento_pct' OR valor BETWEEN 1 AND 100)"
             " AND (tipo <> 'descuento_monto' OR valor > 0)"
@@ -340,6 +343,33 @@ class ReglaBeneficio(Base):
     servicio_id: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True))
     descripcion: Mapped[str] = mapped_column(Text, nullable=False)
     activa: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+    creado_en: Mapped[datetime] = _creado_en()
+    # "fijo": siempre el mismo premio. "ruleta": al completar la tarjeta el cliente gira una
+    # ruleta con estos premios ([{"texto", "descuento_pct" 0..100}]), todos con la misma chance.
+    modo: Mapped[str] = mapped_column(Text, nullable=False, server_default="fijo")
+    ruleta: Mapped[list] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+
+
+class Giro(Base):
+    """Lo que le salió a un cliente en la ruleta. Se usa una vez, al aplicar el premio."""
+
+    __tablename__ = "giros"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["cliente_id", "barberia_id"],
+            ["clientes.id", "clientes.barberia_id"],
+            ondelete="CASCADE",
+        ),
+        CheckConstraint("descuento_pct BETWEEN 0 AND 100", name="descuento_valido"),
+    )
+
+    id: Mapped[UUID] = _id()
+    barberia_id: Mapped[UUID] = _barberia_fk()
+    cliente_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False)
+    premio: Mapped[str] = mapped_column(Text, nullable=False)
+    descuento_pct: Mapped[int] = mapped_column(Integer, nullable=False)
+    turno_id: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), ForeignKey("turnos.id"))
+    usado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     creado_en: Mapped[datetime] = _creado_en()
 
 

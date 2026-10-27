@@ -28,7 +28,7 @@ export function diaDe(iso: string) {
 }
 
 /** Horario de atención de la barbería: de qué hora a qué hora hay algún barbero, agrupando días iguales. */
-function atencion(p: PaginaBarberia) {
+export function atencion(p: PaginaBarberia) {
   const txt = DIAS.map((_, d) => {
     const ts = p.barberos.flatMap((b) => b.horarios).filter((t) => t.dia_semana === d)
     if (!ts.length) return 'Cerrado'

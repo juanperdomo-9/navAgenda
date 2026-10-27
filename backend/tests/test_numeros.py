@@ -13,7 +13,14 @@ def test_numeros_solo_cuenta_asistio(client, ins):  # noqa: F811
     assert n["servicios"] == [{"nombre": "Peinado y corte VIP", "veces": 1}]
     thiago = next(x for x in n["por_barbero"] if x["nombre"] == "Thiago")
     assert thiago["facturado"] == 20000
-    assert n["por_dia"] == [{"fecha": str(MANANA), "facturado": 20000}]
+    assert n["por_periodo"] == [{"clave": str(MANANA), "facturado": 20000}]
+    # Sin "desde": desde el primer turno (todo el historial); más de 2 meses se agrupa por mes
+    todo = client.get("/panel/numeros", params={"hasta": str(MANANA)}).json()
+    assert todo["facturado"] == 20000 and todo["desde"] == str(MANANA)
+    largo = client.get(
+        "/panel/numeros", params={"desde": "2026-01-01", "hasta": str(MANANA)}
+    ).json()
+    assert largo["agrupado"] == "mes" and largo["por_periodo"][0]["clave"] == "2026-01"
 
 
 def test_rango_invalido(client, ins):  # noqa: F811

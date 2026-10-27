@@ -229,8 +229,15 @@ def dar_de_baja_servicio(servicio_id: UUID, admin: Admin, db: DB) -> None:
 # ─── Tarjeta de cortes (regla de fidelidad) ───
 
 
+class PremioRuleta(BaseModel):
+    texto: str = Field(min_length=2, max_length=60)
+    descuento_pct: int = Field(ge=0, le=100)  # 100 = gratis; 0 = sin descuento (ej. un producto)
+
+
 class ReglaIn(BaseModel):
     cada_x_cortes: int = Field(ge=1, le=20)
+    modo: Literal["fijo", "ruleta"] = "fijo"
+    ruleta: list[PremioRuleta] = Field(default_factory=list, max_length=12)
     tipo: Literal["descuento_pct", "descuento_monto", "servicio_gratis", "texto"]
     valor: int | None = Field(default=None, ge=1, le=10_000_000)
     servicio_id: UUID | None = None
@@ -246,6 +253,8 @@ def _regla_out(r: ReglaBeneficio | None) -> dict | None:
         "valor": r.valor,
         "servicio_id": r.servicio_id,
         "descripcion": r.descripcion,
+        "modo": r.modo,
+        "ruleta": r.ruleta,
     }
 
 
@@ -263,6 +272,12 @@ def ver_regla(admin: Admin, db: DB):
 @router.put("/fidelidad")
 def cambiar_regla(datos: ReglaIn, admin: Admin, db: DB):
     """Reemplaza la regla activa (la anterior queda guardada, inactiva). Las tarjetas siguen."""
+    if datos.modo == "ruleta" and len(datos.ruleta) < 2:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "La ruleta necesita al menos 2 premios."
+        )
+    if datos.modo == "ruleta":  # los premios salen de la ruleta, no de tipo/valor
+        datos.tipo, datos.valor, datos.servicio_id = "texto", None, None
     if datos.tipo == "servicio_gratis":
         if not datos.servicio_id:
             raise HTTPException(
@@ -287,6 +302,8 @@ def cambiar_regla(datos: ReglaIn, admin: Admin, db: DB):
         valor=datos.valor if datos.tipo != "servicio_gratis" else None,
         servicio_id=datos.servicio_id if datos.tipo == "servicio_gratis" else None,
         descripcion=datos.descripcion.strip(),
+        modo=datos.modo,
+        ruleta=[p.model_dump() for p in datos.ruleta] if datos.modo == "ruleta" else [],
     )
     db.add(nueva)
     db.commit()

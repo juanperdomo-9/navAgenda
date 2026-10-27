@@ -92,3 +92,20 @@ def test_aislamiento_otra_barberia_no_ve_ni_marca(client, ins, db):
     assert client.get("/panel/agenda", params={"fecha": str(MANANA)}).json()["turnos"] == []
     assert client.post(f"/panel/turnos/{t}/asistio", json={}).status_code == 404
     assert manual(client, ins, 15).status_code == 404
+
+
+def test_turno_a_mano_solo_con_servicios_del_barbero(client, ins, db):
+    agus = db.scalar(select(Barbero).where(Barbero.nombre == "Agus Martín")).id
+    otro = db.scalar(select(Servicio).where(Servicio.nombre.like("Asesoramiento%"))).id
+    inicio = datetime.combine(MANANA, time(12), tzinfo=ZONA_AR).isoformat()
+    r = client.post(
+        "/panel/turnos",
+        json={
+            "barbero_id": str(agus),
+            "servicio_id": str(otro),
+            "inicio": inicio,
+            "nombre": "Juan",
+            "telefono": "221 456 7890",
+        },
+    )
+    assert r.status_code == 422

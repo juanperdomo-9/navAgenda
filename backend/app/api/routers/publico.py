@@ -25,6 +25,7 @@ from app.models import (
     Servicio,
     Turno,
 )
+from app.services import premios
 from app.services.disponibilidad import horarios_libres
 
 router = APIRouter(tags=["público"])
@@ -167,7 +168,12 @@ def pagina(slug: str, db: DB):
             {"id": s.id, "nombre": s.nombre, "precio": s.precio, "duracion_min": s.duracion_min}
             for s in servicios
         ],
-        "fidelidad": {"cada": regla.cada_x_cortes, "descripcion": regla.descripcion}
+        "fidelidad": {
+            "cada": regla.cada_x_cortes,
+            "descripcion": regla.descripcion,
+            "modo": "ruleta" if premios.es_ruleta(regla) else "fijo",
+            "ruleta": [p["texto"] for p in regla.ruleta] if premios.es_ruleta(regla) else [],
+        }
         if regla
         else None,
     }
@@ -307,6 +313,10 @@ def _ticket(db, t: Turno) -> dict:
             "descripcion": regla.descripcion,
             "cortes": fid.cortes_acumulados if fid else 0,
             "premios": fid.beneficios_disponibles if fid else 0,
+            "modo": "ruleta" if premios.es_ruleta(regla) else "fijo",
+            "ruleta": [p["texto"] for p in regla.ruleta] if premios.es_ruleta(regla) else [],
+            "puede_girar": premios.puede_girar(db, regla, fid),
+            "premio": premios.premio_pendiente(db, regla, fid),
         }
         if regla
         else None,
@@ -323,6 +333,23 @@ def _por_token(db, token: str) -> Turno:
 @router.get("/t/{token}")
 def ver_ticket(token: str, db: DB):
     return _ticket(db, _por_token(db, token))
+
+
+@router.post("/t/{token}/girar")
+def girar_ruleta(token: str, db: DB):
+    """El cliente gira la ruleta (una vez por premio ganado). El azar lo decide el servidor."""
+    t = _por_token(db, token)
+    regla = db.scalar(
+        select(ReglaBeneficio).where(
+            ReglaBeneficio.barberia_id == t.barberia_id, ReglaBeneficio.activa
+        )
+    )
+    fid = db.get(Fidelidad, t.cliente_id)
+    if not premios.puede_girar(db, regla, fid):
+        raise HTTPException(status.HTTP_409_CONFLICT, "No tenés una ruleta para girar.")
+    g, i = premios.girar(db, regla, fid)
+    db.commit()
+    return {"indice": i, "premio": g.premio, "ticket": _ticket(db, t)}
 
 
 @router.post("/t/{token}/cancelar")

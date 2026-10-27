@@ -4,13 +4,14 @@ import { Link, useParams } from 'react-router'
 import { api, ApiError } from '@/lib/api'
 import { estiloBarberia, fechaLarga, horaAR, pesos } from './comun'
 import { Cargando } from './Cargando'
+import { Ruleta } from './Ruleta'
 import './barberia.css'
 
 type Ticket = {
   estado: string; inicio: string; fin: string; precio: number; servicio: string; barbero: string; cliente: string
   barberia: { nombre: string; slug: string; color_acento: string; direccion: string | null; barrio: string | null; ciudad: string | null }
   se_puede_cancelar: boolean; cancelar_hasta: string
-  fidelidad: { cada: number; descripcion: string; cortes: number; premios: number } | null
+  fidelidad: { cada: number; descripcion: string; cortes: number; premios: number; modo: 'fijo' | 'ruleta'; ruleta: string[]; puede_girar: boolean; premio: string | null } | null
 }
 
 /** /t/:token — el ticket del turno (link privado): confirmación, cancelar, calendario y tarjeta de cortes. */
@@ -58,10 +59,14 @@ export function TicketPage() {
           </dl>
           {d.fidelidad && (
             <div className="fid">
-              {d.fidelidad.premios > 0 ? `¡Tenés un premio! ${d.fidelidad.descripcion}.` : `Cada corte tacha una tijera. ${d.fidelidad.descripcion}.`}
+              {d.fidelidad.premios > 0 ? (d.fidelidad.modo === 'ruleta' ? (d.fidelidad.puede_girar ? '¡Completaste la tarjeta! Girá la ruleta.' : `¡Tenés un premio! ${d.fidelidad.premio}.`) : `¡Tenés un premio! ${d.fidelidad.descripcion}.`) : `Cada corte tacha una tijera. ${d.fidelidad.descripcion}.`}
               <div className="tijeras" role="img" aria-label={`Llevás ${cortes} de ${d.fidelidad.cada} cortes`}>
                 {Array.from({ length: d.fidelidad.cada }, (_, i) => <i key={i} className={i < cortes ? 'x' : ''} />)}
               </div>
+              {d.fidelidad.modo === 'ruleta' && d.fidelidad.premios > 0 && (
+                <Ruleta token={token!} premios={d.fidelidad.ruleta} puedeGirar={d.fidelidad.puede_girar} premio={d.fidelidad.premio}
+                  onListo={() => qc.invalidateQueries({ queryKey: ['ticket', token] })} />
+              )}
             </div>
           )}
         </article>

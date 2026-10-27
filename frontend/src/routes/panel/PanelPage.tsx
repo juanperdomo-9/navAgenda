@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, ChartColumn, Contact, ExternalLink, Globe, LogOut, Scissors, Store, Users } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { CalendarDays, ChartColumn, Contact, ExternalLink, Globe, LogOut, Menu, Scissors, Store, Users, X } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { api, ApiError, type UsuarioPanel } from '@/lib/api'
 import { Agenda } from './Agenda'
@@ -9,7 +9,7 @@ import { Super } from './Super'
 import { Barberos, MiPagina, Servicios } from './Vistas'
 import './panel.css'
 
-type Config = { nombre: string; slug: string }
+type Config = { nombre: string; slug: string; direccion: string | null; barrio: string | null }
 const NAV = [['agenda', 'Agenda', CalendarDays], ['barberos', 'Barberos', Users], ['servicios', 'Servicios', Scissors], ['clientes', 'Clientes', Contact], ['numeros', 'Números', ChartColumn], ['pagina', 'Mi página', Globe]] as const
 type Vista = (typeof NAV)[number][0]
 
@@ -18,6 +18,9 @@ export function PanelPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [vista, setVista] = useState<Vista>('agenda')
+  const [menu, setMenu] = useState(false)
+  const hoja = useRef<HTMLDialogElement>(null)
+  useEffect(() => { if (menu) hoja.current?.showModal(); else hoja.current?.close() }, [menu])
   const yo = useQuery({ queryKey: ['yo'], queryFn: () => api<UsuarioPanel>('/auth/yo'), retry: false })
   const admin = yo.data?.rol === 'admin' && !yo.data.debe_cambiar_clave
   const cfg = useQuery({ queryKey: ['p-config'], queryFn: () => api<Config>('/panel/barberia'), enabled: admin })
@@ -46,14 +49,27 @@ export function PanelPage() {
         <div>
           <header className="cab">
             <b className="nombre cond">{nombre}</b>
-            <button type="button" className="ver-pagina" onClick={salir} style={{ background: 'none', cursor: 'pointer' }}>Salir</button>
+            <button type="button" className="hamb" onClick={() => setMenu(true)} aria-label="Abrir el menú" aria-expanded={menu}><Menu aria-hidden /></button>
           </header>
           {yo.data.debe_cambiar_clave ? <CambiarClave nombre={yo.data.nombre} onListo={() => qc.invalidateQueries({ queryKey: ['yo'] })} />
             : admin ? { agenda: <Agenda />, barberos: <Barberos />, servicios: <Servicios />, clientes: <Clientes />, numeros: <Numeros />, pagina: <MiPagina /> }[vista]
             : <Super />}
         </div>
       </div>
-      {admin && <nav className="abajo" aria-label="Panel" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>{NAV.map(([k, t, I]) => <a key={k} href="#" aria-current={vista === k ? 'page' : undefined} onClick={(e) => { e.preventDefault(); setVista(k); scrollTo(0, 0) }}><I className="i" aria-hidden />{k === 'pagina' ? 'Página' : t}</a>)}</nav>}
+      <dialog ref={hoja} className="menu-p" onClose={() => setMenu(false)} aria-label="Menú">
+        <div className="mp-cab"><b className="cond">{nombre}</b><button type="button" onClick={() => setMenu(false)} aria-label="Cerrar el menú"><X aria-hidden /></button></div>
+        <dl className="mp-datos">
+          {cfg.data?.direccion && <><dt>Dirección</dt><dd>{cfg.data.direccion}{cfg.data.barrio ? ` · ${cfg.data.barrio}` : ''}</dd></>}
+          {cfg.data && <><dt>Tu link</dt><dd>navagenda.com.ar/{cfg.data.slug}</dd></>}
+          <dt>Entraste como</dt><dd>{yo.data.nombre} ({yo.data.usuario})</dd>
+        </dl>
+        <nav aria-label="Secciones">
+          {yo.data.rol === 'superadmin' && !yo.data.debe_cambiar_clave && <a href="#" aria-current="page" onClick={(e) => { e.preventDefault(); setMenu(false) }}><Store className="i" aria-hidden />Barberías</a>}
+          {admin && NAV.map(([k, t, I]) => <a key={k} href="#" aria-current={vista === k ? 'page' : undefined} onClick={(e) => { e.preventDefault(); setVista(k); setMenu(false); scrollTo(0, 0) }}><I className="i" aria-hidden />{t}</a>)}
+          {cfg.data && <a href={`/${cfg.data.slug}`} target="_blank" rel="noopener"><ExternalLink className="i" aria-hidden />Ver mi página</a>}
+          <a href="#" className="salir" onClick={(e) => { e.preventDefault(); salir() }}><LogOut className="i" aria-hidden />Salir</a>
+        </nav>
+      </dialog>
     </div>
   )
 }

@@ -224,7 +224,9 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
 
 /* ═══ MI PÁGINA ═══ */
 type Config = { nombre: string; slug: string; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null }
-type Regla = { cada_x_cortes: number; tipo: string; valor: number | null; servicio_id: string | null; descripcion: string } | null
+type PremioRuleta = { texto: string; descuento_pct: number }
+type Regla = { cada_x_cortes: number; tipo: string; valor: number | null; servicio_id: string | null; descripcion: string; modo: 'fijo' | 'ruleta'; ruleta: PremioRuleta[] } | null
+const RULETA_INICIAL: PremioRuleta[] = [{ texto: 'Corte gratis', descuento_pct: 100 }, { texto: '50% de descuento', descuento_pct: 50 }, { texto: '20% de descuento', descuento_pct: 20 }, { texto: '10% de descuento', descuento_pct: 10 }]
 const PRESETS = ['#c9a46a', '#c47f57', '#d4a24c', '#1f3a5f', '#2f6b4f', '#7a1f2b', '#141210']
 function lum(hex: string) { const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] }
 const tinta = (hex: string) => ((lum(hex) + 0.05) / 0.0566 >= 1.03 / (lum(hex) + 0.05) ? '#141210' : '#fffdf3')
@@ -237,10 +239,10 @@ export function MiPagina() {
   const ss = useQuery({ queryKey: ['p-servicios'], queryFn: () => api<Servicio[]>('/panel/servicios') })
   const bs = useQuery({ queryKey: ['p-barberos'], queryFn: () => api<Barbero[]>('/panel/barberos') })
   const [f, setF] = useState<Config | null>(null)
-  const [r, setR] = useState({ cada: 5, tipo: 'servicio_gratis', valor: '', servicio: '', texto: '' })
+  const [r, setR] = useState({ cada: 5, tipo: 'servicio_gratis', valor: '', servicio: '', texto: '', modo: 'fijo' as 'fijo' | 'ruleta', ruleta: RULETA_INICIAL })
   const [msg, setMsg] = useState('')
   useEffect(() => { if (cfg.data && !f) setF(cfg.data) }, [cfg.data, f])
-  useEffect(() => { if (regla.isSuccess && ss.data) { const x = regla.data; setR({ cada: x?.cada_x_cortes ?? 5, tipo: x?.tipo ?? 'servicio_gratis', valor: x?.valor ? String(x.valor) : '', servicio: x?.servicio_id ?? ss.data.find((s) => s.activo)?.id ?? '', texto: x?.tipo === 'texto' ? x.descripcion : '' }) } }, [regla.isSuccess, regla.data, ss.data])
+  useEffect(() => { if (regla.isSuccess && ss.data) { const x = regla.data; setR({ cada: x?.cada_x_cortes ?? 5, tipo: x?.tipo ?? 'servicio_gratis', valor: x?.valor ? String(x.valor) : '', servicio: x?.servicio_id ?? ss.data.find((s) => s.activo)?.id ?? '', texto: x?.tipo === 'texto' && x.modo !== 'ruleta' ? x.descripcion : '', modo: x?.modo ?? 'fijo', ruleta: x?.ruleta?.length ? x.ruleta : RULETA_INICIAL }) } }, [regla.isSuccess, regla.data, ss.data])
   if (!f) return <main><p>Cargando…</p></main>
   const url = `navagenda.com.ar/${f.slug}`
   const serv = ss.data?.find((s) => s.id === r.servicio)
@@ -251,7 +253,11 @@ export function MiPagina() {
     if (!ok) return setMsg('Con ese color no se lee bien el texto. Probá otro.')
     try {
       await api('/panel/barberia', { method: 'PATCH', body: JSON.stringify({ nombre: f!.nombre, color_acento: f!.color_acento, direccion: f!.direccion, barrio: f!.barrio, descripcion: f!.descripcion, horas_min_cancelacion: f!.horas_min_cancelacion, lat: f!.lat, lng: f!.lng }) })
-      await api('/panel/fidelidad', { method: 'PUT', body: JSON.stringify({ cada_x_cortes: r.cada, tipo: r.tipo, valor: r.valor ? +r.valor : null, servicio_id: r.tipo === 'servicio_gratis' ? r.servicio : null, descripcion: `Cada ${r.cada} cortes: ${premio}` }) })
+      const ruleta = r.ruleta.filter((x) => x.texto.trim().length >= 2).map((x) => ({ texto: x.texto.trim(), descuento_pct: Math.max(0, Math.min(100, x.descuento_pct || 0)) }))
+      if (r.modo === 'ruleta' && ruleta.length < 2) return setMsg('La ruleta necesita al menos 2 premios con nombre.')
+      await api('/panel/fidelidad', { method: 'PUT', body: JSON.stringify(r.modo === 'ruleta'
+        ? { cada_x_cortes: r.cada, modo: 'ruleta', ruleta, tipo: 'texto', descripcion: `Cada ${r.cada} cortes, girás la ruleta` }
+        : { cada_x_cortes: r.cada, modo: 'fijo', tipo: r.tipo, valor: r.valor ? +r.valor : null, servicio_id: r.tipo === 'servicio_gratis' ? r.servicio : null, descripcion: `Cada ${r.cada} cortes: ${premio}` }) })
       qc.invalidateQueries({ queryKey: ['p-config'] }); qc.invalidateQueries({ queryKey: ['p-regla'] }); setMsg('Tu página se actualizó.')
     } catch (e) { setMsg(errMsg(e)) }
   }
@@ -278,12 +284,28 @@ export function MiPagina() {
             <label className="campo">Descripción<textarea maxLength={600} value={f.descripcion ?? ''} onChange={(e) => setF({ ...f, descripcion: e.target.value })} /></label>
             <label className="campo">Pueden cancelar hasta<select value={f.horas_min_cancelacion} onChange={(e) => setF({ ...f, horas_min_cancelacion: +e.target.value })}>{[0, 1, 2, 3, 6, 12, 24].map((h) => <option key={h} value={h}>{h ? `${h} h antes` : 'el último momento'}</option>)}</select></label></section>
           <section className="bloque"><h3 className="cond">Tarjeta de cortes</h3><p className="ayuda" style={{ marginTop: 10 }}>Así la ven tus clientes en su ticket: una tijera tachada por cada corte.</p>
+            <div className="periodo" role="group" aria-label="Tipo de premio" style={{ marginTop: 12 }}>
+              <button type="button" aria-pressed={r.modo === 'fijo'} onClick={() => setR({ ...r, modo: 'fijo' })}>Premio fijo</button>
+              <button type="button" aria-pressed={r.modo === 'ruleta'} onClick={() => setR({ ...r, modo: 'ruleta' })}>Ruleta</button>
+            </div>
+            {r.modo === 'ruleta' ? <>
+              <div className="regla">Cada <input type="number" min={1} max={20} value={r.cada} onChange={(e) => setR({ ...r, cada: Math.max(1, Math.min(20, +e.target.value || 1)) })} aria-label="Cantidad de cortes" /> cortes, gira la ruleta.</div>
+              <p className="ayuda">Todos los premios tienen la misma chance. El % de descuento es para tus números (100 = gratis, 0 = un regalo sin descuento).</p>
+              <ul className="ruleta-ed">{r.ruleta.map((p, i) => (
+                <li key={i}>
+                  <input value={p.texto} maxLength={60} placeholder="Ej.: Cera de regalo" aria-label={`Premio ${i + 1}`} onChange={(e) => setR({ ...r, ruleta: r.ruleta.map((x, j) => (j === i ? { ...x, texto: e.target.value } : x)) })} />
+                  <label><input type="number" min={0} max={100} value={p.descuento_pct} aria-label={`Descuento del premio ${i + 1}`} onChange={(e) => setR({ ...r, ruleta: r.ruleta.map((x, j) => (j === i ? { ...x, descuento_pct: Math.max(0, Math.min(100, +e.target.value || 0)) } : x)) })} />%</label>
+                  <button type="button" className="quitar" disabled={r.ruleta.length <= 2} onClick={() => setR({ ...r, ruleta: r.ruleta.filter((_, j) => j !== i) })} aria-label={`Quitar ${p.texto || 'premio'}`}><X className="i" aria-hidden /></button>
+                </li>))}</ul>
+              {r.ruleta.length < 12 && <button type="button" className="link" onClick={() => setR({ ...r, ruleta: [...r.ruleta, { texto: '', descuento_pct: 0 }] })}><Plus className="i" aria-hidden />Agregar premio</button>}
+            </> : <>
             <div className="regla">Cada <input type="number" min={1} max={20} value={r.cada} onChange={(e) => setR({ ...r, cada: Math.max(1, Math.min(20, +e.target.value || 1)) })} aria-label="Cantidad de cortes" /> cortes,
               <select value={r.tipo} onChange={(e) => setR({ ...r, tipo: e.target.value })} aria-label="Tipo de premio"><option value="servicio_gratis">un servicio gratis</option><option value="descuento_pct">un % de descuento</option><option value="descuento_monto">un descuento en $</option><option value="texto">otro premio</option></select>
               {r.tipo === 'servicio_gratis' ? <select value={r.servicio} onChange={(e) => setR({ ...r, servicio: e.target.value })} aria-label="Qué servicio">{(ss.data ?? []).filter((s) => s.activo).map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}</select>
                 : r.tipo === 'texto' ? <input style={{ width: 220 }} placeholder="Ej.: una cerveza" value={r.texto} onChange={(e) => setR({ ...r, texto: e.target.value })} />
                 : <input type="number" min={1} placeholder={r.tipo === 'descuento_pct' ? '%' : '$'} value={r.valor} onChange={(e) => setR({ ...r, valor: e.target.value })} aria-label="Valor" />}</div>
-            <div className="tarjeta" role="img" aria-label={`Ejemplo: 2 de ${r.cada} cortes para ${premio}`}>{Array.from({ length: r.cada }, (_, i) => <span key={i} className={`tijera ${i < Math.min(2, r.cada - 1) ? 'x' : ''}`} />)}<span className="premio">{premio}</span></div></section>
+            </>}
+            <div className="tarjeta" role="img" aria-label={`Ejemplo: 2 de ${r.cada} cortes para ${premio}`}>{Array.from({ length: r.cada }, (_, i) => <span key={i} className={`tijera ${i < Math.min(2, r.cada - 1) ? 'x' : ''}`} />)}<span className="premio">{r.modo === 'ruleta' ? 'Ruleta' : premio}</span></div></section>
           {msg && <p role="status" className="vacio" style={{ padding: 12 }}>{msg}</p>}
           <button type="button" className="btn" style={{ justifySelf: 'start' }} onClick={guardar}>Guardar cambios</button>
         </div>

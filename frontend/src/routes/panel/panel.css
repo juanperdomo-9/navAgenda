@@ -290,3 +290,35 @@ main { padding: 24px var(--g) 110px; max-width: 1180px; width: 100%; display: gr
 
 }
 .pa select option { color: #141210; background: #fffdf3; }
+/* Números: navegar el historial (día, semana, mes, todo) */
+.nav-periodo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 12px; }
+.nav-periodo b { font: 800 17px 'Archivo'; }
+.nav-periodo .flecha { width: 44px; height: 44px; border: 2px solid var(--ink); border-radius: 6px; background: var(--papel); font: 900 22px/1 'Archivo'; cursor: pointer; }
+.nav-periodo .flecha:disabled { opacity: .35; cursor: default; }
+.nav-periodo input[type="date"] { min-height: 44px; padding: 0 10px; border: 2px solid var(--linea-fuerte); border-radius: 6px; background: var(--papel); font: 700 15px 'Archivo'; }
+/* Mi página: premios de la ruleta */
+.ruleta-ed { list-style: none; padding: 0; margin-top: 12px; display: grid; gap: 8px; }
+.ruleta-ed li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.ruleta-ed input { min-height: 44px; padding: 0 10px; border: 2px solid var(--linea-fuerte); border-radius: 6px; background: var(--papel); font: 600 16px 'Archivo'; min-width: 0; width: 100%; }
+.ruleta-ed label { display: flex; align-items: center; gap: 4px; font: 800 15px 'Archivo'; }
+.ruleta-ed label input { width: 72px; }
+.ruleta-ed .quitar:disabled { opacity: .3; }
+/* Menú hamburguesa (celular): datos de la barbería + secciones */
+.abajo { display: none !important; }
+.hamb { width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid var(--borde-d); border-radius: 8px; background: none; color: var(--warm); cursor: pointer; }
+.hamb svg { width: 24px; height: 24px; }
+@media (min-width: 960px) { .hamb { display: none; } }
+.menu-p { border: 0; padding: 0; margin: 0 0 0 auto; width: min(340px, 88vw); max-width: none; height: 100dvh; max-height: none; background: var(--screen); color: var(--warm); }
+.menu-p::backdrop { background: #141210b3; }
+.mp-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 14px 14px 18px; border-bottom: 1px solid var(--borde-d); }
+.mp-cab b { font-size: 28px; line-height: .9; }
+.mp-cab button { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; color: var(--warm-2); cursor: pointer; }
+.mp-datos { margin: 0; padding: 14px 18px; display: grid; gap: 2px; border-bottom: 1px solid var(--borde-d); }
+.mp-datos dt { font: 800 11px 'Archivo'; font-stretch: 75%; letter-spacing: .12em; text-transform: uppercase; color: var(--warm-2); margin-top: 8px; }
+.mp-datos dd { margin: 0; font: 600 15px/1.35 'Archivo'; color: var(--warm); overflow-wrap: anywhere; }
+.menu-p nav { display: grid; gap: 2px; padding: 10px; }
+.menu-p nav a { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 12px; border-radius: 6px; color: var(--warm-2); text-decoration: none; font: 700 16px 'Archivo'; }
+.menu-p nav a[aria-current="page"] { background: var(--roll); color: var(--ink); }
+.menu-p nav a:focus-visible { outline: 3px solid var(--roll); outline-offset: -3px; }
+.menu-p nav .salir { margin-top: 10px; border-top: 1px solid var(--borde-d); border-radius: 0; }
+main { padding-bottom: 48px; }

@@ -225,3 +225,63 @@
 .cargando-maq small { display: block; margin-top: 8px; font: 500 14px/1.4 var(--type-archivo); color: #cdbfae; }
 @keyframes titila { 50% { opacity: .15; } }
 @media (prefers-reduced-motion: reduce) { .cargando-maq .led path:nth-child(7) { animation: none; } }
+
+/* Ruleta de premios (en el ticket) */
+.ruleta { margin-top: 16px; display: grid; justify-items: center; gap: 14px; }
+.ruleta-rueda { position: relative; width: min(260px, 72vw); aspect-ratio: 1; }
+.ruleta-rueda svg { width: 100%; height: 100%; display: block; }
+.ruleta-flecha { position: absolute; top: -6px; left: 50%; z-index: 1; translate: -50% 0; width: 0; height: 0;
+  border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 22px solid #ff2b1c; filter: drop-shadow(0 2px 0 #141210); }
+.ruleta-btn { min-height: 52px; padding: 0 22px; border: 2px solid #141210; border-radius: 4px; background: #f6d13a; color: #141210; cursor: pointer;
+  font: 900 20px var(--type-archivo); font-stretch: 70%; text-transform: uppercase; }
+.ruleta-btn:disabled { opacity: .7; cursor: default; }
+.ruleta-res { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.ruleta-res .sello { display: inline-block; padding: 6px 12px 5px; border: 2.5px solid #141210; background: #f6d13a; color: #141210; transform: rotate(-3deg);
+  font: 900 18px var(--type-archivo); font-stretch: 70%; text-transform: uppercase; letter-spacing: .04em; }
+.ruleta-res small { font: 500 14px/1.35 var(--type-archivo); }
+.ruleta .error { color: #9e2a1c; font: 600 14px var(--type-archivo); }
+
+/* ─── Navbar de la barbería: su nombre + menú con datos, barberos y secciones ─── */
+.pb-nav { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 16px; background: var(--shop); border-bottom: 2px solid var(--on-shop); }
+.pb-marca { min-height: 44px; display: inline-flex; align-items: center; color: var(--on-shop); text-decoration: none; font-size: 22px; line-height: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pb-hamb { width: 48px; height: 48px; flex: none; display: grid; place-items: center; border: 2px solid var(--on-shop); border-radius: 8px; background: none; color: var(--on-shop); cursor: pointer; }
+.pb-hamb svg { width: 24px; height: 24px; }
+.pb-menu { border: 0; padding: 0 0 24px; margin: 0 0 0 auto; width: min(360px, 90vw); max-width: none; height: 100dvh; max-height: none; overflow-y: auto;
+  background: #120c0b; color: #f3e9dc; font-family: var(--type-archivo); }
+.pb-menu::backdrop { background: #141210b3; }
+.pb-menu :focus-visible { outline: 3px solid #f6d13a; outline-offset: -3px; }
+.bm-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 14px 14px 18px; border-bottom: 1px solid #ffffff1f; }
+.bm-cab b { font-size: 30px; line-height: .9; }
+.bm-cab button { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; color: #cdbfae; cursor: pointer; }
+.bm-datos { padding: 14px 18px; border-bottom: 1px solid #ffffff1f; display: grid; gap: 10px; }
+.bm-datos a { display: flex; gap: 8px; align-items: flex-start; color: #f3e9dc; font: 700 15px/1.35 var(--type-archivo); text-underline-offset: 3px; }
+.bm-datos .i { width: 1.1em; height: 1.1em; flex: none; margin-top: 2px; }
+.bm-datos dl, .pb-pie dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; font: 600 14px var(--type-archivo); }
+.bm-datos dd, .pb-pie dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.bm-tit { padding: 14px 18px 4px; font: 800 11px var(--type-archivo); font-stretch: 75%; letter-spacing: .14em; text-transform: uppercase; color: #ff8a80; }
+.bm-barberos { list-style: none; margin: 0; padding: 0 10px; display: grid; gap: 4px; }
+.bm-barberos button { width: 100%; display: grid; gap: 2px; padding: 10px 10px; border: 0; border-radius: 6px; background: none; color: inherit; text-align: left; cursor: pointer; }
+.bm-barberos button:hover { background: #ffffff10; }
+.bm-barberos b { font: 900 22px/1 var(--type-archivo); font-stretch: 62%; text-transform: uppercase; }
+.bm-barberos span { font: 500 13px/1.35 var(--type-archivo); color: #cdbfae; }
+.pb-menu nav { display: grid; padding: 10px; margin-top: 8px; border-top: 1px solid #ffffff1f; }
+.pb-menu nav a { min-height: 48px; display: flex; align-items: center; padding: 0 10px; border-radius: 6px; color: #f3e9dc; text-decoration: none; font: 700 16px var(--type-archivo); }
+.pb-menu nav a:hover { background: #ffffff10; }
+.bm-nav { display: flex; align-items: center; min-height: 44px; margin: 6px 20px 0; color: #cdbfae; font: 600 14px var(--type-archivo); }
+
+/* ─── Pie de la barbería ─── */
+.pb-pie { background: #120c0b; color: #f3e9dc; padding: 36px 16px 28px; display: grid; gap: 24px; font-family: var(--type-archivo); }
+.pb-pie > * { width: 100%; max-width: 1200px; margin: 0 auto; }
+.pb-pie b.cond { display: block; font-size: 36px; line-height: .9; }
+.pb-pie > div > p { margin: 8px 0 14px; font: 600 15px/1.4 var(--type-archivo); color: #cdbfae; }
+.pb-pie dl { max-width: 320px; }
+.pb-pie ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.pb-pie ul a { min-height: 44px; display: inline-flex; align-items: center; color: #f3e9dc; font: 700 15px var(--type-archivo); text-underline-offset: 4px; }
+.pb-pie :focus-visible { outline: 3px solid #f6d13a; outline-offset: 2px; }
+.pb-legal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; padding-top: 16px; border-top: 1px solid #ffffff1f; font: 500 13px var(--type-archivo); color: #cdbfae; }
+.pb-legal a { color: #f3e9dc; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; text-underline-offset: 3px; }
+.pb-legal .mark { background: #f6d13a; color: #141210; padding: 3px 5px; font: 900 10px var(--type-archivo); font-stretch: 62%; }
+@media (min-width: 960px) { .pb-nav { padding: 10px 32px; } .pb-pie { padding: 48px 32px 32px; } }
+.pb-nav + .pb-hero { padding-top: 22px; }

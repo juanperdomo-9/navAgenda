@@ -11,7 +11,17 @@ from sqlalchemy.exc import IntegrityError
 from app.api.deps import DB, Admin
 from app.api.routers.publico import normalizar_telefono
 from app.core.tz import ZONA_AR
-from app.models import Barbero, Bloqueo, Cliente, Fidelidad, ReglaBeneficio, Servicio, Turno
+from app.models import (
+    Barbero,
+    BarberoServicio,
+    Bloqueo,
+    Cliente,
+    Fidelidad,
+    ReglaBeneficio,
+    Servicio,
+    Turno,
+)
+from app.services import premios
 
 router = APIRouter(prefix="/panel", tags=["agenda"])
 
@@ -48,21 +58,23 @@ def _turno(db, admin, turno_id: UUID) -> Turno:
 def _out(db, t: Turno, regla) -> dict:
     c, s = db.get(Cliente, t.cliente_id), db.get(Servicio, t.servicio_id)
     f = db.get(Fidelidad, c.id)
-    cortes, premios = (f.cortes_acumulados, f.beneficios_disponibles) if f else (0, 0)
+    cortes, disponibles = (f.cortes_acumulados, f.beneficios_disponibles) if f else (0, 0)
     return {
         "id": t.id,
         "barbero_id": t.barbero_id,
         "inicio": t.inicio,
         "fin": t.fin,
         "precio": t.precio,
+        "cobrado": t.cobrado if t.cobrado is not None else t.precio,
         "estado": t.estado,
         "beneficio_aplicado": t.beneficio_aplicado,
         "origen": t.origen,
         "servicio": s.nombre,
         "cliente": {"nombre": c.nombre, "telefono": c.telefono},
         # Para el sello en la grilla: tiene el premio, o con este corte completa la tarjeta
-        "tiene_premio": premios > 0,
-        "completa_tarjeta": bool(regla) and premios == 0 and cortes == regla.cada_x_cortes - 1,
+        "tiene_premio": disponibles > 0,
+        "premio": premios.premio_pendiente(db, regla, f),
+        "completa_tarjeta": bool(regla) and disponibles == 0 and cortes == regla.cada_x_cortes - 1,
         "cortes": cortes,
     }
 
@@ -123,8 +135,7 @@ def asistio(turno_id: UUID, datos: Asistencia, admin: Admin, db: DB):
             raise HTTPException(
                 status.HTTP_409_CONFLICT, "Ese cliente no tiene un premio disponible."
             )
-        f.beneficios_disponibles -= 1
-        t.beneficio_aplicado = True
+        premios.aplicar(db, regla, f, t)
     elif regla:
         f.cortes_acumulados += 1
         if f.cortes_acumulados >= regla.cada_x_cortes:
@@ -154,8 +165,7 @@ def corregir(turno_id: UUID, admin: Admin, db: DB):
     regla, f = _regla(db, admin.barberia_id), _fid(db, db.get(Cliente, t.cliente_id))
     if t.estado == "asistio":
         if t.beneficio_aplicado:
-            f.beneficios_disponibles += 1
-            t.beneficio_aplicado = False
+            premios.deshacer(db, f, t)
         elif regla:
             if f.cortes_acumulados > 0:
                 f.cortes_acumulados -= 1
@@ -187,6 +197,11 @@ def turno_a_mano(datos: TurnoManual, admin: Admin, db: DB):
     )
     if not barbero or not servicio:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe ese barbero o servicio.")
+    if not db.get(BarberoServicio, (barbero.id, servicio.id)):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"{barbero.nombre.split(' ')[0]} no hace {servicio.nombre}.",
+        )
     tel = normalizar_telefono(datos.telefono)
     if not tel:
         raise HTTPException(

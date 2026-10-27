@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { api, ApiError } from '@/lib/api'
 import { NotFoundPage } from '@/routes/NotFoundPage'
 import { estiloBarberia, guardarTicket, horaAR, hoyMas, pesos, tinta } from './comun'
 import { Led } from './Led'
 import { diaDe, Secciones, type Libre, type PaginaBarberia } from './Secciones'
+import { Barra, PieBarberia } from './Barra'
 import { Cargando } from './Cargando'
 import './barberia.css'
 
@@ -63,9 +64,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   const palabras = p.nombre.split(/\s+/)
   return (
     <div className={`pb ${tinta(p.color_acento) === '#fffdf3' ? 'oscura' : ''}`} style={estiloBarberia(p.color_acento)}>
-      <header className="pb-bar">
-        <a href="/"><span className="mark">Nº</span>Turnos con NavAgenda</a>
-      </header>
+      <Barra p={p} onBarbero={setBarbero} />
       <main className="pb-hero">
         <h1 className="cond" style={{ ['--largo' as string]: Math.max(5, ...palabras.map((x) => x.length)), ['--largo-total' as string]: Math.max(8, p.nombre.length) }}>{p.nombre}</h1>
         <div className="pb-datos">
@@ -75,7 +74,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
             </a>
           )}
         </div>
-        <section className="maq" aria-label="Sacá tu turno" ref={maq}>
+        <section className="maq" id="turno" aria-label="Sacá tu turno" ref={maq}>
           {barbero && (
             <p className="con-quien">Con {p.barberos.find((b) => b.id === barbero)?.nombre}
               <button type="button" onClick={() => setBarbero(null)}>Ver con todos</button></p>
@@ -105,7 +104,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
             onListo={(token) => { guardarTicket(token); navigate(`/t/${token}`) }} onCerrar={() => setElegido(null)} />
         )}
       </dialog>
-      <p className="pb-bar" style={{ justifyContent: 'center' }}><Link to="/">NavAgenda</Link></p>
+      <PieBarberia p={p} />
     </div>
   )
 }

@@ -197,7 +197,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Crear el superadmin: `cd backend && uv run python -m app.cli crear-superadmin <usuario> "<nombre>"` (pide la clave)
 
 ## Estado actual y próximos pasos (actualizado 2026-10-21)
-- **Backend listo para salir** (116 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
+- **Backend listo para salir** (125 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
   horarios libres cada 30 min, API pública (`/p/{slug}`, `/p/{slug}/libres`, `/p/{slug}/turnos`, `/t/{token}`),
   agenda (`/panel/agenda`, asistió/no vino con tarjeta de cortes, corregir, turno a mano), clientes y números.
   Primera barbería real: `uv run python -m app.cli cargar-inspirationmen`.
@@ -222,7 +222,15 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Portal `/`: próximo libre, "Cerca tuyo" (mapa de todas + "Usar mi ubicación" ordena por cercanía), listado de todas
   las barberías con filtro, "¿Tenés una barbería?" → `/sumar` (formulario → solicitudes en el panel del superadmin,
   con "Crear barbería" precargado) y pie con crédito a jpweb.com.ar.
-- **Pendiente**: Inspirationmen tiene que marcar su ubicación en Mi página. Publicar (repo en GitHub → DEPLOY.md).
+- **Ruleta de premios** (2026-10-27): cada barbería elige en Mi página premio fijo o ruleta (2 a 12 premios con
+  texto + % de descuento, misma chance). El cliente gira desde su ticket (`POST /t/{token}/girar`, azar del servidor con
+  `secrets`); lo que sale queda en `giros` y se usa al marcar "asistió" con premio (si no giró, se gira ahí).
+  Lo cobrado se guarda en `turnos.cobrado` y es lo que suma Números.
+- Números: día, semana, mes o todo (desde el primer turno), navegando hacia atrás; más de 2 meses se agrupa por mes.
+- Panel en el celular con menú hamburguesa (datos de la barbería + secciones). Página de la barbería con navbar
+  (menú con datos, horario y barberos) y pie con "Diseño web: jpweb.com.ar".
+- Publicado en Render (deploy automático al pushear a main). GitHub Actions despierta la API cada 10 min.
+- **Pendiente**: Inspirationmen tiene que marcar su ubicación en Mi página.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

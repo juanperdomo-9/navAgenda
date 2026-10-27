@@ -5,7 +5,7 @@ import { api, ApiError } from '@/lib/api'
 import { MAPA, SEG } from '../publico/Led'
 
 type Cliente = { id: string; nombre: string; telefono: string; bloqueado: boolean; visitas: number; ausencias: number; premios_usados: number; cortes: number; premios: number }
-type Numeros = { facturado: number; cortes: number; ausencias: number; premios: number; por_barbero: { id: string; nombre: string; facturado: number; cortes: number }[]; servicios: { nombre: string; veces: number }[]; por_dia: { fecha: string; facturado: number }[] }
+type Numeros = { facturado: number; cortes: number; ausencias: number; premios: number; por_barbero: { id: string; nombre: string; facturado: number; cortes: number }[]; servicios: { nombre: string; veces: number }[]; desde: string; hasta: string; agrupado: 'dia' | 'mes'; por_periodo: { clave: string; facturado: number }[] }
 
 const ZONA = 'America/Argentina/Buenos_Aires'
 const pesos = (n: number) => '$ ' + n.toLocaleString('es-AR')
@@ -63,57 +63,82 @@ export function Clientes() {
 
 const hoyAR = () => new Date().toLocaleDateString('en-CA', { timeZone: ZONA })
 const sumar = (f: string, d: number) => { const x = new Date(f + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() + d); return x.toISOString().slice(0, 10) }
-function rango(p: 'hoy' | 'semana' | 'mes'): [string, string] {
+const finDeMes = (ini: string) => sumar(sumar(ini, 32).slice(0, 8) + '01', -1)
+const mesMas = (ini: string, n: number) => { const [a, m] = ini.split('-').map(Number); const t = a * 12 + m - 1 + n; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}-01` }
+type Periodo = 'dia' | 'semana' | 'mes' | 'todo'
+/** Rango del período, `off` períodos para atrás (0 = el actual). "todo" = desde el primer turno. */
+function rango(p: Periodo, off: number, dia: string): [string | null, string] {
   const h = hoyAR()
-  if (p === 'hoy') return [h, h]
-  if (p === 'semana') { const l = sumar(h, -((new Date(h + 'T12:00:00Z').getUTCDay() + 6) % 7)); return [l, sumar(l, 6)] }
-  const ini = h.slice(0, 8) + '01'
-  return [ini, sumar(sumar(ini, 32).slice(0, 8) + '01', -1)]
+  if (p === 'dia') return [dia, dia]
+  if (p === 'semana') { const l = sumar(h, -((new Date(h + 'T12:00:00Z').getUTCDay() + 6) % 7) - 7 * off); return [l, sumar(l, 6)] }
+  if (p === 'mes') { const ini = mesMas(h.slice(0, 8) + '01', -off); return [ini, finDeMes(ini)] }
+  return [null, h]
+}
+const fecha = (f: string, o: Intl.DateTimeFormatOptions) => new Date(f + 'T12:00:00Z').toLocaleDateString('es-AR', { timeZone: 'UTC', ...o })
+function titulo(p: Periodo, desde: string | null, hasta: string) {
+  if (p === 'dia') { const t = hasta === hoyAR() ? 'Hoy · ' : ''; return t + fecha(hasta, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }
+  if (p === 'semana') return `Semana del ${fecha(desde!, { day: 'numeric', month: 'short' })} al ${fecha(hasta, { day: 'numeric', month: 'short', year: 'numeric' })}`
+  if (p === 'mes') { const t = fecha(desde!, { month: 'long', year: 'numeric' }); return t[0].toUpperCase() + t.slice(1) }
+  return desde ? `Desde el ${fecha(desde, { day: 'numeric', month: 'long', year: 'numeric' })}` : 'Desde el primer turno'
 }
 const DIA = ['D', 'L', 'M', 'X', 'J', 'V', 'S']
+const MES = ['E', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
 /** Primer nombre, con la inicial del apellido si se repite ("Agus M."). */
 const nombreCorto = (n: string, todos: string[]) => { const [p, a] = n.split(' '); return a && todos.filter((x) => x.split(' ')[0] === p).length > 1 ? `${p} ${a[0]}.` : p }
 
 export function Numeros() {
-  const [periodo, setPeriodo] = useState<'hoy' | 'semana' | 'mes'>('hoy')
+  const [periodo, setPeriodo] = useState<Periodo>('dia')
+  const [off, setOff] = useState(0)
+  const [dia, setDia] = useState(hoyAR())
   const [barbero, setBarbero] = useState('')
-  const [desde, hasta] = rango(periodo)
+  const [desde, hasta] = rango(periodo, off, dia)
   const bs = useQuery({ queryKey: ['p-barberos'], queryFn: () => api<{ id: string; nombre: string; activo: boolean }[]>('/panel/barberos') })
   const n = useQuery({
     queryKey: ['p-numeros', desde, hasta, barbero],
-    queryFn: () => api<Numeros>(`/panel/numeros?desde=${desde}&hasta=${hasta}${barbero ? `&barbero_id=${barbero}` : ''}`),
+    queryFn: () => api<Numeros>(`/panel/numeros?hasta=${hasta}${desde ? `&desde=${desde}` : ''}${barbero ? `&barbero_id=${barbero}` : ''}`),
   })
   const P = n.data
   const tasa = P && P.cortes + P.ausencias ? Math.round((P.ausencias / (P.cortes + P.ausencias)) * 100) : 0
   const maxB = Math.max(1, ...(P?.por_barbero ?? []).map((x) => x.facturado))
   const maxS = Math.max(1, ...(P?.servicios ?? []).map((x) => x.veces))
-  const maxD = Math.max(1, ...(P?.por_dia ?? []).map((x) => x.facturado))
+  const maxD = Math.max(1, ...(P?.por_periodo ?? []).map((x) => x.facturado))
   const quien = barbero ? nombreCorto(bs.data?.find((b) => b.id === barbero)?.nombre ?? '', (bs.data ?? []).map((b) => b.nombre)) : ''
+  const actual = periodo === 'dia' ? dia === hoyAR() : off === 0
+  const mover = (d: number) => (periodo === 'dia' ? setDia(sumar(dia, -d)) : setOff(Math.max(0, off + d)))
+  const etiqueta = (k: string) => P?.agrupado === 'mes' ? MES[+k.slice(5, 7) - 1] : periodo === 'semana' ? DIA[new Date(k + 'T12:00:00Z').getUTCDay()] : (+k.slice(8) % 5 === 1 ? String(+k.slice(8)) : ' ')
+  const marca = (k: string) => (P?.agrupado === 'mes' ? k === hoyAR().slice(0, 7) : k === hoyAR())
 
   return (
     <main>
       <div className="titulo"><h1 className="cond">Números</h1>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-          <div className="periodo" role="group" aria-label="Período">{([['hoy', 'Hoy'], ['semana', 'Semana'], ['mes', 'Mes']] as const).map(([k, t]) => <button key={k} type="button" aria-pressed={k === periodo} onClick={() => setPeriodo(k)}>{t}</button>)}</div>
+          <div className="periodo" role="group" aria-label="Período">{([['dia', 'Día'], ['semana', 'Semana'], ['mes', 'Mes'], ['todo', 'Todo']] as const).map(([k, t]) => <button key={k} type="button" aria-pressed={k === periodo} onClick={() => { setPeriodo(k); setOff(0) }}>{t}</button>)}</div>
           <label className="campo" style={{ margin: 0 }}><span className="sr-only">Barbero</span>
             <select value={barbero} onChange={(e) => setBarbero(e.target.value)} style={{ minHeight: 44 }}>
               <option value="">Todos los barberos</option>
               {(bs.data ?? []).filter((b) => b.activo).map((b) => <option key={b.id} value={b.id}>{b.nombre}</option>)}
             </select></label>
         </div>
-        <p>Solo cuenta lo que se cobró: turnos marcados "Asistió".</p></div>
+        <div className="nav-periodo">
+          {periodo !== 'todo' && <button type="button" className="flecha" onClick={() => mover(1)} aria-label="Período anterior">‹</button>}
+          <b aria-live="polite">{titulo(periodo, P?.desde ?? desde, hasta)}</b>
+          {periodo !== 'todo' && <button type="button" className="flecha" onClick={() => mover(-1)} disabled={actual} aria-label="Período siguiente">›</button>}
+          {periodo === 'dia' && <label><span className="sr-only">Elegir día</span><input type="date" value={dia} max={hoyAR()} onChange={(e) => e.target.value && setDia(e.target.value)} /></label>}
+          {!actual && periodo !== 'todo' && <button type="button" className="link" onClick={() => { setOff(0); setDia(hoyAR()) }}>Volver a hoy</button>}
+        </div>
+        <p>Solo cuenta lo que se cobró: turnos marcados "Asistió" (con el descuento del premio, si lo hubo).</p></div>
       {!P ? <p>{n.isError ? 'No pudimos traer los números.' : 'Cargando…'}</p> : <>
         <div className="facturado" role="img" aria-label={`Facturado: ${pesos(P.facturado)}`}>
-          <small>{quien ? `${quien} facturó` : 'Facturado'} {periodo === 'hoy' ? 'hoy' : periodo === 'semana' ? 'esta semana' : 'este mes'}</small>
+          <small>{quien ? `${quien} facturó` : 'Facturado'}</small>
           <div className="monto"><span>$</span><Seg txt={P.facturado.toLocaleString('es-AR')} /></div>
           <p>{P.cortes} {P.cortes === 1 ? 'corte' : 'cortes'} · {tasa}% no vino · ticket promedio {pesos(P.cortes ? Math.round(P.facturado / P.cortes) : 0)}{P.premios ? ` · ${P.premios} ${P.premios === 1 ? 'premio' : 'premios'}` : ''}</p>
         </div>
-        {periodo !== 'hoy' && (
-          <section className="bloque" style={{ marginTop: 26 }}><h3 className="cond">Día por día</h3>
-            <div role="img" aria-label="Facturado por día" style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120, marginTop: 12 }}>
-              {P.por_dia.map((d) => <span key={d.fecha} title={`${d.fecha.slice(8)}/${d.fecha.slice(5, 7)}: ${pesos(d.facturado)}`} style={{ flex: 1, display: 'grid', gap: 4, alignContent: 'end', height: '100%', textAlign: 'center', font: '700 11px Archivo' }}>
-                <i style={{ display: 'block', height: `${(d.facturado / maxD) * 96}px`, minHeight: 2, background: d.fecha === hoyAR() ? 'var(--led)' : 'var(--ink)' }} />
-                {periodo === 'semana' ? DIA[new Date(d.fecha + 'T12:00:00Z').getUTCDay()] : +d.fecha.slice(8) % 5 === 1 ? +d.fecha.slice(8) : ' '}
+        {periodo !== 'dia' && P.por_periodo.length > 1 && (
+          <section className="bloque" style={{ marginTop: 26 }}><h3 className="cond">{P.agrupado === 'mes' ? 'Mes por mes' : 'Día por día'}</h3>
+            <div role="img" aria-label={P.agrupado === 'mes' ? 'Facturado por mes' : 'Facturado por día'} style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120, marginTop: 12 }}>
+              {P.por_periodo.map((d) => <span key={d.clave} title={`${d.clave}: ${pesos(d.facturado)}`} style={{ flex: 1, display: 'grid', gap: 4, alignContent: 'end', height: '100%', textAlign: 'center', font: '700 11px Archivo' }}>
+                <i style={{ display: 'block', height: `${(d.facturado / maxD) * 96}px`, minHeight: 2, background: marca(d.clave) ? 'var(--led)' : 'var(--ink)' }} />
+                {etiqueta(d.clave)}
               </span>)}
             </div></section>)}
         <div className="dos" style={{ marginTop: 26 }}>

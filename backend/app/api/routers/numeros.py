@@ -9,7 +9,7 @@ from sqlalchemy import and_, func, select
 
 from app.api.deps import DB, Admin
 from app.core.tz import ZONA_AR
-from app.models import Barbero, Cliente, Fidelidad, ReglaBeneficio, Servicio, Turno
+from app.models import Barbero, Cliente, Fidelidad, Servicio, Turno
 
 router = APIRouter(prefix="/panel", tags=["numeros"])
 
@@ -69,27 +69,25 @@ def bloquear_cliente(cliente_id: UUID, datos: Bloqueo, admin: Admin, db: DB):
     return {"id": c.id, "bloqueado": c.bloqueado}
 
 
-def _cobrado(precio: int, regla: ReglaBeneficio | None) -> int:
-    """Lo que se cobró de un turno con premio aplicado, según la regla activa."""
-    if not regla or regla.tipo == "servicio_gratis":
-        return 0
-    if regla.tipo == "descuento_pct":
-        return round(precio * (100 - (regla.valor or 0)) / 100)
-    if regla.tipo == "descuento_monto":
-        return max(0, precio - (regla.valor or 0))
-    return precio
-
-
 @router.get("/numeros")
 def numeros(
     admin: Admin,
     db: DB,
-    desde: date,
     hasta: date,
+    desde: date | None = None,
     barbero_id: UUID | None = None,
 ):
-    """Totales entre dos días (inclusive, hora argentina). Solo "asistió" suma a lo facturado."""
-    if hasta < desde or (hasta - desde).days > 366:
+    """Totales entre dos días (inclusive, hora argentina). Solo "asistió" suma a lo facturado.
+
+    Sin `desde`: desde el primer turno de la barbería ("todo"). Rangos de más de 62 días se
+    agrupan por mes en `por_periodo`; si no, por día.
+    """
+    if desde is None:
+        primero = db.scalar(
+            select(func.min(Turno.inicio)).where(Turno.barberia_id == admin.barberia_id)
+        )
+        desde = min(primero.astimezone(ZONA_AR).date(), hasta) if primero else hasta
+    if hasta < desde:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Rango de fechas inválido.")
     ini = datetime.combine(desde, time(0), tzinfo=ZONA_AR)
     fin = datetime.combine(hasta + timedelta(days=1), time(0), tzinfo=ZONA_AR)
@@ -102,11 +100,6 @@ def numeros(
     if barbero_id:
         q = q.where(Turno.barbero_id == barbero_id)
     turnos = db.scalars(q).all()
-    regla = db.scalar(
-        select(ReglaBeneficio).where(
-            ReglaBeneficio.barberia_id == admin.barberia_id, ReglaBeneficio.activa
-        )
-    )
     barberos = db.scalars(
         select(Barbero).where(Barbero.barberia_id == admin.barberia_id).order_by(Barbero.nombre)
     ).all()
@@ -115,25 +108,33 @@ def numeros(
         for s in db.scalars(select(Servicio).where(Servicio.barberia_id == admin.barberia_id))
     }
 
+    por_mes = (hasta - desde).days > 62
+    clave = (lambda d: d.isoformat()[:7]) if por_mes else (lambda d: d.isoformat())
+    por_periodo: dict[str, int] = {}
+    d = desde
+    while d <= hasta:
+        por_periodo.setdefault(clave(d), 0)
+        d += timedelta(days=1)
     por_b = {b.id: {"id": b.id, "nombre": b.nombre, "facturado": 0, "cortes": 0} for b in barberos}
     por_s: dict[UUID, int] = {}
-    por_dia = {(desde + timedelta(days=i)).isoformat(): 0 for i in range((hasta - desde).days + 1)}
     tot = cortes = aus = premios = 0
     for t in turnos:
         if t.estado == "no_asistio":
             aus += 1
             continue
-        monto = _cobrado(t.precio, regla) if t.beneficio_aplicado else t.precio
+        monto = t.cobrado if t.cobrado is not None else t.precio
         tot += monto
         cortes += 1
         premios += t.beneficio_aplicado
         por_b[t.barbero_id]["facturado"] += monto
         por_b[t.barbero_id]["cortes"] += 1
         por_s[t.servicio_id] = por_s.get(t.servicio_id, 0) + 1
-        por_dia[t.inicio.astimezone(ZONA_AR).date().isoformat()] += monto
+        por_periodo[clave(t.inicio.astimezone(ZONA_AR).date())] += monto
 
     activos = {b.id for b in barberos if b.activo}
     return {
+        "desde": desde,
+        "hasta": hasta,
         "facturado": tot,
         "cortes": cortes,
         "ausencias": aus,
@@ -143,5 +144,6 @@ def numeros(
             ({"nombre": servicios[k], "veces": v} for k, v in por_s.items()),
             key=lambda x: -x["veces"],
         ),
-        "por_dia": [{"fecha": k, "facturado": v} for k, v in por_dia.items()],
+        "agrupado": "mes" if por_mes else "dia",
+        "por_periodo": [{"clave": k, "facturado": v} for k, v in por_periodo.items()],
     }

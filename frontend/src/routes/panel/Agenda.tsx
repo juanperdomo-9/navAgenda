@@ -16,7 +16,7 @@ const isoAR = (fecha: string, m: number) => `${fecha}T${mh(m)}:00-03:00`
 
 type Barbero = { id: string; nombre: string; activo: boolean; horarios: { dia_semana: number; desde: string; hasta: string }[]; servicio_ids: string[] }
 type Servicio = { id: string; nombre: string; precio: number; duracion_min: number; activo: boolean }
-type Turno = { id: string; barbero_id: string; inicio: string; fin: string; precio: number; estado: string; beneficio_aplicado: boolean; servicio: string; cliente: { nombre: string; telefono: string }; tiene_premio: boolean; completa_tarjeta: boolean; cortes: number }
+type Turno = { id: string; barbero_id: string; inicio: string; fin: string; precio: number; estado: string; beneficio_aplicado: boolean; servicio: string; cliente: { nombre: string; telefono: string }; tiene_premio: boolean; premio: string | null; cobrado: number; completa_tarjeta: boolean; cortes: number }
 type Agenda = { cada_x_cortes: number | null; premio: string | null; turnos: Turno[]; bloqueos: { id: string; barbero_id: string; inicio: string; fin: string; motivo: string | null }[] }
 
 /** Hoja (panel lateral) reutilizable. */
@@ -137,8 +137,8 @@ export function Agenda() {
         </> : <button type="button" className="btn sec" onClick={() => accion(`/panel/turnos/${turno.id}/corregir`, undefined, 'Volvió a reservado.')}>Corregir: volver a reservado</button>}</div>}>
         {turno && <section className="bloque">
           <h3 className="cond">{turno.servicio}</h3>
-          <p style={{ marginTop: 12, font: '600 17px/1.5 var(--type-archivo)' }}>{hm(turno.inicio)} a {hm(turno.fin)} · {turno.beneficio_aplicado ? 'gratis (premio)' : pesos(turno.precio)}<br />{turno.cliente.telefono.replace('+549', '')}</p>
-          {turno.estado === 'reservado' && turno.tiene_premio && <span className="sello" style={{ marginTop: 14 }}>Tiene premio: {ag?.premio}</span>}
+          <p style={{ marginTop: 12, font: '600 17px/1.5 var(--type-archivo)' }}>{hm(turno.inicio)} a {hm(turno.fin)} · {turno.beneficio_aplicado ? `${pesos(turno.cobrado)} (con premio)` : pesos(turno.precio)}<br />{turno.cliente.telefono.replace('+549', '')}</p>
+          {turno.estado === 'reservado' && turno.tiene_premio && <span className="sello" style={{ marginTop: 14 }}>Tiene premio: {turno.premio ?? ag?.premio}</span>}
           {turno.estado === 'reservado' && turno.completa_tarjeta && <span className="sello completa" style={{ marginTop: 14 }}>Con este corte completa la tarjeta</span>}
           {ag?.cada_x_cortes && <div className="tarjetita" style={{ marginTop: 14 }} role="img" aria-label={`${turno.cortes} de ${ag.cada_x_cortes} cortes`}>{Array.from({ length: ag.cada_x_cortes }, (_, i) => <i key={i} className={i < turno.cortes ? 'x' : ''} />)}</div>}
         </section>}
@@ -150,7 +150,8 @@ export function Agenda() {
   )
 }
 
-function TurnoAMano({ b, m, fecha, servicios, onListo, onCerrar }: { b: Barbero; m: number; fecha: string; servicios: Servicio[]; onListo: (t: string) => void; onCerrar: () => void }) {
+function TurnoAMano({ b, m, fecha, servicios: todos, onListo, onCerrar }: { b: Barbero; m: number; fecha: string; servicios: Servicio[]; onListo: (t: string) => void; onCerrar: () => void }) {
+  const servicios = todos.filter((s) => b.servicio_ids.includes(s.id))
   const [serv, setServ] = useState(servicios[0]?.id ?? '')
   const [nombre, setNombre] = useState('')
   const [tel, setTel] = useState('')
