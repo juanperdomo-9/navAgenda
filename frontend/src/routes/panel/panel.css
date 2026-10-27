@@ -328,3 +328,9 @@ main { padding-bottom: 48px; }
 .logo-prev img { width: 100%; height: 100%; object-fit: cover; }
 .logo-prev b { font-size: 40px; }
 .administrando { margin: 12px var(--g) 0; padding: 10px 14px; background: var(--roll); border: 2px solid var(--ink); border-radius: 6px; font: 600 15px/1.4 'Archivo'; }
+/* Superadmin: cobranza del abono */
+.cobro-hoy { margin-top: 12px; padding: 10px 14px; background: var(--roll); border: 2px solid var(--ink); border-radius: 6px; font: 700 15px/1.4 'Archivo'; }
+.cobro-ed { grid-column: 1 / -1; display: grid; gap: 4px; padding: 12px; margin-top: 6px; background: var(--papel); border: 1px solid var(--linea); border-radius: 6px; }
+.cobro-ed .check { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; font: 600 14px/1.35 'Archivo'; }
+.cobro-ed .check input { width: 20px; height: 20px; flex: none; margin-top: 1px; }
+.cobro-ed .btn { justify-self: start; margin-top: 10px; }

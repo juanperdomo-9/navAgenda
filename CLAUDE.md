@@ -235,6 +235,10 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Fotos para compartir links: la API dibuja `/og.png` (general) y `/og/<slug>.png` (color, nombre y logo). Al compilar,
   `frontend/scripts/compartir.mjs` escribe `dist/<slug>/index.html` con las etiquetas Open Graph de cada barbería
   (una barbería nueva toma su foto en el próximo deploy; mientras tanto usa la general).
+- Cobranza del abono (superadmin): WhatsApp y abono de cada barbería, pagos por mes (`/super/cobranza`),
+  recordatorios de un toque por WhatsApp (día 1 a todas; desde el 2, cada 2 días a las que deben) y pausa por deuda
+  opcional (día 10, solo si ya se le recordó; se reactiva al marcar el pago). El superadmin también puede
+  "Administrar" una barbería (header `X-Barberia`) para cargarle todo.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

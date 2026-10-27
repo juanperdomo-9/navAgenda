@@ -8,13 +8,14 @@ Convenciones:
   mezclar datos de dos barberías (ej. un turno con un barbero de otra barbería).
 """
 
-from datetime import datetime, time
+from datetime import date, datetime, time
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -104,6 +105,15 @@ class Barberia(Base):
     lng: Mapped[Decimal | None] = mapped_column(Numeric(9, 6))
     descripcion: Mapped[str | None] = mapped_column(Text)
     horas_min_cancelacion: Mapped[int] = mapped_column(Integer, nullable=False, server_default="3")
+    # Cobranza del abono (la maneja el superadmin)
+    whatsapp: Mapped[str | None] = mapped_column(Text)
+    abono: Mapped[int | None] = mapped_column(Integer)
+    pausa_por_deuda: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    pausada_por_deuda: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
     activa: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
     creado_en: Mapped[datetime] = _creado_en()
 
@@ -271,6 +281,30 @@ class Turno(Base):
     token_acceso_hash: Mapped[str | None] = mapped_column(Text, unique=True)
     origen: Mapped[str] = mapped_column(Text, nullable=False, server_default="web")
     creado_en: Mapped[datetime] = _creado_en()
+
+
+class Pago(Base):
+    """El abono de un mes (mes = día 1) que pagó una barbería."""
+
+    __tablename__ = "pagos"
+    __table_args__ = (UniqueConstraint("barberia_id", "mes", name="un_pago_por_mes"),)
+
+    id: Mapped[UUID] = _id()
+    barberia_id: Mapped[UUID] = _barberia_fk()
+    mes: Mapped[date] = mapped_column(Date, nullable=False)
+    monto: Mapped[int | None] = mapped_column(Integer)
+    pagado_en: Mapped[datetime] = _creado_en()
+
+
+class Recordatorio(Base):
+    """Cuándo se le recordó el pago a una barbería (para no repetir el mismo día)."""
+
+    __tablename__ = "recordatorios"
+
+    id: Mapped[UUID] = _id()
+    barberia_id: Mapped[UUID] = _barberia_fk()
+    mes: Mapped[date] = mapped_column(Date, nullable=False)
+    enviado_en: Mapped[datetime] = _creado_en()
 
 
 class Solicitud(Base):

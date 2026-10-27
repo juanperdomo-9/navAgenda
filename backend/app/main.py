@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers import (
     agenda,
     auth,
+    cobranza,
     health,
     logo,
     numeros,
@@ -38,8 +39,33 @@ def create_app() -> FastAPI:
     app.include_router(og.router)
     app.include_router(logo.router)
     app.include_router(paginas.router)
-    # Próximas tareas: public (portal, página de la barbería y reservas)
+    app.include_router(cobranza.router)
+    if settings.es_produccion:
+        _revisar_deudas_cada_hora()
     return app
+
+
+def _revisar_deudas_cada_hora() -> None:
+    """Pausa por deuda aunque nadie abra el panel (una sola instancia: alcanza un hilo)."""
+    import threading
+
+    from sqlalchemy.orm import Session
+
+    from app.db.session import get_engine
+
+    def tarea() -> None:
+        try:
+            with Session(get_engine()) as db:
+                cobranza.pausar_vencidas(db)
+        except Exception:  # noqa: BLE001 (que un error no corte el ciclo)
+            pass
+        t = threading.Timer(3600, tarea)
+        t.daemon = True
+        t.start()
+
+    primera = threading.Timer(60, tarea)
+    primera.daemon = True
+    primera.start()
 
 
 app = create_app()

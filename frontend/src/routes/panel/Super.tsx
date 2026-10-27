@@ -3,6 +3,7 @@ import { Copy, ExternalLink, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { ADMINISTRANDO, api, ApiError } from '@/lib/api'
 import { Hoja } from './Agenda'
+import { Cobranza } from './Cobranza'
 
 type Admin = { id: string; nombre: string; usuario: string; ultimo_ingreso: string | null; debe_cambiar_clave: boolean }
 type Barberia = { id: string; nombre: string; slug: string; barrio: string | null; activa: boolean; admins: Admin[]; barberos: number }
@@ -49,6 +50,7 @@ export function Super() {
         <p>{ls.length ? `${ls.filter((b) => b.activa).length} online de ${ls.length}.` : ''} Cada una tiene su admin, que entra con usuario y clave.</p></div>
       <button type="button" className="btn" onClick={() => { setNueva(true); setClave(null) }}><Plus className="i" aria-hidden />Nueva barbería</button>
       {clave && <ClaveTemporal {...clave} onCerrar={() => setClave(null)} />}
+      <Cobranza />
       {!!ps.data?.length && (
         <section className="bloque" style={{ marginTop: 22 }}><h3 className="cond">Quieren sumarse ({ps.data.length})</h3>
           <ul className="lista">{ps.data.map((p) => (
