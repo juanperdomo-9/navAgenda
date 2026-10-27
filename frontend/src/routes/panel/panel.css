@@ -292,7 +292,7 @@ main { padding: 24px var(--g) 110px; max-width: 1180px; width: 100%; display: gr
 .pa select option { color: #141210; background: #fffdf3; }
 /* Números: navegar el historial (día, semana, mes, todo) */
 .nav-periodo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 12px; }
-.nav-periodo b { font: 800 17px 'Archivo'; }
+.nav-periodo b { font: 800 16px/1.25 'Archivo'; flex: 1 1 0; min-width: 0; order: 0; }
 .nav-periodo .flecha { width: 44px; height: 44px; border: 2px solid var(--ink); border-radius: 6px; background: var(--papel); font: 900 22px/1 'Archivo'; cursor: pointer; }
 .nav-periodo .flecha:disabled { opacity: .35; cursor: default; }
 .nav-periodo input[type="date"] { min-height: 44px; padding: 0 10px; border: 2px solid var(--linea-fuerte); border-radius: 6px; background: var(--papel); font: 700 15px 'Archivo'; }
