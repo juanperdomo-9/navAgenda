@@ -28,3 +28,6 @@ Thumbs.db
 .impeccable/config.local.json
 .playwright-mcp/
 .impeccable/critique/
+
+# Listas de contactos para ventas (no se publican: el repo es público)
+docs/Barberias*.csv
