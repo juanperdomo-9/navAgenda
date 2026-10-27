@@ -231,3 +231,34 @@ def test_clave_temporal_por_hash_y_no_pisa_la_clave_elegida(client, db):
     )
     # Ya eligió su clave: la variable que quedó en Render no la vuelve a pisar
     assert preparar_inicial(db, {"juan": h}) == []
+
+
+def test_superadmin_carga_todo_de_una_barberia(client, db):
+    crear_usuario(db, "juan", rol="superadmin")
+    ingresar(client, "juan")
+    b = client.post(
+        "/super/barberias",
+        json={"nombre": "Nueva", "slug": "nueva", "admin_nombre": "Ana", "admin_usuario": "ana"},
+    ).json()["barberia"]
+    assert client.get("/panel/barberos").status_code == 403  # sin elegir barbería
+    h = {"X-Barberia": b["id"]}
+    r = client.post(
+        "/panel/barberos",
+        json={
+            "nombre": "Pepe",
+            "horarios": [{"dia_semana": 0, "desde": "10:00", "hasta": "18:00"}],
+        },
+        headers=h,
+    )
+    assert r.status_code == 201
+    assert [x["nombre"] for x in client.get("/panel/barberos", headers=h).json()] == ["Pepe"]
+
+
+def test_un_admin_no_puede_cambiar_de_barberia_con_el_header(client, db):
+    import uuid
+
+    crear_usuario(db, "admin-a")
+    ingresar(client, "admin-a")
+    propios = client.get("/panel/barberos").json()
+    ajeno = client.get("/panel/barberos", headers={"X-Barberia": str(uuid.uuid4())}).json()
+    assert ajeno == propios

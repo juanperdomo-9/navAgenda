@@ -16,7 +16,7 @@ export async function api<T>(ruta: string, opciones: RequestInit = {}): Promise<
     res = await fetch(BASE + ruta, {
       ...opciones,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...opciones.headers },
+      headers: { 'Content-Type': 'application/json', ...barberiaElegida(), ...opciones.headers },
     })
   } catch {
     throw new ApiError(0, 'No pudimos conectarnos. Revisá tu internet y probá de nuevo.')
@@ -38,4 +38,14 @@ export type UsuarioPanel = {
   rol: 'admin' | 'superadmin'
   barberia_id: string | null
   debe_cambiar_clave: boolean
+}
+
+/** El superadmin puede administrar una barbería: se recuerda en la pestaña y viaja como header. */
+export const ADMINISTRANDO = 'navagenda-administrando'
+export function administrando(): { id: string; nombre: string } | null {
+  try { return JSON.parse(sessionStorage.getItem(ADMINISTRANDO) || 'null') } catch { return null }
+}
+function barberiaElegida(): Record<string, string> {
+  const b = administrando()
+  return b ? { 'X-Barberia': b.id } : {}
 }

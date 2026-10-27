@@ -100,7 +100,7 @@ function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null;
     if (nombre.trim().length < 2) return setError('Poné el nombre del barbero.')
     if (fs.some((_, i) => errorFranja(fs, i))) return setError('Revisá las franjas marcadas en rojo.')
     if (!horarios.length) return setError('Tocá los días que trabaja en alguna franja.')
-    if (!sv.length) return setError('Elegí al menos un servicio.')
+    if (!sv.length && servicios.some((s) => s.activo)) return setError('Elegí al menos un servicio.')
     if (guardando) return
     setGuardando(true)
     try {
@@ -195,7 +195,7 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
     const p = +precio.replace(/\D/g, '')
     if (nombre.trim().length < 2) return setError('Poné el nombre del servicio.')
     if (!p) return setError('Poné el precio.')
-    if (!bs.length) return setError('Elegí al menos un barbero.')
+    if (!bs.length && barberos.some((b) => b.activo)) return setError('Elegí al menos un barbero.')
     if (guardando) return
     setGuardando(true)
     try {

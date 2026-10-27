@@ -1,15 +1,16 @@
 """Dependencias compartidas: sesión de base y usuario del panel autenticado."""
 
 from collections.abc import Callable
+from types import SimpleNamespace
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import COOKIE_SESION, leer_token
 from app.db.session import get_db
-from app.models import Usuario
+from app.models import Barberia, Usuario
 
 DB = Annotated[Session, Depends(get_db)]
 
@@ -47,5 +48,28 @@ def requiere_rol(*roles: str) -> Callable[[Usuario], Usuario]:
 
 
 Superadmin = Annotated[Usuario, Depends(requiere_rol("superadmin"))]
-# El admin solo trabaja sobre su barbería: los endpoints del panel filtran por usuario.barberia_id.
-Admin = Annotated[Usuario, Depends(requiere_rol("admin"))]
+
+
+def admin_de_barberia(
+    db: DB,
+    usuario: Annotated[Usuario, Depends(requiere_rol("admin", "superadmin"))],
+    x_barberia: Annotated[UUID | None, Header()] = None,
+) -> Usuario:
+    """El admin trabaja sobre su barbería. El superadmin puede cargar todo de una barbería
+    (header X-Barberia) para dejarla lista antes de que entre el dueño."""
+    if usuario.rol == "admin":
+        return usuario
+    if not x_barberia or not db.get(Barberia, x_barberia):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Elegí qué barbería querés administrar.")
+    # Una copia (no el objeto de la base): así nunca se guarda el barberia_id en el superadmin
+    return SimpleNamespace(
+        id=usuario.id,
+        nombre=usuario.nombre,
+        usuario=usuario.usuario,
+        rol="admin",
+        barberia_id=x_barberia,
+    )
+
+
+# Los endpoints del panel filtran por usuario.barberia_id.
+Admin = Annotated[Usuario, Depends(admin_de_barberia)]

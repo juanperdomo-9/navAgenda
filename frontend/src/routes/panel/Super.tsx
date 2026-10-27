@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Copy, ExternalLink, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { api, ApiError } from '@/lib/api'
+import { ADMINISTRANDO, api, ApiError } from '@/lib/api'
 import { Hoja } from './Agenda'
 
 type Admin = { id: string; nombre: string; usuario: string; ultimo_ingreso: string | null; debe_cambiar_clave: boolean }
@@ -72,6 +72,7 @@ export function Super() {
             <a className="link" href={`/${b.slug}`} target="_blank" rel="noopener" aria-label={`Ver la página de ${b.nombre}`}><ExternalLink className="i" aria-hidden /></a>
             <span className="acc" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px' }}>
               {b.admins.map((a) => <button key={a.id} className="link" type="button" onClick={() => resetear(b, a)}>Resetear clave{b.admins.length > 1 ? ` de ${a.usuario}` : ''}</button>)}
+              <button className="link" type="button" onClick={() => { sessionStorage.setItem(ADMINISTRANDO, JSON.stringify({ id: b.id, nombre: b.nombre })); qc.clear(); location.reload() }}>Administrar (cargar todo)</button>
               <button className={`link ${b.activa ? 'rojo' : ''}`} type="button" onClick={() => pausar(b)}>{b.activa ? 'Pausar' : 'Reactivar'}</button>
             </span>
           </li>))}</ul>}

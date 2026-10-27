@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, ChartColumn, Contact, ExternalLink, Globe, LogOut, Menu, Scissors, Store, Users, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
-import { api, ApiError, type UsuarioPanel } from '@/lib/api'
+import { ADMINISTRANDO, administrando, api, ApiError, type UsuarioPanel } from '@/lib/api'
 import { Agenda } from './Agenda'
 import { Clientes, Numeros } from './Numeros'
 import { Super } from './Super'
@@ -22,7 +22,8 @@ export function PanelPage() {
   const hoja = useRef<HTMLDialogElement>(null)
   useEffect(() => { if (menu) hoja.current?.showModal(); else hoja.current?.close() }, [menu])
   const yo = useQuery({ queryKey: ['yo'], queryFn: () => api<UsuarioPanel>('/auth/yo'), retry: false })
-  const admin = yo.data?.rol === 'admin' && !yo.data.debe_cambiar_clave
+  const como = yo.data?.rol === 'superadmin' ? administrando() : null
+  const admin = (yo.data?.rol === 'admin' || !!como) && !yo.data?.debe_cambiar_clave
   const cfg = useQuery({ queryKey: ['p-config'], queryFn: () => api<Config>('/panel/barberia'), enabled: admin })
 
   if (yo.isPending) return <div className="pa"><p style={{ padding: 24 }}>Cargando…</p></div>
@@ -51,6 +52,7 @@ export function PanelPage() {
             <b className="nombre cond">{nombre}</b>
             <button type="button" className="hamb" onClick={() => setMenu(true)} aria-label="Abrir el menú" aria-expanded={menu}><Menu aria-hidden /></button>
           </header>
+          {como && <p className="administrando">Estás cargando <b>{como.nombre}</b>. Todo lo que hagas queda en su panel. <button type="button" className="link" onClick={() => { sessionStorage.removeItem(ADMINISTRANDO); qc.clear(); location.reload() }}>Volver a mis barberías</button></p>}
           {yo.data.debe_cambiar_clave ? <CambiarClave nombre={yo.data.nombre} onListo={() => qc.invalidateQueries({ queryKey: ['yo'] })} />
             : admin ? { agenda: <Agenda />, barberos: <Barberos />, servicios: <Servicios />, clientes: <Clientes />, numeros: <Numeros />, pagina: <MiPagina /> }[vista]
             : <Super />}
