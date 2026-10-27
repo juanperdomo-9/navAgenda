@@ -8,6 +8,7 @@ from app.api.routers import (
     logo,
     numeros,
     og,
+    paginas,
     panel,
     publico,
     solicitudes,
@@ -36,6 +37,7 @@ def create_app() -> FastAPI:
     app.include_router(solicitudes.router)
     app.include_router(og.router)
     app.include_router(logo.router)
+    app.include_router(paginas.router)
     # Próximas tareas: public (portal, página de la barbería y reservas)
     return app
 

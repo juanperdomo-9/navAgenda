@@ -41,3 +41,18 @@ def test_fotos_para_compartir(client, ins):  # noqa: F811
     client.put("/panel/barberia/logo", json={"imagen": _png()})
     assert client.get("/og/inspirationmen.png").status_code == 200
     assert client.get("/og/no-existe.png").status_code == 404
+
+
+def test_pagina_con_etiquetas_de_la_barberia(client, ins, monkeypatch):  # noqa: F811
+    from app.api.routers import paginas
+
+    base = (
+        '<html><head><title>NavAgenda</title><!--og--><meta property="og:image" '
+        'content="general" /><!--/og--></head><body></body></html>'
+    )
+    monkeypatch.setitem(paginas._cache, "html", base)
+    monkeypatch.setitem(paginas._cache, "hora", 1e12)
+    r = client.get("/pagina/inspirationmen").text
+    assert "<title>Inspirationmen · Sacá turno</title>" in r and "/api/og/inspirationmen.png" in r
+    otra = client.get("/pagina/panel").text
+    assert 'content="general"' in otra and "<title>NavAgenda</title>" in otra

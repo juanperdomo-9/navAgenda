@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     jwt_secret: str = ""
     sesion_horas: int = 12
     cors_origins: str = "http://localhost:5173"
+    # La web publicada (para armar los links y las fotos al compartir)
+    sitio_url: str = "https://navagenda-web.onrender.com"
 
     @property
     def es_produccion(self) -> bool:
