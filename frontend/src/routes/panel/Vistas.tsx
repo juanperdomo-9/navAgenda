@@ -87,6 +87,7 @@ function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null;
   const [fs, setFs] = useState<Franja[]>(b ? aFranjas(b.horarios) : [{ desde: '12:00', hasta: '18:00', dias: [0, 1, 2, 3, 4] }])
   const [sv, setSv] = useState<string[]>(b ? b.servicio_ids : servicios.map((s) => s.id))
   const [error, setError] = useState('')
+  const [guardando, setGuardando] = useState(false)
   const [baja, setBaja] = useState(false)
   const libres = useQuery({ queryKey: ['bloqueos', b?.id], queryFn: () => api<{ id: string; inicio: string; fin: string; motivo: string | null }[]>(`/panel/barberos/${b!.id}/bloqueos`), enabled: !!b })
   const [ld, setLd] = useState(''), [lh, setLh] = useState('')
@@ -99,13 +100,15 @@ function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null;
     if (fs.some((_, i) => errorFranja(fs, i))) return setError('Revisá las franjas marcadas en rojo.')
     if (!horarios.length) return setError('Tocá los días que trabaja en alguna franja.')
     if (!sv.length) return setError('Elegí al menos un servicio.')
+    if (guardando) return
+    setGuardando(true)
     try {
       let id = b?.id
       if (b) { await api(`/panel/barberos/${b.id}`, { method: 'PATCH', body: JSON.stringify({ nombre }) }); await api(`/panel/barberos/${b.id}/horarios`, { method: 'PUT', body: JSON.stringify({ horarios }) }) }
       else id = (await api<Barbero>('/panel/barberos', { method: 'POST', body: JSON.stringify({ nombre, horarios }) })).id
       await api(`/panel/barberos/${id}/servicios`, { method: 'PUT', body: JSON.stringify({ servicio_ids: sv }) })
       onListo(b ? `Horario de ${nombre.split(' ')[0]} actualizado en tu página.` : `${nombre.split(' ')[0]} ya aparece en tu página para sacar turno.`)
-    } catch (e) { setError(errMsg(e)) }
+    } catch (e) { setError(errMsg(e)) } finally { setGuardando(false) }
   }
   async function cambiarActivo(activo: boolean) {
     try { await api(`/panel/barberos/${b!.id}`, { method: 'PATCH', body: JSON.stringify({ activo }) }); onListo(activo ? `${b!.nombre.split(' ')[0]} volvió a atender.` : `${b!.nombre.split(' ')[0]} ya no aparece para reservar.`) }
@@ -123,7 +126,7 @@ function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null;
   return (
     <Hoja titulo={b ? b.nombre : 'Nuevo barbero'} abierta onCerrar={onCerrar}
       pie={<><p className="resumen-h">{resumen(horarios)}</p>{error && <p className="estado mal" role="alert">{error}</p>}
-        <div className="botones"><button type="button" className="btn sec" onClick={onCerrar}>Cancelar</button><button type="button" className="btn" onClick={guardar}>{b ? 'Guardar' : 'Guardar y publicar'}</button></div></>}>
+        <div className="botones"><button type="button" className="btn sec" onClick={onCerrar}>Cancelar</button><button type="button" className="btn" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : b ? 'Guardar' : 'Guardar y publicar'}</button></div></>}>
       <section className="bloque"><h3 className="cond">Datos</h3><label className="campo">Nombre y apellido<input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="off" /></label></section>
       <section className="bloque"><h3 className="cond">Horario</h3><p className="ayuda" style={{ marginTop: 10 }}>Cargá cada franja una vez y tocá los días que la trabaja. Los turnos arrancan cada 30 minutos.</p>
         <div className="franjas">{fs.map((f, i) => { const err = errorFranja(fs, i); return (
@@ -185,18 +188,21 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
   const [dur, setDur] = useState(s?.duracion_min ?? 30)
   const [bs, setBs] = useState<string[]>(s ? s.barbero_ids : barberos.map((b) => b.id))
   const [error, setError] = useState('')
+  const [guardando, setGuardando] = useState(false)
   const [baja, setBaja] = useState(false)
   async function guardar() {
     const p = +precio.replace(/\D/g, '')
     if (nombre.trim().length < 2) return setError('Poné el nombre del servicio.')
     if (!p) return setError('Poné el precio.')
     if (!bs.length) return setError('Elegí al menos un barbero.')
+    if (guardando) return
+    setGuardando(true)
     try {
       const datos = { nombre: nombre.trim(), precio: p, duracion_min: dur }
       const out = s ? await api<Servicio>(`/panel/servicios/${s.id}`, { method: 'PATCH', body: JSON.stringify(datos) }) : await api<Servicio>('/panel/servicios', { method: 'POST', body: JSON.stringify(datos) })
       await api(`/panel/servicios/${out.id}/barberos`, { method: 'PUT', body: JSON.stringify({ barbero_ids: bs }) })
       onListo(s ? `"${datos.nombre}" actualizado en tu página.` : `"${datos.nombre}" ya se puede reservar.`)
-    } catch (e) { setError(errMsg(e)) }
+    } catch (e) { setError(errMsg(e)) } finally { setGuardando(false) }
   }
   async function activo(v: boolean) {
     try { if (v) await api(`/panel/servicios/${s!.id}`, { method: 'PATCH', body: JSON.stringify({ activo: true }) }); else await api(`/panel/servicios/${s!.id}`, { method: 'DELETE' }); onListo(v ? `"${s!.nombre}" se ofrece de nuevo.` : `"${s!.nombre}" ya no se ofrece.`) }
@@ -204,7 +210,7 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
   }
   return (
     <Hoja titulo={s ? s.nombre : 'Nuevo servicio'} abierta onCerrar={onCerrar}
-      pie={<>{error && <p className="estado mal" role="alert">{error}</p>}<div className="botones"><button type="button" className="btn sec" onClick={onCerrar}>Cancelar</button><button type="button" className="btn" onClick={guardar}>Guardar</button></div></>}>
+      pie={<>{error && <p className="estado mal" role="alert">{error}</p>}<div className="botones"><button type="button" className="btn sec" onClick={onCerrar}>Cancelar</button><button type="button" className="btn" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar'}</button></div></>}>
       <section className="bloque"><h3 className="cond">Servicio</h3>
         <label className="campo">Nombre<input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="off" placeholder="Ej.: Corte + barba" /></label>
         <div className="fila2">

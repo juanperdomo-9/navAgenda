@@ -349,3 +349,12 @@ def test_regla_de_fidelidad_se_reemplaza(client, admin):
         ).status_code
         == 422
     )
+
+
+def test_no_se_crean_dos_barberos_iguales(client, db):
+    crear_usuario(db, "admin-dup")
+    ingresar(client, "admin-dup")
+    h = [{"dia_semana": 0, "desde": "10:00", "hasta": "18:00"}]
+    assert client.post("/panel/barberos", json={"nombre": "Alexis", "horarios": h}).status_code == 201
+    r = client.post("/panel/barberos", json={"nombre": "ALEXIS ", "horarios": h})
+    assert r.status_code == 409

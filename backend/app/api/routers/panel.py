@@ -10,7 +10,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.api.deps import DB, Admin
 from app.models import Barberia, Barbero, Bloqueo, ReglaBeneficio, Servicio
@@ -81,8 +81,21 @@ def listar_barberos(admin: Admin, db: DB):
     return [svc.barbero_out(db, b) for b in barberos]
 
 
+def _sin_repetir(db, modelo, barberia_id, nombre: str, que: str) -> None:
+    """Evita duplicados (ej.: tocar dos veces "Guardar"): no dos activos con el mismo nombre."""
+    if db.scalar(
+        select(modelo.id).where(
+            modelo.barberia_id == barberia_id,
+            modelo.activo,
+            func.lower(modelo.nombre) == nombre.strip().lower(),
+        )
+    ):
+        raise HTTPException(status.HTTP_409_CONFLICT, f"Ya tenés {que} {nombre.strip()}.")
+
+
 @router.post("/barberos", response_model=BarberoOut, status_code=status.HTTP_201_CREATED)
 def crear_barbero(datos: BarberoNuevo, admin: Admin, db: DB):
+    _sin_repetir(db, Barbero, admin.barberia_id, datos.nombre, "un barbero que se llama")
     b = svc.crear_barbero(db, admin.barberia_id, datos.nombre, datos.foto_url, datos.horarios)
     db.commit()
     return svc.barbero_out(db, b)
@@ -190,6 +203,7 @@ def listar_servicios(admin: Admin, db: DB):
 
 @router.post("/servicios", response_model=ServicioOut, status_code=status.HTTP_201_CREATED)
 def crear_servicio(datos: ServicioNuevo, admin: Admin, db: DB):
+    _sin_repetir(db, Servicio, admin.barberia_id, datos.nombre, "un servicio")
     s = svc.crear_servicio(db, admin.barberia_id, datos.nombre, datos.precio, datos.duracion_min)
     db.commit()
     return svc.servicio_out(db, s)
