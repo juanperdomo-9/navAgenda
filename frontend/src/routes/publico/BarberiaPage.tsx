@@ -8,6 +8,7 @@ import { Led } from './Led'
 import { diaDe, Secciones, type Libre, type PaginaBarberia } from './Secciones'
 import { Barra, PieBarberia } from './Barra'
 import { Cargando } from './Cargando'
+import { estadoAhora, Galeria } from './Galeria'
 import './barberia.css'
 
 type Pagina = PaginaBarberia & { color_acento: string }
@@ -74,6 +75,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
               {p.direccion}{p.barrio ? ` · ${p.barrio}` : ''}
             </a>
           )}
+          {(() => { const e = estadoAhora(p); return e && <span className={`pb-estado ${e.abierto ? 'abierto' : ''}`}>{e.texto}</span> })()}
         </div>
         <section className="maq" id="turno" aria-label="Sacá tu turno" ref={maq}>
           {barbero && (
@@ -98,6 +100,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
           <p className="fine">Nombre y teléfono, nada más. Sin cuenta, sin seña.</p>
         </section>
       </main>
+      <Galeria fotos={p.fotos ?? []} nombre={p.nombre} />
       <Secciones p={p} servicio={servicio} setServicio={elegirServicio} nombreDe={nombreDe} onElegir={setElegido} subir={subir} />
       <dialog ref={hoja} className="hoja-p" onClose={() => setElegido(null)} aria-label="Tus datos">
         {elegido && (

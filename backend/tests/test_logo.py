@@ -56,3 +56,29 @@ def test_pagina_con_etiquetas_de_la_barberia(client, ins, monkeypatch):  # noqa:
     assert "<title>Inspirationmen · Sacá turno</title>" in r and "/api/og/inspirationmen.png" in r
     otra = client.get("/pagina/panel").text
     assert 'content="general"' in otra and "<title>NavAgenda</title>" in otra
+
+
+def test_galeria_del_local_hasta_8_y_publica(client, ins):  # noqa: F811
+    ids = [
+        client.post("/panel/fotos", json={"imagen": _png(2400, 1200)}).json()["id"]
+        for _ in range(8)
+    ]
+    assert client.post("/panel/fotos", json={"imagen": _png()}).status_code == 409
+    foto = client.get(f"/foto/{ids[0]}.jpg")
+    assert foto.status_code == 200 and max(Image.open(BytesIO(foto.content)).size) == 1600
+    assert len(client.get("/p/inspirationmen").json()["fotos"]) == 8
+    assert client.delete(f"/panel/fotos/{ids[0]}").status_code == 204
+    assert len(client.get("/panel/fotos").json()) == 7
+
+
+def test_foto_de_cada_barbero(client, ins):  # noqa: F811
+    bid = ins["barbero"]
+    r = client.put(f"/panel/barberos/{bid}/foto", json={"imagen": _png()}).json()
+    assert r["foto_url"].endswith("?v=1")
+    assert Image.open(BytesIO(client.get(f"/barbero/{bid}.jpg").content)).size == (480, 480)
+    thiago = next(
+        b for b in client.get("/p/inspirationmen").json()["barberos"] if b["id"] == str(bid)
+    )
+    assert thiago["foto_url"] == r["foto_url"]
+    assert client.delete(f"/panel/barberos/{bid}/foto").status_code == 204
+    assert client.get(f"/barbero/{bid}.jpg").status_code == 404

@@ -3,11 +3,12 @@ import { Copy, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, ApiError } from '@/lib/api'
 import { Hoja } from './Agenda'
+import { FotoBarbero, FotosLocal } from './Fotos'
 import { Logo } from './Logo'
 import { Ubicacion } from './Ubicacion'
 
 type Tramo = { dia_semana: number; desde: string; hasta: string }
-type Barbero = { id: string; nombre: string; activo: boolean; horarios: Tramo[]; servicio_ids: string[] }
+type Barbero = { id: string; nombre: string; foto_url: string | null; activo: boolean; horarios: Tramo[]; servicio_ids: string[] }
 type Servicio = { id: string; nombre: string; precio: number; duracion_min: number; activo: boolean; barbero_ids: string[] }
 type Franja = { desde: string; hasta: string; dias: number[] }
 
@@ -84,6 +85,7 @@ export function Barberos() {
 }
 
 function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null; servicios: Servicio[]; onCerrar: () => void; onListo: (t: string) => void }) {
+  const [foto, setFoto] = useState(b?.foto_url ?? null)
   const [nombre, setNombre] = useState(b?.nombre ?? '')
   const [fs, setFs] = useState<Franja[]>(b ? aFranjas(b.horarios) : [{ desde: '12:00', hasta: '18:00', dias: [0, 1, 2, 3, 4] }])
   const [sv, setSv] = useState<string[]>(b ? b.servicio_ids : servicios.map((s) => s.id))
@@ -128,7 +130,9 @@ function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null;
     <Hoja titulo={b ? b.nombre : 'Nuevo barbero'} abierta onCerrar={onCerrar}
       pie={<><p className="resumen-h">{resumen(horarios)}</p>{error && <p className="estado mal" role="alert">{error}</p>}
         <div className="botones"><button type="button" className="btn sec" onClick={onCerrar}>Cancelar</button><button type="button" className="btn" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : b ? 'Guardar' : 'Guardar y publicar'}</button></div></>}>
-      <section className="bloque"><h3 className="cond">Datos</h3><label className="campo">Nombre y apellido<input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="off" /></label></section>
+      <section className="bloque"><h3 className="cond">Datos</h3><label className="campo">Nombre y apellido<input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="off" /></label>
+        {b ? <FotoBarbero id={b.id} url={foto} nombre={b.nombre} onCambio={() => { qc.invalidateQueries({ queryKey: ['p-barberos'] }); api<Barbero[]>('/panel/barberos').then((ls) => setFoto(ls.find((x) => x.id === b.id)?.foto_url ?? null)) }} />
+          : <p className="ayuda" style={{ marginTop: 10 }}>La foto se sube después de guardarlo.</p>}</section>
       <section className="bloque"><h3 className="cond">Horario</h3><p className="ayuda" style={{ marginTop: 10 }}>Cargá cada franja una vez y tocá los días que la trabaja. Los turnos arrancan cada 30 minutos.</p>
         <div className="franjas">{fs.map((f, i) => { const err = errorFranja(fs, i); return (
           <div key={i} className={`franja ${err ? 'mal' : ''}`}>
@@ -283,6 +287,7 @@ export function MiPagina() {
             {ok && <div className="previa" style={{ ['--prev' as string]: f.color_acento, ['--prev-ink' as string]: tinta(f.color_acento) }}><b className="cond">{f.nombre}</b><span>{f.direccion}</span></div>}</section>
         </div>
         <div style={{ display: 'grid', gap: 26, alignContent: 'start' }}>
+          <FotosLocal onAviso={setMsg} />
           <Logo url={cfg.data?.logo_url ?? null} nombre={f.nombre} onCambio={(m) => { setMsg(m); qc.invalidateQueries({ queryKey: ['p-config'] }) }} />
           <section className="bloque"><h3 className="cond">Datos</h3>
             <label className="campo">Nombre<input value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} /></label>

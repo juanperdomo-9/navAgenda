@@ -20,6 +20,7 @@ from app.models import (
     BarberoServicio,
     Cliente,
     Fidelidad,
+    FotoLocal,
     HorarioBarbero,
     ReglaBeneficio,
     Servicio,
@@ -139,7 +140,13 @@ def pagina(slug: str, db: DB):
         .where(HorarioBarbero.barbero_id.in_([x.id for x in barberos]))
         .order_by(HorarioBarbero.dia_semana, HorarioBarbero.desde)
     ).all()
+    fotos = db.scalars(
+        select(FotoLocal.id)
+        .where(FotoLocal.barberia_id == b.id)
+        .order_by(FotoLocal.orden, FotoLocal.creado_en)
+    ).all()
     return {
+        "fotos": [f"/api/foto/{f}.jpg" for f in fotos],
         "nombre": b.nombre,
         "slug": b.slug,
         "color_acento": b.color_acento,

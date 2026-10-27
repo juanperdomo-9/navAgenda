@@ -7,8 +7,9 @@ import { hoyMas, horaAR, pesos, ZONA } from './comun'
 
 type Tramo = { dia_semana: number; desde: string; hasta: string }
 export type PaginaBarberia = {
+  fotos: string[]
   nombre: string; slug: string; logo_url: string | null; direccion: string | null; barrio: string | null; ciudad: string | null; lat: string | null; lng: string | null
-  barberos: { id: string; nombre: string; servicio_ids: string[]; horarios: Tramo[] }[]
+  barberos: { id: string; nombre: string; foto_url: string | null; servicio_ids: string[]; horarios: Tramo[] }[]
   servicios: { id: string; nombre: string; precio: number; duracion_min: number }[]
   fidelidad: { cada: number; descripcion: string } | null
 }
@@ -71,7 +72,7 @@ export function Secciones({ p, servicio, setServicio, nombreDe, onElegir, subir 
             const dias = atencion({ ...p, barberos: [b] }).filter((x) => x.txt !== 'Cerrado').map((x) => x.dias).join(', ')
             return (
               <li key={b.id}>
-                <span className="nom">{nombreDe(b.id)}</span>
+                <span className="nom">{b.foto_url && <img className="cara" src={b.foto_url} alt="" />}{nombreDe(b.id)}</span>
                 <span className="det">{b.nombre}{dias ? ` · ${dias}` : ''}</span>
                 <button className="sacar" type="button" disabled={!prox} onClick={() => prox && onElegir(prox)}
                   aria-label={prox ? `Sacar ${diaDe(prox.inicio)} a las ${horaAR(prox.inicio)} con ${b.nombre}` : `${b.nombre} no tiene lugar hoy ni mañana`}>

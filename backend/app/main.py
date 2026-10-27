@@ -5,6 +5,7 @@ from app.api.routers import (
     agenda,
     auth,
     cobranza,
+    fotos,
     health,
     logo,
     numeros,
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
     app.include_router(logo.router)
     app.include_router(paginas.router)
     app.include_router(cobranza.router)
+    app.include_router(fotos.router)
     if settings.es_produccion:
         _revisar_deudas_cada_hora()
     return app

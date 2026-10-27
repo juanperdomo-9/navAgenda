@@ -156,6 +156,7 @@ class Barbero(Base):
     barberia_id: Mapped[UUID] = _barberia_fk()
     nombre: Mapped[str] = mapped_column(Text, nullable=False)
     foto_url: Mapped[str | None] = mapped_column(Text)
+    foto_jpg: Mapped[bytes | None] = deferred(mapped_column(LargeBinary))
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
     creado_en: Mapped[datetime] = _creado_en()
 
@@ -280,6 +281,18 @@ class Turno(Base):
     cobrado: Mapped[int | None] = mapped_column(Integer)
     token_acceso_hash: Mapped[str | None] = mapped_column(Text, unique=True)
     origen: Mapped[str] = mapped_column(Text, nullable=False, server_default="web")
+    creado_en: Mapped[datetime] = _creado_en()
+
+
+class FotoLocal(Base):
+    """Fotos del local para la galería de la página de la barbería (hasta 8)."""
+
+    __tablename__ = "fotos_local"
+
+    id: Mapped[UUID] = _id()
+    barberia_id: Mapped[UUID] = _barberia_fk()
+    orden: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    jpg: Mapped[bytes] = deferred(mapped_column(LargeBinary, nullable=False))
     creado_en: Mapped[datetime] = _creado_en()
 
 

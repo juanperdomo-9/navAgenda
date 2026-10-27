@@ -334,3 +334,11 @@ main { padding-bottom: 48px; }
 .cobro-ed .check { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; font: 600 14px/1.35 'Archivo'; }
 .cobro-ed .check input { width: 20px; height: 20px; flex: none; margin-top: 1px; }
 .cobro-ed .btn { justify-self: start; margin-top: 10px; }
+/* Mi página: fotos del local */
+.bloque h3 small { font: 700 13px 'Archivo'; text-transform: none; color: var(--ink-2); }
+.fotos-ed { list-style: none; padding: 0; margin-top: 12px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.fotos-ed li { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; background: var(--papel); border: 1px solid var(--linea); }
+.fotos-ed img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fotos-ed li > button:not(.fotos-mas) { position: absolute; top: 4px; right: 4px; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #141210cc; color: #fff; cursor: pointer; }
+.fotos-ed li > button svg { width: 18px; height: 18px; }
+.fotos-mas { width: 100%; height: 100%; display: grid; place-content: center; justify-items: center; gap: 4px; border: 2px dashed var(--linea-fuerte); border-radius: 6px; background: none; cursor: pointer; font: 700 13px 'Archivo'; color: var(--ink-2); }

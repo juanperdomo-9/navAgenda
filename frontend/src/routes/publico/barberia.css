@@ -295,3 +295,39 @@
 .pb-fondo { position: absolute; z-index: -1; top: -40px; left: 50%; translate: -50% 0; width: 300px; aspect-ratio: 1; object-fit: cover;
   border-radius: 50%; opacity: .16; filter: grayscale(1) contrast(1.1); pointer-events: none; }
 @media (min-width: 960px) { .pb-fondo { top: 6%; width: 460px; opacity: .1; } }
+
+/* Abierto / cerrado, junto a la dirección */
+.pb-estado { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border: 2px solid var(--on-shop); border-radius: 14px; font: 800 13px var(--type-archivo); }
+.pb-estado::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .5; }
+.pb-estado.abierto::before { background: #2e9e5b; opacity: 1; }
+
+/* Galería del local: una grande y dos chicas */
+.galeria { max-width: 1200px; margin: 8px auto 0; padding: 0 16px; }
+.gal-grilla { display: grid; gap: 6px; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; border: 2px solid var(--on-shop); }
+.gal-grilla.n1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.gal-grilla.n2 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr; }
+.gal-grilla button { position: relative; padding: 0; border: 0; background: #120c0b; cursor: zoom-in; min-height: 0; overflow: hidden; }
+.gal-grilla button:first-child { grid-row: span 2; }
+.gal-grilla.n2 button:first-child { grid-row: auto; }
+.gal-grilla img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; }
+.gal-grilla button:hover img { transform: scale(1.03); }
+.gal-todas { position: absolute; right: 8px; bottom: 8px; padding: 6px 10px; background: #fffdf3; color: #141210; border-radius: 6px; font: 800 13px var(--type-archivo); }
+.gal-full { border: 0; padding: 0; margin: 0; width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; background: #0b0807; }
+.gal-full::backdrop { background: #000; }
+.gal-tira { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.gal-tira figure { flex: 0 0 100%; margin: 0; display: grid; place-items: center; scroll-snap-align: start; position: relative; }
+.gal-tira img { max-width: 100%; max-height: 100dvh; object-fit: contain; }
+.gal-tira figcaption { position: absolute; bottom: 16px; left: 50%; translate: -50% 0; padding: 4px 10px; background: #000a; color: #fff; border-radius: 12px; font: 700 13px var(--type-archivo); }
+.gal-cerrar, .gal-flecha { position: absolute; z-index: 2; width: 48px; height: 48px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #000a; color: #fff; cursor: pointer; }
+.gal-cerrar { top: 12px; right: 12px; }
+.gal-flecha { top: 50%; translate: 0 -50%; }
+.gal-flecha.izq { left: 12px; } .gal-flecha.der { right: 12px; }
+@media (hover: none) { .gal-flecha { display: none; } }
+@media (prefers-reduced-motion: reduce) { .gal-grilla img { transition: none; } }
+
+/* La cara de cada barbero */
+.lineup .nom { display: flex; align-items: center; gap: 12px; }
+.lineup .nom .cara { width: 56px; height: 56px; flex: none; border-radius: 50%; object-fit: cover; border: 3px solid var(--on-shop); }
+.bm-barberos b { display: flex; align-items: center; gap: 10px; }
+.bm-barberos b .cara { width: 36px; height: 36px; flex: none; border-radius: 50%; object-fit: cover; border: 2px solid #f3e9dc; }
+@media (min-width: 960px) { .gal-grilla { aspect-ratio: 21 / 9; } .galeria { padding: 0 32px; } }

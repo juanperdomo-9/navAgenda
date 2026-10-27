@@ -198,7 +198,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Crear el superadmin: `cd backend && uv run python -m app.cli crear-superadmin <usuario> "<nombre>"` (pide la clave)
 
 ## Estado actual y próximos pasos (actualizado 2026-10-21)
-- **Backend listo para salir** (128 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
+- **Backend listo para salir** (137 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
   horarios libres cada 30 min, API pública (`/p/{slug}`, `/p/{slug}/libres`, `/p/{slug}/turnos`, `/t/{token}`),
   agenda (`/panel/agenda`, asistió/no vino con tarjeta de cortes, corregir, turno a mano), clientes y números.
   Primera barbería real: `uv run python -m app.cli cargar-inspirationmen`.
@@ -240,6 +240,9 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   recordatorios de un toque por WhatsApp (día 1 a todas; desde el 2, cada 2 días a las que deben) y pausa por deuda
   opcional (día 10, solo si ya se le recordó; se reactiva al marcar el pago). El superadmin también puede
   "Administrar" una barbería (header `X-Barberia`) para cargarle todo.
+- Galería del local (Mi página → Fotos del local, hasta 8, `fotos_local`, `/foto/<id>.jpg`): collage debajo de la
+  máquina y "Ver todas" en pantalla completa. Foto de cada barbero (Barberos → editar, `/barbero/<id>.jpg`), se ve en
+  "Los barberos" y en el menú. Junto a la dirección: "Abierto hasta las …" / "Cerrado · abre …" según los horarios.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

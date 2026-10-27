@@ -3,18 +3,17 @@ import { useRef, useState } from 'react'
 import { api, ApiError } from '@/lib/api'
 
 /** Achica la foto en el navegador (las del celular pesan mucho) antes de subirla. */
-function achicar(archivo: File): Promise<string> {
+export function achicar(archivo: File, lado = 1000, tipo = 'image/png'): Promise<string> {
   return new Promise((ok, mal) => {
     const url = URL.createObjectURL(archivo)
     const img = new Image()
     img.onload = () => {
-      const lado = Math.min(1000, img.width, img.height) || 1000
-      const k = lado / Math.min(img.width, img.height)
+      const k = Math.min(1, lado / Math.max(img.width, img.height))
       const c = document.createElement('canvas')
       c.width = Math.round(img.width * k); c.height = Math.round(img.height * k)
       c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height)
       URL.revokeObjectURL(url)
-      ok(c.toDataURL('image/png'))
+      ok(c.toDataURL(tipo, 0.88))
     }
     img.onerror = () => { URL.revokeObjectURL(url); mal(new Error('imagen')) }
     img.src = url

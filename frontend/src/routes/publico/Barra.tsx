@@ -34,7 +34,7 @@ export function Barra({ p, onBarbero }: { p: PaginaBarberia; onBarbero: (id: str
             return (
               <li key={b.id}>
                 <button type="button" onClick={() => { onBarbero(b.id); ir('turno') }}>
-                  <b>{b.nombre}</b><span>{dias || 'Sin horario cargado'}</span><span>{b.servicio_ids.length} {b.servicio_ids.length === 1 ? 'servicio' : 'servicios'} · Sacar turno con {b.nombre.split(' ')[0]}</span>
+                  <b>{b.foto_url && <img className="cara" src={b.foto_url} alt="" />}{b.nombre}</b><span>{dias || 'Sin horario cargado'}</span><span>{b.servicio_ids.length} {b.servicio_ids.length === 1 ? 'servicio' : 'servicios'} · Sacar turno con {b.nombre.split(' ')[0]}</span>
                 </button>
               </li>
             )
