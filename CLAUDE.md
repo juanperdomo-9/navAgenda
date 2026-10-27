@@ -9,6 +9,7 @@ Cada asistencia suma al total facturado y cuenta para un beneficio de fidelidad 
 Sin seña: la reserva se confirma al instante.
 
 Modelo de negocio: suscripción mensual por barbería (multi-barbería desde el día uno).
+Precios (Juan, 2026-10-27): primer mes gratis; después $30.000/mes con 1 barbero, $40.000 con 2 y $50.000 con 3 o más.
 
 **Ciudad principal: La Plata** (casco urbano y alrededores: Tolosa, Gonnet, City Bell, Los Hornos, etc.).
 Las direcciones usan el formato platense ("Calle 8 e/ 49 y 50").
