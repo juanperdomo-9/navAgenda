@@ -156,23 +156,37 @@ function TurnoAMano({ b, m, fecha, servicios: todos, onListo, onCerrar }: { b: B
   const [nombre, setNombre] = useState('')
   const [tel, setTel] = useState('')
   const [error, setError] = useState('')
+  const [modo, setModo] = useState<'turno' | 'bloqueo'>('turno')
+  const [hasta, setHasta] = useState(m + PASO)
+  const [motivo, setMotivo] = useState('')
   async function cargar() {
     if (nombre.trim().length < 2 || tel.replace(/\D/g, '').length < 10) return setError('Poné el nombre y el teléfono con código de área.')
     try { await api('/panel/turnos', { method: 'POST', body: JSON.stringify({ barbero_id: b.id, servicio_id: serv, inicio: isoAR(fecha, m), nombre, telefono: tel }) }); onListo(`Turno cargado: ${mh(m)} ${nombre} con ${b.nombre.split(' ')[0]}.`) }
     catch (e) { setError(e instanceof ApiError ? e.message : 'No se pudo cargar.') }
   }
   async function bloquear() {
-    try { await api(`/panel/barberos/${b.id}/bloqueos`, { method: 'POST', body: JSON.stringify({ inicio: isoAR(fecha, m), fin: isoAR(fecha, m + PASO), motivo: 'Bloqueado' }) }); onListo('Horario bloqueado.') }
+    try { await api(`/panel/barberos/${b.id}/bloqueos`, { method: 'POST', body: JSON.stringify({ inicio: isoAR(fecha, m), fin: isoAR(fecha, hasta), motivo: motivo.trim() || 'Bloqueado' }) }); onListo(`Bloqueado de ${mh(m)} a ${mh(hasta)} para ${b.nombre.split(' ')[0]}.`) }
     catch (e) { setError(e instanceof ApiError ? e.message : 'No se pudo bloquear.') }
   }
   return (
-    <Hoja titulo="Turno a mano" abierta onCerrar={onCerrar} pie={<div className="botones"><button type="button" className="btn sec" onClick={bloquear}>Bloquear 30 min</button><button type="button" className="btn" onClick={cargar}>Cargar turno</button></div>}>
+    <Hoja titulo={modo === 'turno' ? 'Turno a mano' : 'Bloquear horario'} abierta onCerrar={onCerrar} pie={<div className="botones">{modo === 'turno' ? <button type="button" className="btn" onClick={cargar}>Cargar turno</button> : <button type="button" className="btn" onClick={bloquear}>Bloquear de {mh(m)} a {mh(hasta)}</button>}</div>}>
       <section className="bloque">
         <h3 className="cond">{mh(m)} con {b.nombre.split(' ')[0]}</h3>
+        <div className="periodo" role="group" aria-label="Qué hacer" style={{ marginTop: 12 }}>
+          <button type="button" aria-pressed={modo === 'turno'} onClick={() => setModo('turno')}>Cargar turno</button>
+          <button type="button" aria-pressed={modo === 'bloqueo'} onClick={() => setModo('bloqueo')}>Bloquear horario</button>
+        </div>
+        {modo === 'bloqueo' ? <>
+          <label className="campo">Hasta<select value={hasta} onChange={(e) => setHasta(+e.target.value)}>{Array.from({ length: Math.floor((24 * 60 - m) / PASO) }, (_, i) => m + PASO * (i + 1)).map((h) => <option key={h} value={h}>{mh(h % (24 * 60))}{h - m >= 60 ? ` (${(h - m) / 60} h)` : ' (30 min)'}</option>)}</select></label>
+          <label className="campo">Motivo (opcional)<input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Almuerzo, trámite, curso…" maxLength={120} autoComplete="off" /></label>
+          <p className="ayuda" style={{ marginTop: 8 }}>En ese rato nadie puede sacar turno con {b.nombre.split(' ')[0]}. Para desbloquear, tocá el bloque en la grilla.</p>
+          {error && <p className="err" role="alert" style={{ marginTop: 10 }}>{error}</p>}
+        </> : <>
         <label className="campo">Servicio<select value={serv} onChange={(e) => setServ(e.target.value)}>{servicios.map((s) => <option key={s.id} value={s.id}>{s.nombre} · {pesos(s.precio)}</option>)}</select></label>
         <label className="campo">Nombre del cliente<input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="off" /></label>
         <label className="campo">Teléfono<span className="prefijo"><span aria-hidden>+54 9</span><input type="tel" inputMode="tel" value={tel} onChange={(e) => setTel(e.target.value)} autoComplete="off" /></span><span className="ayuda">Con código de área, sin 0 ni 15. Así suma a su tarjeta.</span></label>
         {error && <p className="err" role="alert" style={{ marginTop: 10 }}>{error}</p>}
+        </>}
       </section>
     </Hoja>
   )

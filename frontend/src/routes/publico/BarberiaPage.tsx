@@ -66,6 +66,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
     <div className={`pb ${tinta(p.color_acento) === '#fffdf3' ? 'oscura' : ''}`} style={estiloBarberia(p.color_acento)}>
       <Barra p={p} onBarbero={setBarbero} />
       <main className="pb-hero">
+        {p.logo_url && <img className="pb-fondo" src={p.logo_url} alt="" aria-hidden />}
         <h1 className="cond" style={{ ['--largo' as string]: Math.max(5, ...palabras.map((x) => x.length)), ['--largo-total' as string]: Math.max(8, p.nombre.length) }}>{p.nombre}</h1>
         <div className="pb-datos">
           {p.direccion && (
