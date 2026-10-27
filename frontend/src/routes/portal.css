@@ -110,3 +110,7 @@
 .sumar-form p { font: 600 17px/1.4 var(--type-archivo); }
 @media (min-width: 960px) { .sumar-pag { grid-template-columns: 1.1fr .9fr; column-gap: 56px; padding: 24px 32px 72px; align-items: start; } }
 .mapa-portal .pin-p.cerca b { background: var(--screen); color: var(--led); border-color: var(--screen); box-shadow: none; font-size: 17px; padding: 8px 10px 7px; }
+/* Portal: logo de la barbería en el listado */
+.rollo .txt b.con-logo { display: flex; align-items: center; gap: 10px; }
+.rollo .txt b.con-logo::before { display: none; }
+.rollo .txt b img { width: 40px; height: 40px; flex: none; border-radius: 50%; object-fit: cover; border: 2px solid var(--ink); }

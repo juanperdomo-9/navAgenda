@@ -18,7 +18,7 @@ export function Barra({ p, onBarbero }: { p: PaginaBarberia; onBarbero: (id: str
   return (
     <>
       <header className="pb-nav">
-        <a href={`/${p.slug}`} className="pb-marca cond">{p.nombre}</a>
+        <a href={`/${p.slug}`} className="pb-marca cond">{p.logo_url && <img src={p.logo_url} alt="" />}{p.nombre}</a>
         <button type="button" className="pb-hamb" onClick={() => setAbierto(true)} aria-label="Abrir el menú" aria-expanded={abierto}><Menu aria-hidden /></button>
       </header>
       <dialog ref={ref} className="pb-menu" onClose={() => setAbierto(false)} aria-label={`Menú de ${p.nombre}`}>
@@ -53,7 +53,7 @@ export function PieBarberia({ p }: { p: PaginaBarberia }) {
   return (
     <footer className="pb-pie">
       <div>
-        <b className="cond">{p.nombre}</b>
+        <b className="cond pie-nombre">{p.logo_url && <img src={p.logo_url} alt="" />}{p.nombre}</b>
         {p.direccion && <p>{lugar}</p>}
         <dl>{atencion(p).map((x) => [<dt key={'t' + x.d}>{x.dias}</dt>, <dd key={'d' + x.d}>{x.txt}</dd>])}</dl>
       </div>

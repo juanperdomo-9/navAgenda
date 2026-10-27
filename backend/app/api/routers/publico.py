@@ -94,6 +94,7 @@ def portal(db: DB):
                 "nombre": b.nombre,
                 "slug": b.slug,
                 "color_acento": b.color_acento,
+                "logo_url": b.logo_url,
                 "direccion": b.direccion,
                 "barrio": b.barrio,
                 "lat": b.lat,

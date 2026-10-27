@@ -20,6 +20,7 @@ from sqlalchemy import (
     ForeignKeyConstraint,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     SmallInteger,
     Text,
@@ -30,7 +31,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, ExcludeConstraint
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, deferred, mapped_column
 
 from app.db.session import Base
 
@@ -94,6 +95,7 @@ class Barberia(Base):
     nombre: Mapped[str] = mapped_column(Text, nullable=False)
     slug: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     logo_url: Mapped[str | None] = mapped_column(Text)
+    logo_png: Mapped[bytes | None] = deferred(mapped_column(LargeBinary))
     color_acento: Mapped[str] = mapped_column(Text, nullable=False, server_default="#c9a46a")
     direccion: Mapped[str | None] = mapped_column(Text)
     ciudad: Mapped[str | None] = mapped_column(Text)

@@ -285,3 +285,7 @@
 .pb-legal .mark { background: #f6d13a; color: #141210; padding: 3px 5px; font: 900 10px var(--type-archivo); font-stretch: 62%; }
 @media (min-width: 960px) { .pb-nav { padding: 10px 32px; } .pb-pie { padding: 48px 32px 32px; } }
 .pb-nav + .pb-hero { padding-top: 22px; }
+/* Logo de la barbería en el navbar y el pie */
+.pb-marca img, .pie-nombre img { width: 36px; height: 36px; flex: none; border-radius: 50%; object-fit: cover; margin-right: 10px; border: 2px solid var(--on-shop); }
+.pie-nombre { display: flex; align-items: center; }
+.pie-nombre img { width: 56px; height: 56px; border-color: #f3e9dc; }

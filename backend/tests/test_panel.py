@@ -355,6 +355,8 @@ def test_no_se_crean_dos_barberos_iguales(client, db):
     crear_usuario(db, "admin-dup")
     ingresar(client, "admin-dup")
     h = [{"dia_semana": 0, "desde": "10:00", "hasta": "18:00"}]
-    assert client.post("/panel/barberos", json={"nombre": "Alexis", "horarios": h}).status_code == 201
+    assert (
+        client.post("/panel/barberos", json={"nombre": "Alexis", "horarios": h}).status_code == 201
+    )
     r = client.post("/panel/barberos", json={"nombre": "ALEXIS ", "horarios": h})
     assert r.status_code == 409

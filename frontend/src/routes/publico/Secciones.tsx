@@ -7,7 +7,7 @@ import { hoyMas, horaAR, pesos, ZONA } from './comun'
 
 type Tramo = { dia_semana: number; desde: string; hasta: string }
 export type PaginaBarberia = {
-  nombre: string; slug: string; direccion: string | null; barrio: string | null; ciudad: string | null; lat: string | null; lng: string | null
+  nombre: string; slug: string; logo_url: string | null; direccion: string | null; barrio: string | null; ciudad: string | null; lat: string | null; lng: string | null
   barberos: { id: string; nombre: string; servicio_ids: string[]; horarios: Tramo[] }[]
   servicios: { id: string; nombre: string; precio: number; duracion_min: number }[]
   fidelidad: { cada: number; descripcion: string } | null

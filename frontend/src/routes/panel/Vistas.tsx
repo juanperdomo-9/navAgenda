@@ -3,6 +3,7 @@ import { Copy, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, ApiError } from '@/lib/api'
 import { Hoja } from './Agenda'
+import { Logo } from './Logo'
 import { Ubicacion } from './Ubicacion'
 
 type Tramo = { dia_semana: number; desde: string; hasta: string }
@@ -229,7 +230,7 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
 }
 
 /* ═══ MI PÁGINA ═══ */
-type Config = { nombre: string; slug: string; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null }
+type Config = { nombre: string; slug: string; logo_url: string | null; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null }
 type PremioRuleta = { texto: string; descuento_pct: number }
 type Regla = { cada_x_cortes: number; tipo: string; valor: number | null; servicio_id: string | null; descripcion: string; modo: 'fijo' | 'ruleta'; ruleta: PremioRuleta[] } | null
 const RULETA_INICIAL: PremioRuleta[] = [{ texto: 'Corte gratis', descuento_pct: 100 }, { texto: '50% de descuento', descuento_pct: 50 }, { texto: '20% de descuento', descuento_pct: 20 }, { texto: '10% de descuento', descuento_pct: 10 }]
@@ -282,6 +283,7 @@ export function MiPagina() {
             {ok && <div className="previa" style={{ ['--prev' as string]: f.color_acento, ['--prev-ink' as string]: tinta(f.color_acento) }}><b className="cond">{f.nombre}</b><span>{f.direccion}</span></div>}</section>
         </div>
         <div style={{ display: 'grid', gap: 26, alignContent: 'start' }}>
+          <Logo url={cfg.data?.logo_url ?? null} nombre={f.nombre} onCambio={(m) => { setMsg(m); qc.invalidateQueries({ queryKey: ['p-config'] }) }} />
           <section className="bloque"><h3 className="cond">Datos</h3>
             <label className="campo">Nombre<input value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} /></label>
             <div className="fila2"><label className="campo">Dirección<input value={f.direccion ?? ''} onChange={(e) => setF({ ...f, direccion: e.target.value })} /></label><label className="campo">Barrio<input value={f.barrio ?? ''} onChange={(e) => setF({ ...f, barrio: e.target.value })} /></label></div>

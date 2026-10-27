@@ -197,7 +197,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Crear el superadmin: `cd backend && uv run python -m app.cli crear-superadmin <usuario> "<nombre>"` (pide la clave)
 
 ## Estado actual y próximos pasos (actualizado 2026-10-21)
-- **Backend listo para salir** (125 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
+- **Backend listo para salir** (128 tests): auth, panel (barberos, horarios, días libres, servicios, configuración),
   horarios libres cada 30 min, API pública (`/p/{slug}`, `/p/{slug}/libres`, `/p/{slug}/turnos`, `/t/{token}`),
   agenda (`/panel/agenda`, asistió/no vino con tarjeta de cortes, corregir, turno a mano), clientes y números.
   Primera barbería real: `uv run python -m app.cli cargar-inspirationmen`.
@@ -230,7 +230,11 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Panel en el celular con menú hamburguesa (datos de la barbería + secciones). Página de la barbería con navbar
   (menú con datos, horario y barberos) y pie con "Diseño web: jpweb.com.ar".
 - Publicado en Render (deploy automático al pushear a main). GitHub Actions despierta la API cada 10 min.
-- **Pendiente**: Inspirationmen tiene que marcar su ubicación en Mi página.
+- Logo de cada barbería (Mi página → Logo): se guarda en la base (`barberias.logo_png`, 400×400) y se sirve en
+  `/logo/<slug>.png`; aparece en el navbar, el pie y el portal.
+- Fotos para compartir links: la API dibuja `/og.png` (general) y `/og/<slug>.png` (color, nombre y logo). Al compilar,
+  `frontend/scripts/compartir.mjs` escribe `dist/<slug>/index.html` con las etiquetas Open Graph de cada barbería
+  (una barbería nueva toma su foto en el próximo deploy; mientras tanto usa la general).
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

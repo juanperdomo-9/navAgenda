@@ -9,7 +9,7 @@ import { horaAR, pesos, ZONA } from './publico/comun'
 import './publico/barberia.css'
 import './portal.css'
 
-type Item = { nombre: string; slug: string; color_acento: string; direccion: string | null; barrio: string | null; lat: string | null; lng: string | null; precio_desde: number; proximo_libre: string | null }
+type Item = { nombre: string; slug: string; color_acento: string; logo_url: string | null; direccion: string | null; barrio: string | null; lat: string | null; lng: string | null; precio_desde: number; proximo_libre: string | null }
 type Punto = { lat: number; lng: number }
 
 const cuando = (iso: string) => {
@@ -96,7 +96,7 @@ export function HomePage() {
               {ordenadas.map((b) => (
                 <li key={b.slug}>
                   <Link to={`/${b.slug}`} className={`rollo ${cerca?.slug === b.slug ? 'la-cerca' : ''}`} style={{ ['--c' as string]: b.color_acento }}>
-                    <span className="txt"><b>{b.nombre}</b>
+                    <span className="txt"><b className={b.logo_url ? 'con-logo' : ''}>{b.logo_url && <img src={b.logo_url} alt="" />}{b.nombre}</b>
                       <span><MapPin aria-hidden className="i" />{[b.barrio, b.direccion].filter(Boolean).join(' · ') || 'La Plata'}</span>
                       <span>Desde {pesos(b.precio_desde)}{b.m !== null ? ` · ${distancia(b.m)}` : ''}</span></span>
                     {cerca?.slug === b.slug && <span className="sello-cerca">La más cerca</span>}
