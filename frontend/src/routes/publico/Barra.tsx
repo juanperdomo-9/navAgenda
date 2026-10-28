@@ -48,7 +48,7 @@ export function Barra({ p, onBarbero }: { p: PaginaBarberia; onBarbero: (id: str
 }
 
 /** Pie de la página de la barbería, con el crédito de diseño web. */
-export function PieBarberia({ p }: { p: PaginaBarberia }) {
+export function PieBarberia({ p, onBarbero }: { p: PaginaBarberia; onBarbero: (id: string) => void }) {
   const lugar = [p.direccion, p.barrio, p.ciudad ?? 'La Plata'].filter(Boolean).join(', ')
   return (
     <footer className="pb-pie">
@@ -58,7 +58,7 @@ export function PieBarberia({ p }: { p: PaginaBarberia }) {
         <dl>{atencion(p).map((x) => [<dt key={'t' + x.d}>{x.dias}</dt>, <dd key={'d' + x.d}>{x.txt}</dd>])}</dl>
       </div>
       <ul aria-label="Links de cada barbero">
-        {p.barberos.map((b) => <li key={b.id}><a href={`/${p.slug}?con=${sinTildes(b.nombre)}`}>Turno con {b.nombre}</a></li>)}
+        {p.barberos.map((b) => <li key={b.id}><a href={`/${p.slug}?con=${sinTildes(b.nombre)}`} onClick={(e) => { e.preventDefault(); onBarbero(b.id) }}>Turno con {b.nombre}</a></li>)}
       </ul>
       <p className="pb-legal">
         <a href="/"><span className="mark">Nº</span> Turnos con NavAgenda</a>

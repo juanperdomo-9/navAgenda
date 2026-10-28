@@ -41,9 +41,9 @@ export function atencion(p: PaginaBarberia) {
   return g.map((x) => ({ ...x, dias: x.d === x.h ? DIAS[x.d] : `${DIAS[x.d]} a ${DIAS[x.h].toLowerCase()}` }))
 }
 
-export function Secciones({ p, servicio, setServicio, nombreDe, onElegir, subir }: {
+export function Secciones({ p, servicio, setServicio, nombreDe, onElegir, onBarbero, subir }: {
   p: PaginaBarberia; servicio: string; setServicio: (id: string) => void; nombreDe: (id: string) => string
-  onElegir: (l: Libre) => void; subir: () => void
+  onElegir: (l: Libre) => void; onBarbero: (id: string) => void; subir: () => void
 }) {
   const libresDe = (o: number) => ({
     queryKey: ['libres', p.slug, servicio, hoyMas(o), null],
@@ -72,8 +72,11 @@ export function Secciones({ p, servicio, setServicio, nombreDe, onElegir, subir 
             const dias = atencion({ ...p, barberos: [b] }).filter((x) => x.txt !== 'Cerrado').map((x) => x.dias).join(', ')
             return (
               <li key={b.id}>
-                <span className="nom">{b.foto_url && <img className="cara" src={b.foto_url} alt="" />}{nombreDe(b.id)}</span>
-                <span className="det">{b.nombre}{dias ? ` · ${dias}` : ''}</span>
+                <button type="button" className="quien" onClick={() => onBarbero(b.id)} aria-label={`Ver los turnos de ${b.nombre}`}>
+                  {b.foto_url ? <img className="cara" src={b.foto_url} alt="" /> : <span className="cara sin" aria-hidden>{b.nombre[0]}</span>}
+                  <span className="nom">{nombreDe(b.id)}</span>
+                  <span className="det">{b.nombre}{dias ? ` · ${dias}` : ''}<em>Ver sus turnos →</em></span>
+                </button>
                 <button className="sacar" type="button" disabled={!prox} onClick={() => prox && onElegir(prox)}
                   aria-label={prox ? `Sacar ${diaDe(prox.inicio)} a las ${horaAR(prox.inicio)} con ${b.nombre}` : `${b.nombre} no tiene lugar hoy ni mañana`}>
                   <small>{prox ? (diaDe(prox.inicio) === 'hoy' ? 'Libre hoy' : 'Mañana') : 'Sin lugar'}</small><b>{prox ? horaAR(prox.inicio) : '--:--'}</b>

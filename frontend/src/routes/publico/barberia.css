@@ -326,8 +326,21 @@
 @media (prefers-reduced-motion: reduce) { .gal-grilla img { transition: none; } }
 
 /* La cara de cada barbero */
-.lineup .nom { display: flex; align-items: center; gap: 12px; }
-.lineup .nom .cara { width: 56px; height: 56px; flex: none; border-radius: 50%; object-fit: cover; border: 3px solid var(--on-shop); }
+/* Toda la fila (foto, nombre y datos) lleva a la máquina con ese barbero */
+.lineup .quien { grid-column: 1; grid-row: 1 / span 2; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 2px 14px;
+  min-height: 44px; padding: 0; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; }
+.lineup .quien .cara { grid-row: 1 / span 2; width: clamp(72px, 20vw, 112px); aspect-ratio: 1; height: auto; flex: none; border-radius: 50%; object-fit: cover; border: 3px solid var(--on-shop); }
+.lineup .quien .cara.sin { display: grid; place-items: center; background: var(--on-shop); color: var(--shop); font: 900 clamp(36px, 10vw, 56px)/1 var(--type-archivo); font-stretch: 62%; text-transform: uppercase; }
+.lineup .quien .nom { align-self: end; font-size: clamp(32px, 9vw, 64px); }
+.lineup .quien .det { align-self: start; grid-column: 2; font-size: 14px; }
+.lineup .quien .det em { display: block; margin-top: 4px; font: 800 13px var(--type-archivo); font-style: normal; text-decoration: underline; text-underline-offset: 3px; }
+.lineup .quien:hover .nom { text-decoration: underline; text-decoration-thickness: 4px; text-underline-offset: 6px; }
 .bm-barberos b { display: flex; align-items: center; gap: 10px; }
 .bm-barberos b .cara { width: 36px; height: 36px; flex: none; border-radius: 50%; object-fit: cover; border: 2px solid #f3e9dc; }
 @media (min-width: 960px) { .gal-grilla { aspect-ratio: 21 / 9; } .galeria { padding: 0 32px; } }
+
+/* Máquina: otro horario del mismo día */
+.maq .otro { display: block; width: 100%; min-height: 44px; margin-top: 8px; background: none; border: 0; color: var(--warm); font: 700 15px var(--type-archivo); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.maq .otros { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin-top: 6px; }
+.maq .otros button { min-height: 48px; background: none; color: var(--led); border: 2px solid #ff2b1c66; border-radius: 4px; font: 900 22px var(--type-archivo); font-stretch: 70%; cursor: pointer; }
+.maq .otros button:hover { background: var(--led); color: var(--screen); border-color: var(--led); }

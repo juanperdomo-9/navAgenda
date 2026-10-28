@@ -54,6 +54,9 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
     return p.barberos.filter((b) => b.nombre.split(' ')[0] === n).length > 1 && ap ? `${n} ${ap[0]}.` : n
   }
 
+  // "Otro horario": todos los libres del día, sin perder el próximo de entrada
+  const [ver, setVer] = useState(false)
+  const unicos = lista.filter((l, i) => lista.findIndex((x) => x.inicio === l.inicio) === i)
   const [elegido, setElegido] = useState<Libre | null>(null)
   const hoja = useRef<HTMLDialogElement>(null)
   useEffect(() => { if (elegido) hoja.current?.showModal(); else hoja.current?.close() }, [elegido])
@@ -61,11 +64,12 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   const maq = useRef<HTMLElement>(null)
   const subir = () => maq.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })
   // Desde la lista de precios: si el barbero elegido no hace ese servicio, pasa a "cualquiera"
+  const conBarbero = (id: string) => { setBarbero(id); setVer(false); setTimeout(subir, 50) }
   const elegirServicio = (id: string) => { if (barbero && !p.barberos.find((b) => b.id === barbero)?.servicio_ids.includes(id)) setBarbero(null); setPreferido(id) }
   const palabras = p.nombre.split(/\s+/)
   return (
     <div className={`pb ${tinta(p.color_acento) === '#fffdf3' ? 'oscura' : ''}`} style={estiloBarberia(p.color_acento)}>
-      <Barra p={p} onBarbero={setBarbero} />
+      <Barra p={p} onBarbero={(id) => { setBarbero(id); setVer(false) }} />
       <main className="pb-hero">
         {p.logo_url && <img className="pb-fondo" src={p.logo_url} alt="" aria-hidden />}
         <h1 className="cond" style={{ ['--largo' as string]: Math.max(5, ...palabras.map((x) => x.length)), ['--largo-total' as string]: Math.max(8, p.nombre.length) }}>{p.nombre}</h1>
@@ -80,11 +84,11 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
         <section className="maq" id="turno" aria-label="Sacá tu turno" ref={maq}>
           {barbero && (
             <p className="con-quien">Con {p.barberos.find((b) => b.id === barbero)?.nombre}
-              <button type="button" onClick={() => setBarbero(null)}>Ver con todos</button></p>
+              <button type="button" onClick={() => { setBarbero(null); setVer(false) }}>Ver con todos</button></p>
           )}
           <div className="dias" role="group" aria-label="Día">
-            <button type="button" aria-pressed={!fecha && dia === 0} onClick={() => { setFecha(''); setDia(0) }}>Hoy</button>
-            <button type="button" aria-pressed={!fecha && dia === 1} onClick={() => { setFecha(''); setDia(1) }}>Mañana</button>
+            <button type="button" aria-pressed={!fecha && dia === 0} onClick={() => { setFecha(''); setDia(0); setVer(false) }}>Hoy</button>
+            <button type="button" aria-pressed={!fecha && dia === 1} onClick={() => { setFecha(''); setDia(1); setVer(false) }}>Mañana</button>
             <label className={fecha ? 'on' : ''}>{fecha ? diaTxt : 'Otro día'}<input type="date" min={hoyMas(0)} value={fecha} onChange={(e) => setFecha(e.target.value)} aria-label="Elegir otro día" /></label>
           </div>
           <Led hora={prox ? horaAR(prox.inicio).replace(/^0/, '') : null} />
@@ -97,18 +101,28 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
           ) : !fecha && dia === 0 && !libres.isPending ? (
             <button type="button" className="take alt" onClick={() => setDia(1)}>Ver mañana</button>
           ) : null}
+          {unicos.length > 1 && !barbero && (
+            <button type="button" className="otro" aria-expanded={ver} aria-controls="otros" onClick={() => setVer(!ver)}>
+              {ver ? 'Ocultar horarios' : `Otro horario · ${unicos.length} libres ${diaTxt}`}
+            </button>
+          )}
+          {(ver || barbero) && unicos.length > 1 && (
+            <div className="otros" id="otros" role="group" aria-label={`Horarios libres ${diaTxt}`}>
+              {unicos.map((l) => <button key={l.inicio} type="button" onClick={() => setElegido(l)} aria-label={`${horaAR(l.inicio)} con ${nombreDe(l.barbero_id)}`}>{horaAR(l.inicio).replace(/^0/, '')}</button>)}
+            </div>
+          )}
           <p className="fine">Nombre y teléfono, nada más. Sin cuenta, sin seña.</p>
         </section>
       </main>
       <Galeria fotos={p.fotos ?? []} nombre={p.nombre} />
-      <Secciones p={p} servicio={servicio} setServicio={elegirServicio} nombreDe={nombreDe} onElegir={setElegido} subir={subir} />
+      <Secciones p={p} servicio={servicio} setServicio={elegirServicio} nombreDe={nombreDe} onElegir={setElegido} onBarbero={conBarbero} subir={subir} />
       <dialog ref={hoja} className="hoja-p" onClose={() => setElegido(null)} aria-label="Tus datos">
         {elegido && (
           <Datos slug={p.slug} libre={elegido} servicios={p.servicios.filter((s) => p.barberos.find((b) => b.id === elegido.barbero_id)?.servicio_ids.includes(s.id))} preferido={preferido} barbero={nombreDe(elegido.barbero_id)} diaTxt={diaDe(elegido.inicio)}
             onListo={(token) => { guardarTicket(token); navigate(`/t/${token}`) }} onCerrar={() => setElegido(null)} />
         )}
       </dialog>
-      <PieBarberia p={p} />
+      <PieBarberia p={p} onBarbero={conBarbero} />
     </div>
   )
 }
