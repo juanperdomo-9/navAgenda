@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ChevronLeft, ChevronRight, Gift, Plus, X } from 'lucide-react'
+import { Ban, ChevronLeft, ChevronRight, Gift, Plus, X } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 
 const ZONA = 'America/Argentina/Buenos_Aires'
@@ -40,7 +40,7 @@ export function Agenda() {
   const servicios = useQuery({ queryKey: ['p-servicios'], queryFn: () => api<Servicio[]>('/panel/servicios') })
   const agenda = useQuery({ queryKey: ['agenda', fecha], queryFn: () => api<Agenda>(`/panel/agenda?fecha=${fecha}`), refetchInterval: 60_000 })
   const [turno, setTurno] = useState<Turno | null>(null)
-  const [nuevo, setNuevo] = useState<{ b: Barbero; m: number } | null>(null)
+  const [nuevo, setNuevo] = useState<{ b: Barbero; m: number; pasado?: boolean; bloquear?: boolean } | null>(null)
   const [aviso, setAviso] = useState('')
   const refrescar = () => qc.invalidateQueries({ queryKey: ['agenda'] })
 
@@ -55,6 +55,10 @@ export function Agenda() {
   const tramos = (b: Barbero) => b.horarios.filter((h) => h.dia_semana === dow).map((h) => [+h.desde.slice(0, 2) * 60 + +h.desde.slice(3, 5), +h.hasta.slice(0, 2) * 60 + +h.hasta.slice(3, 5)])
   const todos = bs.flatMap(tramos)
   const ahora = off === 0 ? minDe(new Date().toISOString()) : off < 0 ? 24 * 60 : 0
+  const primerLibre = (b: Barbero) => {
+    const t = tramos(b)[0]
+    return t ? Math.max(t[0], Math.ceil(ahora / PASO) * PASO) : Math.ceil(Math.max(ahora, 9 * 60) / PASO) * PASO
+  }
   const hechos = ag?.turnos.filter((t) => t.estado === 'asistio') ?? []
 
   let grilla: ReactNode = <div className="vacio"><b className="cond">Cerrado</b>Nadie trabaja este día.</div>
@@ -75,8 +79,9 @@ export function Agenda() {
               <div key={b.id} className="col-b" style={{ height: filas * FILA }}>
                 {horas.map((h) => {
                   if (!tr.some(([a, z]) => h >= a && h + PASO <= z)) return <div key={h} className="celda fuera" style={{ top: y(h) }} aria-hidden />
-                  if (ocup.some(([a, z]) => h < z && a < h + PASO) || h + PASO <= ahora) return null
-                  return <button key={h} type="button" className="celda libre" style={{ top: y(h) }} onClick={() => setNuevo({ b, m: h })} aria-label={`Libre ${mh(h)} con ${b.nombre}: cargar turno`}><span>{mh(h)}</span><Plus className="i" aria-hidden /></button>
+                  if (ocup.some(([a, z]) => h < z && a < h + PASO)) return null
+                  const pasada = h + PASO <= ahora
+                  return <button key={h} type="button" className={`celda libre ${pasada ? 'pasada' : ''}`} style={{ top: y(h) }} onClick={() => setNuevo({ b, m: h, pasado: pasada })} aria-label={`${pasada ? 'Ya pasó' : 'Libre'} ${mh(h)} con ${b.nombre}: cargar turno`}><span>{mh(h)}</span><Plus className="i" aria-hidden /></button>
                 })}
                 {bl.map((x) => {
                   const a = Math.max(ini, minDe(x.inicio)), z = Math.min(fin, minDe(x.fin) || 24 * 60)
@@ -111,6 +116,7 @@ export function Agenda() {
           <button type="button" className="icono" onClick={() => setOff(off - 1)} aria-label="Día anterior"><ChevronLeft className="i" aria-hidden /></button>
           <button type="button" className="btn sec chico" disabled={off === 0} onClick={() => setOff(0)}>Hoy</button>
           <button type="button" className="icono" onClick={() => setOff(off + 1)} aria-label="Día siguiente"><ChevronRight className="i" aria-hidden /></button>
+          {off >= 0 && bs.length > 0 && <button type="button" className="btn sec chico" onClick={() => setNuevo({ b: bs[0], m: primerLibre(bs[0]), bloquear: true })}><Ban className="i" aria-hidden />Bloquear</button>}
         </div>
         <p>{largo(fecha)} · Tocá un turno para marcar si vino: suma a la caja y a su tarjeta de cortes.</p>
       </div>
@@ -144,24 +150,34 @@ export function Agenda() {
         </section>}
       </Hoja>
 
-      {nuevo && <TurnoAMano b={nuevo.b} m={nuevo.m} fecha={fecha} servicios={(servicios.data ?? []).filter((s) => s.activo && nuevo.b.servicio_ids.includes(s.id))}
+      {nuevo && <TurnoAMano key={nuevo.b.id + nuevo.m} b={nuevo.b} m={nuevo.m} pasado={!!nuevo.pasado} barberos={nuevo.bloquear ? bs : undefined} fecha={fecha} servicios={(servicios.data ?? []).filter((s) => s.activo)}
         onListo={(t) => { setNuevo(null); refrescar(); setAviso(t) }} onCerrar={() => setNuevo(null)} />}
     </main>
   )
 }
 
-function TurnoAMano({ b, m, fecha, servicios: todos, onListo, onCerrar }: { b: Barbero; m: number; fecha: string; servicios: Servicio[]; onListo: (t: string) => void; onCerrar: () => void }) {
+function TurnoAMano({ b: b0, m: m0, pasado, barberos, fecha, servicios: todos, onListo, onCerrar }: { b: Barbero; m: number; pasado: boolean; barberos?: Barbero[]; fecha: string; servicios: Servicio[]; onListo: (t: string) => void; onCerrar: () => void }) {
+  const [b, setB] = useState(b0)
+  const [m, setM] = useState(m0)
+  const [vino, setVino] = useState(true)
   const servicios = todos.filter((s) => b.servicio_ids.includes(s.id))
   const [serv, setServ] = useState(servicios[0]?.id ?? '')
   const [nombre, setNombre] = useState('')
   const [tel, setTel] = useState('')
   const [error, setError] = useState('')
-  const [modo, setModo] = useState<'turno' | 'bloqueo'>('turno')
+  const [modo, setModo] = useState<'turno' | 'bloqueo'>(barberos ? 'bloqueo' : 'turno')
   const [hasta, setHasta] = useState(m + PASO)
   const [motivo, setMotivo] = useState('')
   async function cargar() {
     if (nombre.trim().length < 2 || tel.replace(/\D/g, '').length < 10) return setError('Poné el nombre y el teléfono con código de área.')
-    try { await api('/panel/turnos', { method: 'POST', body: JSON.stringify({ barbero_id: b.id, servicio_id: serv, inicio: isoAR(fecha, m), nombre, telefono: tel }) }); onListo(`Turno cargado: ${mh(m)} ${nombre} con ${b.nombre.split(' ')[0]}.`) }
+    try {
+      const t = await api<Turno>('/panel/turnos', { method: 'POST', body: JSON.stringify({ barbero_id: b.id, servicio_id: serv, inicio: isoAR(fecha, m), nombre, telefono: tel }) })
+      if (pasado && vino) {
+        await api(`/panel/turnos/${t.id}/asistio`, { method: 'POST', body: JSON.stringify({ aplicar_premio: false }) })
+        return onListo(`Cargado: ${mh(m)} ${nombre} vino. Suma a la caja y a su tarjeta.`)
+      }
+      onListo(`Turno cargado: ${mh(m)} ${nombre} con ${b.nombre.split(' ')[0]}.`)
+    }
     catch (e) { setError(e instanceof ApiError ? e.message : 'No se pudo cargar.') }
   }
   async function bloquear() {
@@ -169,13 +185,16 @@ function TurnoAMano({ b, m, fecha, servicios: todos, onListo, onCerrar }: { b: B
     catch (e) { setError(e instanceof ApiError ? e.message : 'No se pudo bloquear.') }
   }
   return (
-    <Hoja titulo={modo === 'turno' ? 'Turno a mano' : 'Bloquear horario'} abierta onCerrar={onCerrar} pie={<div className="botones">{modo === 'turno' ? <button type="button" className="btn" onClick={cargar}>Cargar turno</button> : <button type="button" className="btn" onClick={bloquear}>Bloquear de {mh(m)} a {mh(hasta)}</button>}</div>}>
+    <Hoja titulo={modo === 'turno' ? (pasado ? 'Turno que ya pasó' : 'Turno a mano') : 'Bloquear horario'} abierta onCerrar={onCerrar} pie={<div className="botones">{modo === 'turno' ? <button type="button" className="btn" onClick={cargar}>{pasado && vino ? 'Cargar: ya vino' : 'Cargar turno'}</button> : <button type="button" className="btn" onClick={bloquear}>Bloquear de {mh(m)} a {mh(hasta)}</button>}</div>}>
       <section className="bloque">
         <h3 className="cond">{mh(m)} con {b.nombre.split(' ')[0]}</h3>
-        <div className="periodo" role="group" aria-label="Qué hacer" style={{ marginTop: 12 }}>
+        {barberos ? <>
+          <label className="campo">Barbero<select value={b.id} onChange={(e) => setB(barberos.find((x) => x.id === e.target.value)!)}>{barberos.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</select></label>
+          <label className="campo">Desde<select value={m} onChange={(e) => { const v = +e.target.value; setM(v); if (hasta <= v) setHasta(v + PASO) }}>{Array.from({ length: 48 }, (_, i) => i * PASO).map((h) => <option key={h} value={h}>{mh(h)}</option>)}</select></label>
+        </> : !pasado && <div className="periodo" role="group" aria-label="Qué hacer" style={{ marginTop: 12 }}>
           <button type="button" aria-pressed={modo === 'turno'} onClick={() => setModo('turno')}>Cargar turno</button>
           <button type="button" aria-pressed={modo === 'bloqueo'} onClick={() => setModo('bloqueo')}>Bloquear horario</button>
-        </div>
+        </div>}
         {modo === 'bloqueo' ? <>
           <label className="campo">Hasta<select value={hasta} onChange={(e) => setHasta(+e.target.value)}>{Array.from({ length: Math.floor((24 * 60 - m) / PASO) }, (_, i) => m + PASO * (i + 1)).map((h) => <option key={h} value={h}>{mh(h % (24 * 60))}{h - m >= 60 ? ` (${(h - m) / 60} h)` : ' (30 min)'}</option>)}</select></label>
           <label className="campo">Motivo (opcional)<input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Almuerzo, trámite, curso…" maxLength={120} autoComplete="off" /></label>
@@ -185,6 +204,7 @@ function TurnoAMano({ b, m, fecha, servicios: todos, onListo, onCerrar }: { b: B
         <label className="campo">Servicio<select value={serv} onChange={(e) => setServ(e.target.value)}>{servicios.map((s) => <option key={s.id} value={s.id}>{s.nombre} · {pesos(s.precio)}</option>)}</select></label>
         <label className="campo">Nombre del cliente<input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="off" /></label>
         <label className="campo">Teléfono<span className="prefijo"><span aria-hidden>+54 9</span><input type="tel" inputMode="tel" value={tel} onChange={(e) => setTel(e.target.value)} autoComplete="off" /></span><span className="ayuda">Con código de área, sin 0 ni 15. Así suma a su tarjeta.</span></label>
+        {pasado && <label className="check" style={{ marginTop: 12 }}><input type="checkbox" checked={vino} onChange={(e) => setVino(e.target.checked)} />Ya vino<small>Suma a la caja y una tijera a su tarjeta</small></label>}
         {error && <p className="err" role="alert" style={{ marginTop: 10 }}>{error}</p>}
         </>}
       </section>
