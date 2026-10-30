@@ -140,3 +140,30 @@ def test_portal_lista_barberias_con_proximo_libre(client, ins):
     lista = client.get("/p").json()
     ins_ = next(x for x in lista if x["slug"] == "inspirationmen")
     assert ins_["precio_desde"] == 20000 and ins_["proximo_libre"]
+
+
+def test_avisa_al_barbero_por_mail_al_reservar_y_cancelar(client, ins, db, monkeypatch):
+    from app.models import Barbero
+    from app.services import avisos
+
+    enviados = []
+    monkeypatch.setattr(avisos, "_enviar", lambda *a: enviados.append(a))
+    libre = proximo_libre(client, ins)
+    db.get(Barbero, libre["barbero_id"]).email = "barbero@mail.com"
+    db.flush()
+    t = reservar(client, ins, libre).json()
+    client.post(f"/t/{t['token']}/cancelar")
+    assert [(e[0], e[1].split(":")[0]) for e in enviados] == [
+        ("barbero@mail.com", "Nuevo turno"),
+        ("barbero@mail.com", "Cancelado"),
+    ]
+    assert "Juan" in enviados[0][2] and "4567890" in enviados[0][2]
+
+
+def test_sin_mail_del_barbero_no_se_avisa(client, ins, monkeypatch):
+    from app.services import avisos
+
+    enviados = []
+    monkeypatch.setattr(avisos, "_enviar", lambda *a: enviados.append(a))
+    assert reservar(client, ins, proximo_libre(client, ins)).status_code == 201
+    assert enviados == []

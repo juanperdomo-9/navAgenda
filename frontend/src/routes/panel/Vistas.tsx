@@ -8,7 +8,7 @@ import { Logo } from './Logo'
 import { Ubicacion } from './Ubicacion'
 
 type Tramo = { dia_semana: number; desde: string; hasta: string }
-type Barbero = { id: string; nombre: string; foto_url: string | null; activo: boolean; horarios: Tramo[]; servicio_ids: string[] }
+type Barbero = { id: string; nombre: string; foto_url: string | null; email: string | null; activo: boolean; horarios: Tramo[]; servicio_ids: string[] }
 type Servicio = { id: string; nombre: string; precio: number; duracion_min: number; activo: boolean; barbero_ids: string[] }
 type Franja = { desde: string; hasta: string; dias: number[] }
 
@@ -87,6 +87,7 @@ export function Barberos() {
 function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null; servicios: Servicio[]; onCerrar: () => void; onListo: (t: string) => void }) {
   const [foto, setFoto] = useState(b?.foto_url ?? null)
   const [nombre, setNombre] = useState(b?.nombre ?? '')
+  const [email, setEmail] = useState(b?.email ?? '')
   const [fs, setFs] = useState<Franja[]>(b ? aFranjas(b.horarios) : [{ desde: '12:00', hasta: '18:00', dias: [0, 1, 2, 3, 4] }])
   const [sv, setSv] = useState<string[]>(b ? b.servicio_ids : servicios.map((s) => s.id))
   const [error, setError] = useState('')
@@ -100,6 +101,7 @@ function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null;
 
   async function guardar() {
     if (nombre.trim().length < 2) return setError('Poné el nombre del barbero.')
+    if (email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError('Revisá el mail: tiene que ser como nombre@gmail.com.')
     if (fs.some((_, i) => errorFranja(fs, i))) return setError('Revisá las franjas marcadas en rojo.')
     if (!horarios.length) return setError('Tocá los días que trabaja en alguna franja.')
     if (!sv.length && servicios.some((s) => s.activo)) return setError('Elegí al menos un servicio.')
@@ -107,8 +109,8 @@ function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null;
     setGuardando(true)
     try {
       let id = b?.id
-      if (b) { await api(`/panel/barberos/${b.id}`, { method: 'PATCH', body: JSON.stringify({ nombre }) }); await api(`/panel/barberos/${b.id}/horarios`, { method: 'PUT', body: JSON.stringify({ horarios }) }) }
-      else id = (await api<Barbero>('/panel/barberos', { method: 'POST', body: JSON.stringify({ nombre, horarios }) })).id
+      if (b) { await api(`/panel/barberos/${b.id}`, { method: 'PATCH', body: JSON.stringify({ nombre, email: email.trim() }) }); await api(`/panel/barberos/${b.id}/horarios`, { method: 'PUT', body: JSON.stringify({ horarios }) }) }
+      else id = (await api<Barbero>('/panel/barberos', { method: 'POST', body: JSON.stringify({ nombre, email: email.trim(), horarios }) })).id
       await api(`/panel/barberos/${id}/servicios`, { method: 'PUT', body: JSON.stringify({ servicio_ids: sv }) })
       onListo(b ? `Horario de ${nombre.split(' ')[0]} actualizado en tu página.` : `${nombre.split(' ')[0]} ya aparece en tu página para sacar turno.`)
     } catch (e) { setError(errMsg(e)) } finally { setGuardando(false) }
@@ -131,6 +133,7 @@ function EditorBarbero({ b, servicios, onCerrar, onListo }: { b: Barbero | null;
       pie={<><p className="resumen-h">{resumen(horarios)}</p>{error && <p className="estado mal" role="alert">{error}</p>}
         <div className="botones"><button type="button" className="btn sec" onClick={onCerrar}>Cancelar</button><button type="button" className="btn" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : b ? 'Guardar' : 'Guardar y publicar'}</button></div></>}>
       <section className="bloque"><h3 className="cond">Datos</h3><label className="campo">Nombre y apellido<input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="off" /></label>
+        <label className="campo">Mail para avisos (opcional)<input type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@gmail.com" autoComplete="off" /><span className="ayuda">Le llega un mail cada vez que le sacan o le cancelan un turno.</span></label>
         {b ? <FotoBarbero id={b.id} url={foto} nombre={b.nombre} onCambio={() => { qc.invalidateQueries({ queryKey: ['p-barberos'] }); api<Barbero[]>('/panel/barberos').then((ls) => setFoto(ls.find((x) => x.id === b.id)?.foto_url ?? null)) }} />
           : <p className="ayuda" style={{ marginTop: 10 }}>La foto se sube después de guardarlo.</p>}</section>
       <section className="bloque"><h3 className="cond">Horario</h3><p className="ayuda" style={{ marginTop: 10 }}>Cargá cada franja una vez y tocá los días que la trabaja. Los turnos arrancan cada 30 minutos.</p>
@@ -255,11 +258,12 @@ export function MiPagina() {
   useEffect(() => { if (cfg.data && !f) setF(cfg.data) }, [cfg.data, f])
   useEffect(() => { if (regla.isSuccess && ss.data) { const x = regla.data; setR({ cada: x?.cada_x_cortes ?? 5, tipo: x?.tipo ?? 'servicio_gratis', valor: x?.valor ? String(x.valor) : '', servicio: x?.servicio_id ?? ss.data.find((s) => s.activo)?.id ?? '', texto: x?.tipo === 'texto' && x.modo !== 'ruleta' ? x.descripcion : '', modo: x?.modo ?? 'fijo', ruleta: x?.ruleta?.length ? x.ruleta : RULETA_INICIAL }) } }, [regla.isSuccess, regla.data, ss.data])
   if (!f) return <main><p>Cargando…</p></main>
-  const url = `navagenda.com.ar/${f.slug}`
+  // La dirección real de la web (hoy navagenda-web.onrender.com; mañana el dominio propio)
+  const url = `${location.host}/${f.slug}`
   const serv = ss.data?.find((s) => s.id === r.servicio)
   const premio = r.tipo === 'servicio_gratis' ? `${serv?.nombre ?? 'Servicio'} gratis` : r.tipo === 'descuento_pct' ? `${r.valor || '?'}% de descuento` : r.tipo === 'descuento_monto' ? `${pesos(+r.valor || 0)} de descuento` : r.texto || 'Premio'
   const ok = colorOk(f.color_acento)
-  async function copiar(t: string) { try { await navigator.clipboard.writeText('https://' + t); setMsg('Link copiado.') } catch { setMsg(t) } }
+  async function copiar(t: string) { try { await navigator.clipboard.writeText(`${location.protocol}//${t}`); setMsg('Link copiado.') } catch { setMsg(t) } }
   async function guardar() {
     if (!ok) return setMsg('Con ese color no se lee bien el texto. Probá otro.')
     try {
@@ -279,7 +283,7 @@ export function MiPagina() {
         <div style={{ display: 'grid', gap: 26, alignContent: 'start' }}>
           <section className="bloque"><h3 className="cond">Tu link</h3><p className="ayuda" style={{ marginTop: 10 }}>Ponelo en tu Instagram y tu WhatsApp. Cada barbero tiene el suyo, que abre la página con él ya elegido.</p>
             <ul className="links">{[url, ...(bs.data ?? []).filter((b) => b.activo).map((b) => `${url}?con=${b.nombre.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim().replace(/\s+/g, '-')}`)].map((l) => (
-              <li key={l}><span>{l}</span><button type="button" className="quitar" onClick={() => copiar(l)} aria-label={`Copiar ${l}`}><Copy className="i" aria-hidden /></button></li>))}</ul></section>
+              <li key={l}><a href={`${location.protocol}//${l}`} target="_blank" rel="noopener">{l}</a><button type="button" className="quitar" onClick={() => copiar(l)} aria-label={`Copiar ${l}`}><Copy className="i" aria-hidden /></button></li>))}</ul></section>
           <section className="bloque"><h3 className="cond">Color</h3>
             <div className="colores" role="group" aria-label="Color de tu página">{PRESETS.map((c) => <button key={c} type="button" className="color" style={{ background: c }} aria-pressed={c === f.color_acento} aria-label={`Color ${c}`} onClick={() => setF({ ...f, color_acento: c })} />)}</div>
             <label className="campo">Otro color (hexadecimal)<input value={f.color_acento} maxLength={7} onChange={(e) => setF({ ...f, color_acento: e.target.value.toLowerCase() })} /></label>

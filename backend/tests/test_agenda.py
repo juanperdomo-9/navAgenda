@@ -109,3 +109,24 @@ def test_turno_a_mano_solo_con_servicios_del_barbero(client, ins, db):
         },
     )
     assert r.status_code == 422
+
+
+def test_la_barberia_cancela_un_turno_y_libera_el_horario(client, ins):
+    t = manual(client, ins, 12).json()["id"]
+    assert client.post(f"/panel/turnos/{t}/cancelar").json()["estado"] == "cancelado"
+    assert client.post(f"/panel/turnos/{t}/cancelar").status_code == 409
+    assert manual(client, ins, 12, tel="221 999 8888").status_code == 201
+
+
+def test_no_se_cancela_uno_ya_atendido(client, ins):
+    t = manual(client, ins, 12).json()["id"]
+    client.post(f"/panel/turnos/{t}/asistio", json={})
+    assert client.post(f"/panel/turnos/{t}/cancelar").status_code == 409
+
+
+def test_el_mail_del_barbero_se_guarda_y_se_borra(client, ins):
+    b = str(ins["barbero"])
+    r = client.patch(f"/panel/barberos/{b}", json={"email": " Thiago@Mail.com "})
+    assert r.json()["email"] == "thiago@mail.com"
+    assert client.patch(f"/panel/barberos/{b}", json={"email": "no-es-un-mail"}).status_code == 422
+    assert client.patch(f"/panel/barberos/{b}", json={"email": ""}).json()["email"] is None

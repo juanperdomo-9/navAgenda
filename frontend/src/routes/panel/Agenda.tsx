@@ -40,6 +40,8 @@ export function Agenda() {
   const servicios = useQuery({ queryKey: ['p-servicios'], queryFn: () => api<Servicio[]>('/panel/servicios') })
   const agenda = useQuery({ queryKey: ['agenda', fecha], queryFn: () => api<Agenda>(`/panel/agenda?fecha=${fecha}`), refetchInterval: 60_000 })
   const [turno, setTurno] = useState<Turno | null>(null)
+  const [cancelando, setCancelando] = useState(false)
+  const cfg = useQuery({ queryKey: ['p-config'], queryFn: () => api<{ nombre: string; slug: string }>('/panel/barberia') })
   const [nuevo, setNuevo] = useState<{ b: Barbero; m: number; pasado?: boolean; bloquear?: boolean } | null>(null)
   const [aviso, setAviso] = useState('')
   const refrescar = () => qc.invalidateQueries({ queryKey: ['agenda'] })
@@ -91,7 +93,7 @@ export function Agenda() {
                   const clase = t.estado === 'reservado' && t.tiene_premio ? 'con-premio' : t.estado
                   const alto = y(minDe(t.fin)) - y(minDe(t.inicio))
                   return (
-                    <button key={t.id} type="button" className={`bloque-t ${clase} ${alto < 50 ? 'corto' : ''}`} style={{ top: y(minDe(t.inicio)) + 2, height: alto - 4 }} onClick={() => setTurno(t)}
+                    <button key={t.id} type="button" className={`bloque-t ${clase} ${alto < 50 ? 'corto' : ''}`} style={{ top: y(minDe(t.inicio)) + 2, height: alto - 4 }} onClick={() => { setCancelando(false); setTurno(t) }}
                       aria-label={`${hm(t.inicio)} ${t.cliente.nombre}, ${t.servicio}, ${t.estado === 'reservado' ? (t.tiene_premio ? 'tiene premio' : 'reservado') : t.estado === 'asistio' ? 'vino' : 'no vino'}`}>
                       <b>{hm(t.inicio)} {t.cliente.nombre}</b>
                       <span>{t.estado !== 'reservado' && <em>{t.estado === 'asistio' ? (t.beneficio_aplicado ? 'Premio' : 'Vino') : 'No vino'}</em>}{t.servicio}{t.estado === 'reservado' && t.tiene_premio && <Gift className="i" aria-hidden />}</span>
@@ -146,6 +148,15 @@ export function Agenda() {
           <p style={{ marginTop: 12, font: '600 17px/1.5 var(--type-archivo)' }}>{hm(turno.inicio)} a {hm(turno.fin)} · {turno.beneficio_aplicado ? `${pesos(turno.cobrado)} (con premio)` : pesos(turno.precio)}<br />{turno.cliente.telefono.replace('+549', '')}</p>
           {turno.estado === 'reservado' && turno.tiene_premio && <span className="sello" style={{ marginTop: 14 }}>Tiene premio: {turno.premio ?? ag?.premio}</span>}
           {turno.estado === 'reservado' && turno.completa_tarjeta && <span className="sello completa" style={{ marginTop: 14 }}>Con este corte completa la tarjeta</span>}
+          {turno.estado === 'reservado' && (cancelando ? (
+            <div className="confirmar" style={{ marginTop: 18 }}>¿Cancelar el turno de {turno.cliente.nombre}? El horario queda libre para otro.
+              <div className="botones">
+                <button type="button" className="btn peligro chico" onClick={() => { window.open(avisoCancelado(turno, cfg.data), '_blank', 'noopener'); accion(`/panel/turnos/${turno.id}/cancelar`, undefined, 'Turno cancelado. Le abrimos WhatsApp para avisarle.') }}>Cancelar y avisarle por WhatsApp</button>
+                <button type="button" className="btn sec chico" onClick={() => accion(`/panel/turnos/${turno.id}/cancelar`, undefined, 'Turno cancelado. El horario quedó libre.')}>Solo cancelar</button>
+                <button type="button" className="link" onClick={() => setCancelando(false)}>No</button>
+              </div>
+            </div>
+          ) : <button type="button" className="link rojo" style={{ marginTop: 18 }} onClick={() => setCancelando(true)}>Cancelar este turno</button>)}
           {ag?.cada_x_cortes && <div className="tarjetita" style={{ marginTop: 14 }} role="img" aria-label={`${turno.cortes} de ${ag.cada_x_cortes} cortes`}>{Array.from({ length: ag.cada_x_cortes }, (_, i) => <i key={i} className={i < turno.cortes ? 'x' : ''} />)}</div>}
         </section>}
       </Hoja>
@@ -154,6 +165,13 @@ export function Agenda() {
         onListo={(t) => { setNuevo(null); refrescar(); setAviso(t) }} onCerrar={() => setNuevo(null)} />}
     </main>
   )
+}
+
+/** Link de WhatsApp al cliente con el aviso de que se canceló su turno. */
+function avisoCancelado(t: Turno, b?: { nombre: string; slug: string }) {
+  const dia = new Date(t.inicio).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'numeric', timeZone: ZONA })
+  const txt = `Hola ${t.cliente.nombre.split(' ')[0]}, te escribimos de ${b?.nombre ?? 'la barbería'}. Tuvimos que cancelar tu turno del ${dia} a las ${hm(t.inicio)}. Perdón por el cambio.${b ? ` Si querés, sacá otro acá: ${location.origin}/${b.slug}` : ''}`
+  return `https://wa.me/${t.cliente.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(txt)}`
 }
 
 function TurnoAMano({ b: b0, m: m0, pasado, barberos, fecha, servicios: todos, onListo, onCerrar }: { b: Barbero; m: number; pasado: boolean; barberos?: Barbero[]; fecha: string; servicios: Servicio[]; onListo: (t: string) => void; onCerrar: () => void }) {

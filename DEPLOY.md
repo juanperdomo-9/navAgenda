@@ -17,6 +17,11 @@
 5. Plan free: la API se duerme a los 15 min sin uso (el primero espera ~50 s). Opcional: un ping gratis cada
    10 min a `https://navagenda-api.onrender.com/health` (ej.: cron-job.org).
 
+6. **Avisos por mail a cada barbero (Brevo, gratis hasta 300 por día)**: creá la cuenta en brevo.com, verificá tu
+   mail como remitente (*Senders, Domains & Dedicated IPs → Senders*) y generá una clave en *SMTP & API → API Keys*.
+   En Render → `navagenda-api` → *Environment* agregá `BREVO_API_KEY` (la clave) y `BREVO_REMITENTE` (el mail
+   verificado). Cada barbero carga su mail en *Barberos → editar*. Sin la clave no se manda nada.
+
 Si se pierde una clave: el superadmin resetea la de cualquier admin desde su panel.
 
 Dominio propio: en Render → `navagenda-web` → *Custom domains* (después).

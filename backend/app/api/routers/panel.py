@@ -97,6 +97,7 @@ def _sin_repetir(db, modelo, barberia_id, nombre: str, que: str) -> None:
 def crear_barbero(datos: BarberoNuevo, admin: Admin, db: DB):
     _sin_repetir(db, Barbero, admin.barberia_id, datos.nombre, "un barbero que se llama")
     b = svc.crear_barbero(db, admin.barberia_id, datos.nombre, datos.foto_url, datos.horarios)
+    b.email = (datos.email or "").strip().lower() or None
     db.commit()
     return svc.barbero_out(db, b)
 
@@ -111,6 +112,8 @@ def cambiar_barbero(barbero_id: UUID, datos: BarberoCambios, admin: Admin, db: D
     b = _barbero(db, admin, barbero_id)
     for campo, valor in datos.model_dump(exclude_unset=True).items():
         setattr(b, campo, valor.strip() if isinstance(valor, str) else valor)
+    if "email" in datos.model_fields_set:
+        b.email = (datos.email or "").strip().lower() or None
     db.commit()
     return svc.barbero_out(db, b)
 

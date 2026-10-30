@@ -157,6 +157,8 @@ class Barbero(Base):
     nombre: Mapped[str] = mapped_column(Text, nullable=False)
     foto_url: Mapped[str | None] = mapped_column(Text)
     foto_jpg: Mapped[bytes | None] = deferred(mapped_column(LargeBinary))
+    # Para avisarle por mail cuando le sacan o cancelan un turno
+    email: Mapped[str | None] = mapped_column(Text)
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
     creado_en: Mapped[datetime] = _creado_en()
 

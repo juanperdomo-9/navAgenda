@@ -47,9 +47,13 @@ def _sin_superposicion(tramos: list[Tramo]) -> list[Tramo]:
 # ─── Barberos ───
 
 
+MAIL = r"^\s*$|^\s*[^@\s]+@[^@\s]+\.[^@\s]+\s*$"
+
+
 class BarberoNuevo(BaseModel):
     nombre: str = Field(min_length=2, max_length=60)
     foto_url: str | None = Field(default=None, max_length=500)
+    email: str | None = Field(default=None, max_length=120, pattern=MAIL)
     horarios: list[Tramo] = Field(default_factory=list, max_length=60)
 
     @field_validator("horarios")
@@ -61,6 +65,7 @@ class BarberoNuevo(BaseModel):
 class BarberoCambios(BaseModel):
     nombre: str | None = Field(default=None, min_length=2, max_length=60)
     foto_url: str | None = Field(default=None, max_length=500)
+    email: str | None = Field(default=None, max_length=120, pattern=MAIL)
     activo: bool | None = None
 
 
@@ -85,6 +90,7 @@ class BarberoOut(BaseModel):
     id: UUID
     nombre: str
     foto_url: str | None
+    email: str | None = None
     activo: bool
     horarios: list[Tramo]
     servicio_ids: list[UUID]

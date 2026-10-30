@@ -6,7 +6,7 @@ import secrets
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -26,7 +26,7 @@ from app.models import (
     Servicio,
     Turno,
 )
-from app.services import premios
+from app.services import avisos, premios
 from app.services.disponibilidad import horarios_libres
 
 router = APIRouter(tags=["público"])
@@ -210,7 +210,7 @@ class Reserva(BaseModel):
 
 
 @router.post("/p/{slug}/turnos", status_code=status.HTTP_201_CREATED)
-def reservar(slug: str, datos: Reserva, request: Request, db: DB):
+def reservar(slug: str, datos: Reserva, request: Request, db: DB, tareas: BackgroundTasks):
     ip = request.client.host if request.client else "?"
     if not limite_reservas.permitir(ip):
         raise HTTPException(
@@ -280,6 +280,7 @@ def reservar(slug: str, datos: Reserva, request: Request, db: DB):
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Ese horario se acaba de ocupar. Elegí otro."
         ) from None
+    tareas.add_task(avisos.mandar, avisos.armar(db, turno, "nuevo"))
     return {"token": token, **_ticket(db, turno)}
 
 
@@ -361,7 +362,7 @@ def girar_ruleta(token: str, db: DB):
 
 
 @router.post("/t/{token}/cancelar")
-def cancelar(token: str, db: DB):
+def cancelar(token: str, db: DB, tareas: BackgroundTasks):
     t = _por_token(db, token)
     info = _ticket(db, t)
     if not info["se_puede_cancelar"]:
@@ -373,4 +374,5 @@ def cancelar(token: str, db: DB):
         )
     t.estado = "cancelado"
     db.commit()
+    tareas.add_task(avisos.mandar, avisos.armar(db, t, "cancelado"))
     return _ticket(db, t)

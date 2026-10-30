@@ -173,7 +173,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 
 ## Fuera del MVP (no construir todavía)
 - Pagos o señas online
-- Notificaciones por WhatsApp, SMS o email
+- Notificaciones al cliente por WhatsApp, SMS o email (al barbero sí: mail por Brevo)
 - Verificación del teléfono por SMS/WhatsApp
 - Cuentas de cliente con login
 - Comisiones de barberos y liquidación de sueldos
@@ -243,6 +243,10 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Galería del local (Mi página → Fotos del local, hasta 8, `fotos_local`, `/foto/<id>.jpg`): collage debajo de la
   máquina y "Ver todas" en pantalla completa. Foto de cada barbero (Barberos → editar, `/barbero/<id>.jpg`), se ve en
   "Los barberos" y en el menú. Junto a la dirección: "Abierto hasta las …" / "Cerrado · abre …" según los horarios.
+- Avisos al barbero (2026-10-30): mail por Brevo (`app/services/avisos.py`, `BREVO_API_KEY` + `BREVO_REMITENTE`)
+  cuando le sacan o cancelan un turno desde la web; cada barbero carga su mail en Barberos. WhatsApp (Meta) después.
+  El panel cancela turnos (`POST /panel/turnos/{id}/cancelar`) con "avisarle por WhatsApp" de un toque, carga
+  turnos que ya pasaron (como "vino") y bloquea franjas con el botón "Bloquear" de la grilla.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

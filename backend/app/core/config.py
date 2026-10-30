@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     # La web publicada (para armar los links y las fotos al compartir)
     sitio_url: str = "https://navagenda-web.onrender.com"
+    # Avisos por mail al barbero (Brevo). Sin la clave no se manda nada.
+    brevo_api_key: str = ""
+    brevo_remitente: str = ""
+    brevo_nombre: str = "NavAgenda"
 
     @property
     def es_produccion(self) -> bool:

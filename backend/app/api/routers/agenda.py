@@ -158,6 +158,19 @@ def no_asistio(turno_id: UUID, admin: Admin, db: DB):
     return _out(db, t, _regla(db, admin.barberia_id))
 
 
+@router.post("/turnos/{turno_id}/cancelar")
+def cancelar_turno(turno_id: UUID, admin: Admin, db: DB):
+    """La barbería cancela un turno (pasó algo): queda en el historial y el horario se libera."""
+    t = _turno(db, admin, turno_id)
+    if t.estado != "reservado":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Solo se cancelan turnos por atender. Corregilo primero."
+        )
+    t.estado = "cancelado"
+    db.commit()
+    return _out(db, t, _regla(db, admin.barberia_id))
+
+
 @router.post("/turnos/{turno_id}/corregir")
 def corregir(turno_id: UUID, admin: Admin, db: DB):
     """Vuelve el turno a 'reservado' deshaciendo lo que sumó a la tarjeta."""

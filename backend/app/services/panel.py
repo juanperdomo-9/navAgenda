@@ -52,6 +52,7 @@ def barbero_out(db: Session, b: Barbero) -> BarberoOut:
         id=b.id,
         nombre=b.nombre,
         foto_url=b.foto_url,
+        email=b.email,
         activo=b.activo,
         horarios=[Tramo.model_validate(h) for h in horarios],
         servicio_ids=list(servicios),
