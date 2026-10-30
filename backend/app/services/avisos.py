@@ -7,6 +7,7 @@ un problema con el mail nunca frena una reserva.
 
 import json
 import logging
+import urllib.error
 import urllib.request
 
 from app.core.config import get_settings
@@ -72,5 +73,8 @@ def _enviar(para: str, asunto: str, texto: str) -> None:
     try:
         with urllib.request.urlopen(pedido, timeout=10):
             pass
+    except urllib.error.HTTPError as e:  # Brevo explica el motivo en el cuerpo (sin la clave)
+        motivo = e.read().decode(errors="replace")[:300]
+        log.warning("No se pudo mandar el aviso a %s: %s %s", para, e.code, motivo)
     except Exception:  # un mail que no sale no tiene que romper nada
         log.warning("No se pudo mandar el aviso a %s", para, exc_info=True)
