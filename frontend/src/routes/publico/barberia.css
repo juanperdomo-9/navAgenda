@@ -344,6 +344,3 @@
 .maq .otros { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin-top: 6px; }
 .maq .otros button { min-height: 48px; background: none; color: var(--led); border: 2px solid #ff2b1c66; border-radius: 4px; font: 900 22px var(--type-archivo); font-stretch: 70%; cursor: pointer; }
 .maq .otros button:hover { background: var(--led); color: var(--screen); border-color: var(--led); }
-
-/* Hoja de datos: servicio que dura más de lo que queda libre a esa hora */
-.hoja-p .serv.no-entra { opacity: .45; cursor: not-allowed; border-style: dashed; }
