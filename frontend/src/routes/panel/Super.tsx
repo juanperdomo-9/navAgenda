@@ -137,7 +137,7 @@ function NuevaBarberia({ pedido, onCerrar, onListo }: { pedido?: Pedido; onCerra
       pie={<button type="submit" form="nueva-b" className="btn" disabled={enviando}>{enviando ? 'Creando…' : 'Crear barbería'}</button>}>
       <form id="nueva-b" onSubmit={enviar} style={{ display: 'grid', gap: 4 }}>
         {campo('nombre', 'Nombre')}
-        {campo('slug', 'Link', { ayuda: `navagenda.com.ar/${f.slug || '…'}`, auto: 'slug' })}
+        {campo('slug', 'Link', { ayuda: `${location.host}/${f.slug || '…'}`, auto: 'slug' })}
         {campo('direccion', 'Dirección (opcional)', { ayuda: 'Ej.: Calle 8 e/ 49 y 50' })}
         {campo('barrio', 'Barrio (opcional)')}
         {campo('admin_nombre', 'Nombre del dueño')}

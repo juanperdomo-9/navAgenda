@@ -271,7 +271,8 @@ main { padding: 24px var(--g) 110px; max-width: 1180px; width: 100%; display: gr
 .previa .maq .seg { font-size: 28px; }
 .links { list-style: none; padding: 0; display: grid; gap: 8px; margin-top: 12px; }
 .links li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 6px 6px 14px; background: var(--papel); border: 1px solid var(--linea); border-radius: 6px; font: 700 15px 'Archivo'; }
-.links li span { overflow-wrap: anywhere; }
+.links li span, .links li a { overflow-wrap: anywhere; }
+.links li a { color: inherit; text-decoration: underline; text-underline-offset: 3px; min-height: 44px; display: flex; align-items: center; }
 .regla { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font: 800 18px 'Archivo'; margin-top: 12px; }
 .regla select, .regla input { min-height: 52px; padding: 0 12px; border: 2px solid var(--linea-fuerte); border-radius: 6px; background: var(--papel); font: 800 18px 'Archivo'; }
 .regla input { width: 110px; }

@@ -62,7 +62,7 @@ export function PanelPage() {
         <div className="mp-cab"><b className="cond">{nombre}</b><button type="button" onClick={() => setMenu(false)} aria-label="Cerrar el menú"><X aria-hidden /></button></div>
         <dl className="mp-datos">
           {cfg.data?.direccion && <><dt>Dirección</dt><dd>{cfg.data.direccion}{cfg.data.barrio ? ` · ${cfg.data.barrio}` : ''}</dd></>}
-          {cfg.data && <><dt>Tu link</dt><dd>navagenda.com.ar/{cfg.data.slug}</dd></>}
+          {cfg.data && <><dt>Tu link</dt><dd>{location.host}/{cfg.data.slug}</dd></>}
           <dt>Entraste como</dt><dd>{yo.data.nombre} ({yo.data.usuario})</dd>
         </dl>
         <nav aria-label="Secciones">
