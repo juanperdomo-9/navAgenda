@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { api, ApiError } from '@/lib/api'
 import { NotFoundPage } from '@/routes/NotFoundPage'
-import { estiloBarberia, guardarTicket, horaAR, hoyMas, pesos, tinta } from './comun'
+import { estiloBarberia, guardarTicket, horaAR, hoyMas, pesos, tinta, ZONA } from './comun'
 import { Led } from './Led'
 import { diaDe, Secciones, type Libre, type PaginaBarberia } from './Secciones'
 import { Barra, PieBarberia } from './Barra'
@@ -130,7 +130,19 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
 function Datos({ slug, libre, servicios, preferido, barbero, diaTxt, onListo, onCerrar }: {
   slug: string; libre: Libre; servicios: Pagina['servicios']; preferido: string | null; barbero: string; diaTxt: string; onListo: (t: string) => void; onCerrar: () => void
 }) {
-  const [sid, setSid] = useState(servicios.find((s) => s.id === preferido)?.id ?? servicios[0]?.id ?? '')
+  // Los horarios salen del servicio más corto: uno más largo puede no entrar a esta hora
+  // (cierra el barbero o tiene otro turno después). Se pregunta, para cada servicio, si este horario está libre.
+  const fecha = new Date(libre.inicio).toLocaleDateString('en-CA', { timeZone: ZONA })
+  const entran = useQueries({
+    queries: servicios.map((s) => ({
+      queryKey: ['libres', slug, s.id, fecha, libre.barbero_id],
+      queryFn: () => api<Libre[]>(`/p/${slug}/libres?servicio_id=${s.id}&fecha=${fecha}&barbero_id=${libre.barbero_id}`),
+    })),
+  })
+  const entra = (i: number) => !entran[i].data || entran[i].data.some((l) => l.inicio === libre.inicio)
+  const [elegido, setSid] = useState(servicios.find((s) => s.id === preferido)?.id ?? servicios[0]?.id ?? '')
+  // Si el elegido no entra, pasa al primero que sí
+  const sid = entra(servicios.findIndex((s) => s.id === elegido)) ? elegido : servicios.find((_, i) => entra(i))?.id ?? elegido
   const servicio = servicios.find((s) => s.id === sid) ?? servicios[0]
   const guardado = useMemo(() => { try { return JSON.parse(localStorage.getItem('navagenda-yo') || 'null') } catch { return null } }, [])
   const [nombre, setNombre] = useState(guardado?.nombre ?? '')
@@ -159,10 +171,10 @@ function Datos({ slug, libre, servicios, preferido, barbero, diaTxt, onListo, on
       <div className="res"><b>{horaAR(libre.inicio).replace(/^0/, '')}</b><span>Con {barbero}</span><small>{diaTxt.charAt(0).toUpperCase() + diaTxt.slice(1)}</small></div>
       <fieldset className="servs">
         <legend>¿Qué te hacés?</legend>
-        {servicios.map((s) => (
-          <label key={s.id} className="serv">
-            <input type="radio" name="servicio" value={s.id} checked={s.id === sid} onChange={() => { setSid(s.id); setError('') }} />
-            <span>{s.nombre}<small>{s.duracion_min} min</small></span><b>{pesos(s.precio)}</b>
+        {servicios.map((s, i) => (
+          <label key={s.id} className={`serv ${entra(i) ? '' : 'no-entra'}`}>
+            <input type="radio" name="servicio" value={s.id} checked={s.id === sid} disabled={!entra(i)} onChange={() => { setSid(s.id); setError('') }} />
+            <span>{s.nombre}<small>{s.duracion_min} min{!entra(i) && ' · no entra a esta hora'}</small></span><b>{pesos(s.precio)}</b>
           </label>
         ))}
       </fieldset>
