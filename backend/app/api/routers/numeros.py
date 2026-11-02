@@ -5,11 +5,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, delete, func, select
 
 from app.api.deps import DB, Admin
 from app.core.tz import ZONA_AR
-from app.models import Barbero, Cliente, Fidelidad, Servicio, Turno
+from app.models import Barbero, Cliente, Fidelidad, Giro, Servicio, Turno
 
 router = APIRouter(prefix="/panel", tags=["numeros"])
 
@@ -67,6 +67,22 @@ def bloquear_cliente(cliente_id: UUID, datos: Bloqueo, admin: Admin, db: DB):
     c.bloqueado = datos.bloqueado
     db.commit()
     return {"id": c.id, "bloqueado": c.bloqueado}
+
+
+@router.delete("/clientes/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
+def borrar_cliente(cliente_id: UUID, admin: Admin, db: DB) -> None:
+    """Borra un cliente (ej. uno de prueba) con sus turnos, giros y tarjeta. No se puede deshacer:
+    sus turnos dejan de contar en Números."""
+    c = db.scalar(
+        select(Cliente).where(Cliente.id == cliente_id, Cliente.barberia_id == admin.barberia_id)
+    )
+    if not c:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe ese cliente.")
+    db.execute(delete(Giro).where(Giro.cliente_id == c.id))
+    db.execute(delete(Turno).where(Turno.cliente_id == c.id))
+    db.execute(delete(Fidelidad).where(Fidelidad.cliente_id == c.id))
+    db.delete(c)
+    db.commit()
 
 
 @router.get("/numeros")

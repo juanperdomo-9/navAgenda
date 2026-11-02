@@ -30,7 +30,17 @@ export function Clientes() {
   const regla = useQuery({ queryKey: ['p-regla'], queryFn: () => api<{ cada_x_cortes: number } | null>('/panel/fidelidad') })
   const [q, setQ] = useState('')
   const [aviso, setAviso] = useState('')
+  const [borrando, setBorrando] = useState<string | null>(null)
   const cada = regla.data?.cada_x_cortes ?? 0
+
+  async function borrar(c: Cliente) {
+    try {
+      await api(`/panel/clientes/${c.id}`, { method: 'DELETE' })
+      setBorrando(null)
+      setAviso(`Borramos a ${c.nombre} y sus turnos.`)
+      qc.invalidateQueries({ queryKey: ['p-clientes'] }); qc.invalidateQueries({ queryKey: ['agenda'] }); qc.invalidateQueries({ queryKey: ['numeros'] })
+    } catch (e) { setAviso(e instanceof ApiError ? e.message : 'No se pudo borrar.') }
+  }
 
   async function bloquear(c: Cliente) {
     try {
@@ -55,7 +65,12 @@ export function Clientes() {
             <span><span className="n cond">{c.nombre}</span><span className="r" style={{ display: 'block' }}>{telFmt(c.telefono)} · {c.visitas} {c.visitas === 1 ? 'visita' : 'visitas'} · {c.ausencias} {c.ausencias === 1 ? 'ausencia' : 'ausencias'} · {c.premios_usados} {c.premios_usados === 1 ? 'premio usado' : 'premios usados'}</span></span>
             {c.premios > 0 ? <span className="sello"><Gift className="i" aria-hidden />Tiene premio</span>
               : cada > 0 && <span className="tarjetita" role="img" aria-label={`${c.cortes} de ${cada} cortes`}>{Array.from({ length: cada }, (_, i) => <i key={i} className={i < c.cortes ? 'x' : ''} />)}</span>}
-            <span className="acc"><button className={`link ${c.bloqueado ? '' : 'rojo'}`} type="button" onClick={() => bloquear(c)}>{c.bloqueado ? 'Desbloquear teléfono' : 'Bloquear teléfono'}</button>{c.bloqueado && <span className="ayuda"> No puede sacar turnos online.</span>}</span>
+            <span className="acc"><button className={`link ${c.bloqueado ? '' : 'rojo'}`} type="button" onClick={() => bloquear(c)}>{c.bloqueado ? 'Desbloquear teléfono' : 'Bloquear teléfono'}</button>{c.bloqueado && <span className="ayuda"> No puede sacar turnos online.</span>}
+              {borrando === c.id ? (
+                <span className="confirmar" style={{ marginTop: 8 }}>¿Borrar a {c.nombre}? Se borran sus turnos y su tarjeta, y dejan de contar en Números. No se puede deshacer.
+                  <span className="botones"><button type="button" className="btn peligro chico" onClick={() => borrar(c)}>Sí, borrar</button><button type="button" className="btn sec chico" onClick={() => setBorrando(null)}>No</button></span>
+                </span>
+              ) : <button className="link rojo" type="button" onClick={() => setBorrando(c.id)}>Borrar cliente</button>}</span>
           </li>))}</ul>}
     </main>
   )

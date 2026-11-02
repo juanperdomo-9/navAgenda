@@ -237,7 +237,8 @@ main { padding: 24px var(--g) 110px; max-width: 1180px; width: 100%; display: gr
 .cliente { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; padding: 14px 4px; border-bottom: 1px solid var(--linea); align-items: center; }
 .cliente .n { font-size: 24px; line-height: 1; }
 .cliente .r { font: 500 14px/1.35 'Archivo'; color: var(--ink-2); }
-.cliente .acc { grid-column: 1 / -1; }
+.cliente .acc { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; }
+.cliente .acc .confirmar { flex-basis: 100%; }
 .cliente.bloq .n { text-decoration: line-through; }
 .tarjetita { display: flex; gap: 3px; align-items: center; }
 .tarjetita i { position: relative; width: 16px; height: 16px; border-radius: 50%; border: 1.5px dashed var(--linea-fuerte); }
