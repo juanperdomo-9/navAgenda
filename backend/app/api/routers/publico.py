@@ -209,6 +209,30 @@ class Reserva(BaseModel):
     telefono: str = Field(min_length=8, max_length=24)
 
 
+def _por_que_no(db, barberia_id, datos: Reserva, dia: date, inicio: datetime) -> str:
+    """Los horarios se ofrecen con el servicio más corto: si con ese sí entra, el problema es
+    que el servicio elegido es más largo (termina después del cierre o pisa el próximo turno)."""
+    s = db.scalar(
+        select(Servicio).where(
+            Servicio.id == datos.servicio_id, Servicio.barberia_id == barberia_id
+        )
+    )
+    corto = db.scalar(
+        select(Servicio)
+        .where(Servicio.barberia_id == barberia_id, Servicio.activo)
+        .order_by(Servicio.duracion_min)
+        .limit(1)
+    )
+    if s and corto and corto.duracion_min < s.duracion_min:
+        libres_corto = horarios_libres(db, barberia_id, corto.id, dia, datos.barbero_id)
+        if any(x.inicio == inicio for x in libres_corto):
+            return (
+                f"{s.nombre} dura {s.duracion_min} min y no entra a esa hora. "
+                "Elegí un horario más temprano u otro servicio."
+            )
+    return "Ese horario ya no está libre. Elegí otro."
+
+
 @router.post("/p/{slug}/turnos", status_code=status.HTTP_201_CREATED)
 def reservar(slug: str, datos: Reserva, request: Request, db: DB, tareas: BackgroundTasks):
     ip = request.client.host if request.client else "?"
@@ -231,7 +255,7 @@ def reservar(slug: str, datos: Reserva, request: Request, db: DB, tareas: Backgr
         if x.inicio == inicio
     ]
     if not candidatos:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Ese horario ya no está libre. Elegí otro.")
+        raise HTTPException(status.HTTP_409_CONFLICT, _por_que_no(db, b.id, datos, dia, inicio))
 
     cliente = db.scalar(select(Cliente).where(Cliente.barberia_id == b.id, Cliente.telefono == tel))
     if cliente and cliente.bloqueado:
@@ -353,7 +377,8 @@ def girar_ruleta(token: str, db: DB):
             ReglaBeneficio.barberia_id == t.barberia_id, ReglaBeneficio.activa
         )
     )
-    fid = db.get(Fidelidad, t.cliente_id)
+    # Bloquea la tarjeta: dos toques seguidos no pueden girar dos veces el mismo premio
+    fid = db.get(Fidelidad, t.cliente_id, with_for_update=True)
     if not premios.puede_girar(db, regla, fid):
         raise HTTPException(status.HTTP_409_CONFLICT, "No tenés una ruleta para girar.")
     g, i = premios.girar(db, regla, fid)

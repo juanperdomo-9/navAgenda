@@ -49,7 +49,12 @@ def _fid(db, c: Cliente) -> Fidelidad:
 
 
 def _turno(db, admin, turno_id: UUID) -> Turno:
-    t = db.scalar(select(Turno).where(Turno.id == turno_id, Turno.barberia_id == admin.barberia_id))
+    # Bloquea el turno hasta el commit: un doble toque en "Asistió" no suma dos tijeras
+    t = db.scalar(
+        select(Turno)
+        .where(Turno.id == turno_id, Turno.barberia_id == admin.barberia_id)
+        .with_for_update()
+    )
     if not t:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe ese turno.")
     return t

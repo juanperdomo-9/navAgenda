@@ -167,3 +167,32 @@ def test_sin_mail_del_barbero_no_se_avisa(client, ins, monkeypatch):
     monkeypatch.setattr(avisos, "_enviar", lambda *a: enviados.append(a))
     assert reservar(client, ins, proximo_libre(client, ins)).status_code == 201
     assert enviados == []
+
+
+def test_si_el_servicio_no_entra_lo_dice(client, ins, db):
+    """El último horario sale con el servicio más corto; uno más largo no entra antes del cierre."""
+    from app.models import Servicio
+
+    corto, largo = ins["p"]["servicios"][0], ins["p"]["servicios"][1]
+    db.get(Servicio, largo["id"]).duracion_min = 60
+    db.flush()
+    hoy = datetime.now(ZONA_AR).date()
+    for d in range(1, 10):
+        r = client.get(
+            "/p/inspirationmen/libres",
+            params={"servicio_id": corto["id"], "fecha": str(hoy + timedelta(days=d))},
+        ).json()
+        if r:
+            break
+    ultimo = r[-1]
+    res = client.post(
+        "/p/inspirationmen/turnos",
+        json={
+            "servicio_id": largo["id"],
+            "barbero_id": ultimo["barbero_id"],
+            "inicio": ultimo["inicio"],
+            "nombre": "Juan",
+            "telefono": "221 456 7890",
+        },
+    )
+    assert res.status_code == 409 and "no entra a esa hora" in res.json()["detail"]
