@@ -247,6 +247,11 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   cuando le sacan o cancelan un turno desde la web; cada barbero carga su mail en Barberos. WhatsApp (Meta) después.
   El panel cancela turnos (`POST /panel/turnos/{id}/cancelar`) con "avisarle por WhatsApp" de un toque, carga
   turnos que ya pasaron (como "vino") y bloquea franjas con el botón "Bloquear" de la grilla.
+- Ruleta de bienvenida (2026-11-02): talón "¿Primera vez acá?" arriba de la máquina; un teléfono nuevo (sin turnos en
+  esa barbería) gira una sola vez para siempre (`POST /p/{slug}/bienvenida`, tabla `bienvenidas`) con los premios de la
+  ruleta de fidelidad y tiene 3 minutos para sacar turno para los próximos 7 días. El premio queda en el turno, se ve en
+  la grilla ("Primera vez: …") y se cobra al marcar asistió. Se prende en Mi página (`barberias.ruleta_bienvenida`).
+- Clientes: se pueden borrar (con sus turnos, tarjeta y giro de bienvenida), pensado para clientes de prueba.
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

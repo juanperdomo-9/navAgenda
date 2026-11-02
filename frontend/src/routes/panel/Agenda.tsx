@@ -17,7 +17,7 @@ const isoAR = (fecha: string, m: number) => m < 24 * 60 ? `${fecha}T${mh(m)}:00-
 
 type Barbero = { id: string; nombre: string; activo: boolean; horarios: { dia_semana: number; desde: string; hasta: string }[]; servicio_ids: string[] }
 type Servicio = { id: string; nombre: string; precio: number; duracion_min: number; activo: boolean }
-type Turno = { id: string; barbero_id: string; inicio: string; fin: string; precio: number; estado: string; beneficio_aplicado: boolean; servicio: string; cliente: { nombre: string; telefono: string }; tiene_premio: boolean; premio: string | null; cobrado: number; completa_tarjeta: boolean; cortes: number }
+type Turno = { id: string; barbero_id: string; inicio: string; fin: string; precio: number; estado: string; beneficio_aplicado: boolean; servicio: string; cliente: { nombre: string; telefono: string }; tiene_premio: boolean; premio: string | null; cobrado: number; completa_tarjeta: boolean; cortes: number; bienvenida: string | null }
 type Agenda = { cada_x_cortes: number | null; premio: string | null; turnos: Turno[]; bloqueos: { id: string; barbero_id: string; inicio: string; fin: string; motivo: string | null }[] }
 
 /** Hoja (panel lateral) reutilizable. */
@@ -91,13 +91,13 @@ export function Agenda() {
                   return <button key={x.id} type="button" className="bloque-b" style={{ top: y(a), height: y(z) - y(a) }} onClick={async () => { await api(`/panel/bloqueos/${x.id}`, { method: 'DELETE' }); refrescar(); setAviso('Horario desbloqueado.') }} aria-label={`Bloqueado: ${x.motivo ?? ''}. Desbloquear`}><span>{x.motivo || 'Bloqueado'}</span></button>
                 })}
                 {ts.map((t) => {
-                  const clase = t.estado === 'reservado' && t.tiene_premio ? 'con-premio' : t.estado
+                  const clase = t.estado === 'reservado' && (t.tiene_premio || t.bienvenida) ? 'con-premio' : t.estado
                   const alto = y(minDe(t.fin)) - y(minDe(t.inicio))
                   return (
                     <button key={t.id} type="button" className={`bloque-t ${clase} ${alto < 50 ? 'corto' : ''}`} style={{ top: y(minDe(t.inicio)) + 2, height: alto - 4 }} onClick={() => { setCancelando(false); setTurno(t) }}
                       aria-label={`${hm(t.inicio)} ${t.cliente.nombre}, ${t.servicio}, ${t.estado === 'reservado' ? (t.tiene_premio ? 'tiene premio' : 'reservado') : t.estado === 'asistio' ? 'vino' : 'no vino'}`}>
                       <b>{hm(t.inicio)} {t.cliente.nombre}</b>
-                      <span>{t.estado !== 'reservado' && <em>{t.estado === 'asistio' ? (t.beneficio_aplicado ? 'Premio' : 'Vino') : 'No vino'}</em>}{t.servicio}{t.estado === 'reservado' && t.tiene_premio && <Gift className="i" aria-hidden />}</span>
+                      <span>{t.estado !== 'reservado' && <em>{t.estado === 'asistio' ? (t.beneficio_aplicado ? 'Premio' : 'Vino') : 'No vino'}</em>}{t.servicio}{t.estado === 'reservado' && (t.tiene_premio || t.bienvenida) && <Gift className="i" aria-hidden />}</span>
                     </button>
                   )
                 })}
@@ -148,6 +148,7 @@ export function Agenda() {
           <h3 className="cond">{turno.servicio}</h3>
           <p style={{ marginTop: 12, font: '600 17px/1.5 var(--type-archivo)' }}>{hm(turno.inicio)} a {hm(turno.fin)} · {turno.beneficio_aplicado ? `${pesos(turno.cobrado)} (con premio)` : pesos(turno.precio)}<br />{turno.cliente.telefono.replace('+549', '')}</p>
           {turno.estado === 'reservado' && turno.tiene_premio && <span className="sello" style={{ marginTop: 14 }}>Tiene premio: {turno.premio ?? ag?.premio}</span>}
+          {turno.bienvenida && <span className="sello" style={{ marginTop: 14 }}>Primera vez: {turno.bienvenida}{turno.estado === 'reservado' ? ' · se aplica al marcar Asistió' : ''}</span>}
           {turno.estado === 'reservado' && turno.completa_tarjeta && <span className="sello completa" style={{ marginTop: 14 }}>Con este corte completa la tarjeta</span>}
           {turno.estado === 'reservado' && (cancelando ? (
             <div className="confirmar" style={{ marginTop: 18 }}>¿Cancelar el turno de {turno.cliente.nombre}? El horario queda libre para otro.

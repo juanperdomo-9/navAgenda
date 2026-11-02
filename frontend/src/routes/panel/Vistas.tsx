@@ -237,7 +237,7 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
 }
 
 /* ═══ MI PÁGINA ═══ */
-type Config = { nombre: string; slug: string; logo_url: string | null; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null }
+type Config = { nombre: string; slug: string; logo_url: string | null; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null; ruleta_bienvenida: boolean }
 type PremioRuleta = { texto: string; descuento_pct: number }
 type Regla = { cada_x_cortes: number; tipo: string; valor: number | null; servicio_id: string | null; descripcion: string; modo: 'fijo' | 'ruleta'; ruleta: PremioRuleta[] } | null
 const RULETA_INICIAL: PremioRuleta[] = [{ texto: 'Corte gratis', descuento_pct: 100 }, { texto: '50% de descuento', descuento_pct: 50 }, { texto: '20% de descuento', descuento_pct: 20 }, { texto: '10% de descuento', descuento_pct: 10 }]
@@ -277,7 +277,7 @@ export function MiPagina() {
   async function guardar() {
     if (!ok) return setMsg('Con ese color no se lee bien el texto. Probá otro.')
     try {
-      await api('/panel/barberia', { method: 'PATCH', body: JSON.stringify({ nombre: f!.nombre, color_acento: f!.color_acento, direccion: f!.direccion, barrio: f!.barrio, descripcion: f!.descripcion, horas_min_cancelacion: f!.horas_min_cancelacion, lat: f!.lat, lng: f!.lng }) })
+      await api('/panel/barberia', { method: 'PATCH', body: JSON.stringify({ nombre: f!.nombre, color_acento: f!.color_acento, direccion: f!.direccion, barrio: f!.barrio, descripcion: f!.descripcion, horas_min_cancelacion: f!.horas_min_cancelacion, lat: f!.lat, lng: f!.lng, ruleta_bienvenida: r.modo === 'ruleta' && f!.ruleta_bienvenida }) })
       const n = Number(r.cada)
       if (!Number.isInteger(n) || n < 1 || n > 20) return setMsg('La tarjeta va de 1 a 20 cortes.')
       const ruleta = r.ruleta.filter((x) => x.texto.trim().length >= 2).map((x) => ({ texto: x.texto.trim(), descuento_pct: x.pct.trim() === '' ? 0 : Number(x.pct) }))
@@ -328,6 +328,8 @@ export function MiPagina() {
                   <button type="button" className="quitar" disabled={r.ruleta.length <= 2} onClick={() => setR({ ...r, ruleta: r.ruleta.filter((_, j) => j !== i) })} aria-label={`Quitar ${p.texto || 'premio'}`}><X className="i" aria-hidden /></button>
                 </li>))}</ul>
               {r.ruleta.length < 12 && <button type="button" className="link" onClick={() => setR({ ...r, ruleta: [...r.ruleta, { texto: '', pct: '0' }] })}><Plus className="i" aria-hidden />Agregar premio</button>}
+              <label className="check" style={{ marginTop: 12 }}><input type="checkbox" checked={f.ruleta_bienvenida} onChange={(e) => setF({ ...f, ruleta_bienvenida: e.target.checked })} />
+                <span>Ruleta de bienvenida<small style={{ display: 'block', fontWeight: 500 }}>Un cliente nuevo gira una vez con estos premios y tiene 3 minutos para sacar turno (para dentro de 7 días).</small></span></label>
             </> : <>
             <div className="regla">Cada <input type="number" inputMode="numeric" min={1} max={20} value={r.cada} onChange={(e) => setR({ ...r, cada: e.target.value })} aria-label="Cantidad de cortes" /> cortes,
               <select value={r.tipo} onChange={(e) => setR({ ...r, tipo: e.target.value })} aria-label="Tipo de premio"><option value="servicio_gratis">un servicio gratis</option><option value="descuento_pct">un % de descuento</option><option value="descuento_monto">un descuento en $</option><option value="texto">otro premio</option></select>

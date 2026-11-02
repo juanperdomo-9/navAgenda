@@ -10,7 +10,7 @@ import './barberia.css'
 type Ticket = {
   estado: string; inicio: string; fin: string; precio: number; servicio: string; barbero: string; cliente: string
   barberia: { nombre: string; slug: string; color_acento: string; direccion: string | null; barrio: string | null; ciudad: string | null }
-  se_puede_cancelar: boolean; cancelar_hasta: string
+  se_puede_cancelar: boolean; cancelar_hasta: string; bienvenida: string | null
   fidelidad: { cada: number; descripcion: string; cortes: number; premios: number; modo: 'fijo' | 'ruleta'; ruleta: string[]; puede_girar: boolean; premio: string | null } | null
 }
 
@@ -56,6 +56,7 @@ export function TicketPage() {
             <dt>Precio</dt><dd>{pesos(d.precio)}, en el local</dd>
             <dt>Dónde</dt><dd><a href={mapa} target="_blank" rel="noopener">{b.direccion}</a></dd>
             <dt>A nombre de</dt><dd>{d.cliente}</dd>
+            {d.bienvenida && <><dt>Premio</dt><dd>{d.bienvenida} (primera vez)</dd></>}
           </dl>
           {d.fidelidad && (
             <div className="fid">

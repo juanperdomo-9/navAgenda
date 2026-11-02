@@ -8,6 +8,7 @@ import { Led } from './Led'
 import { diaDe, Secciones, type Libre, type PaginaBarberia } from './Secciones'
 import { Barra, PieBarberia } from './Barra'
 import { Cargando } from './Cargando'
+import { Bienvenida, leerGanado, mostrarTalon, PremioActivo, TalonBienvenida, type Ganado } from './Bienvenida'
 import { estadoAhora, Galeria } from './Galeria'
 import './barberia.css'
 
@@ -57,6 +58,10 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   // "Otro horario": todos los libres del día, sin perder el próximo de entrada
   const [ver, setVer] = useState(false)
   const unicos = lista.filter((l, i) => lista.findIndex((x) => x.inicio === l.inicio) === i)
+  // Ruleta de bienvenida: talón → (número + ruleta en lugar de la máquina) → premio con 3 minutos
+  const [bvAbierta, setBvAbierta] = useState(false)
+  const [ganado, setGanado] = useState<Ganado | null>(() => { const g = leerGanado(p.slug); return g && g.vence > Date.now() ? g : null })
+  const [talon] = useState(() => !!p.bienvenida && mostrarTalon(p.slug))
   const [elegido, setElegido] = useState<Libre | null>(null)
   const hoja = useRef<HTMLDialogElement>(null)
   useEffect(() => { if (elegido) hoja.current?.showModal(); else hoja.current?.close() }, [elegido])
@@ -81,7 +86,10 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
           )}
           {(() => { const e = estadoAhora(p); return e && <span className={`pb-estado ${e.abierto ? 'abierto' : ''}`}>{e.texto}</span> })()}
         </div>
+        {talon && !bvAbierta && !ganado && !leerGanado(p.slug) && <TalonBienvenida onAbrir={() => setBvAbierta(true)} />}
         <section className="maq" id="turno" aria-label="Sacá tu turno" ref={maq}>
+          {bvAbierta ? <Bienvenida slug={p.slug} premios={p.fidelidad?.ruleta ?? []} onCerrar={() => setBvAbierta(false)} onGanado={(g) => { setGanado(g); setBvAbierta(false) }} /> : <>
+          {ganado && <PremioActivo g={ganado} onVence={() => setGanado(null)} />}
           {barbero && (
             <p className="con-quien">Con {p.barberos.find((b) => b.id === barbero)?.nombre}
               <button type="button" onClick={() => { setBarbero(null); setVer(false) }}>Ver con todos</button></p>
@@ -112,13 +120,14 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
             </div>
           )}
           <p className="fine">Nombre y teléfono, nada más. Sin cuenta, sin seña.</p>
+          </>}
         </section>
       </main>
       <Galeria fotos={p.fotos ?? []} nombre={p.nombre} />
       <Secciones p={p} servicio={servicio} setServicio={elegirServicio} nombreDe={nombreDe} onElegir={setElegido} onBarbero={conBarbero} subir={subir} />
       <dialog ref={hoja} className="hoja-p" onClose={() => setElegido(null)} aria-label="Tus datos">
         {elegido && (
-          <Datos slug={p.slug} libre={elegido} servicios={p.servicios.filter((s) => p.barberos.find((b) => b.id === elegido.barbero_id)?.servicio_ids.includes(s.id))} preferido={preferido} barbero={nombreDe(elegido.barbero_id)} diaTxt={diaDe(elegido.inicio)}
+          <Datos slug={p.slug} libre={elegido} telInicial={ganado?.tel} servicios={p.servicios.filter((s) => p.barberos.find((b) => b.id === elegido.barbero_id)?.servicio_ids.includes(s.id))} preferido={preferido} barbero={nombreDe(elegido.barbero_id)} diaTxt={diaDe(elegido.inicio)}
             onListo={(token) => { guardarTicket(token); navigate(`/t/${token}`) }} onCerrar={() => setElegido(null)} />
         )}
       </dialog>
@@ -127,14 +136,14 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
   )
 }
 
-function Datos({ slug, libre, servicios, preferido, barbero, diaTxt, onListo, onCerrar }: {
-  slug: string; libre: Libre; servicios: Pagina['servicios']; preferido: string | null; barbero: string; diaTxt: string; onListo: (t: string) => void; onCerrar: () => void
+function Datos({ slug, libre, telInicial, servicios, preferido, barbero, diaTxt, onListo, onCerrar }: {
+  slug: string; libre: Libre; telInicial?: string; servicios: Pagina['servicios']; preferido: string | null; barbero: string; diaTxt: string; onListo: (t: string) => void; onCerrar: () => void
 }) {
   const [sid, setSid] = useState(servicios.find((s) => s.id === preferido)?.id ?? servicios[0]?.id ?? '')
   const servicio = servicios.find((s) => s.id === sid) ?? servicios[0]
   const guardado = useMemo(() => { try { return JSON.parse(localStorage.getItem('navagenda-yo') || 'null') } catch { return null } }, [])
   const [nombre, setNombre] = useState(guardado?.nombre ?? '')
-  const [tel, setTel] = useState(guardado?.tel ?? '')
+  const [tel, setTel] = useState(telInicial ?? guardado?.tel ?? '')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
