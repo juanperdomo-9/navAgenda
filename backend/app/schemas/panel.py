@@ -164,6 +164,7 @@ class ConfigBarberia(BaseModel):
     lng: Decimal | None
     descripcion: str | None
     horas_min_cancelacion: int
+    ruleta_bienvenida: bool = False
 
 
 class ConfigCambios(BaseModel):
@@ -177,6 +178,7 @@ class ConfigCambios(BaseModel):
     lng: Decimal | None = Field(default=None, ge=-180, le=180)
     descripcion: str | None = Field(default=None, max_length=600)
     horas_min_cancelacion: int | None = Field(default=None, ge=0, le=72)
+    ruleta_bienvenida: bool | None = None
 
     @field_validator("color_acento")
     @classmethod

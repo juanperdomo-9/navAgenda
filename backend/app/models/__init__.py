@@ -105,6 +105,10 @@ class Barberia(Base):
     lng: Mapped[Decimal | None] = mapped_column(Numeric(9, 6))
     descripcion: Mapped[str | None] = mapped_column(Text)
     horas_min_cancelacion: Mapped[int] = mapped_column(Integer, nullable=False, server_default="3")
+    # Ruleta de bienvenida para teléfonos nuevos (usa los premios de la ruleta de fidelidad)
+    ruleta_bienvenida: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
     # Cobranza del abono (la maneja el superadmin)
     whatsapp: Mapped[str | None] = mapped_column(Text)
     abono: Mapped[int | None] = mapped_column(Integer)
@@ -421,6 +425,28 @@ class Giro(Base):
     descuento_pct: Mapped[int] = mapped_column(Integer, nullable=False)
     turno_id: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), ForeignKey("turnos.id"))
     usado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    creado_en: Mapped[datetime] = _creado_en()
+
+
+class Bienvenida(Base):
+    """Ruleta de bienvenida: un giro por teléfono nuevo en cada barbería, para siempre.
+    El premio vale si saca turno antes de `vence_en` (3 min) para los próximos 7 días."""
+
+    __tablename__ = "bienvenidas"
+    __table_args__ = (
+        UniqueConstraint("barberia_id", "telefono", name="bienvenida_una_por_telefono"),
+        CheckConstraint("descuento_pct BETWEEN 0 AND 100", name="bienvenida_descuento_valido"),
+    )
+
+    id: Mapped[UUID] = _id()
+    barberia_id: Mapped[UUID] = _barberia_fk()
+    telefono: Mapped[str] = mapped_column(Text, nullable=False)
+    premio: Mapped[str] = mapped_column(Text, nullable=False)
+    descuento_pct: Mapped[int] = mapped_column(Integer, nullable=False)
+    vence_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    turno_id: Mapped[UUID | None] = mapped_column(
+        PgUUID(as_uuid=True), ForeignKey("turnos.id", ondelete="SET NULL")
+    )
     creado_en: Mapped[datetime] = _creado_en()
 
 

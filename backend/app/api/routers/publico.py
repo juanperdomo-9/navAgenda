@@ -18,6 +18,7 @@ from app.models import (
     Barberia,
     Barbero,
     BarberoServicio,
+    Bienvenida,
     Cliente,
     Fidelidad,
     FotoLocal,
@@ -26,11 +27,12 @@ from app.models import (
     Servicio,
     Turno,
 )
-from app.services import avisos, premios
+from app.services import avisos, bienvenida, premios
 from app.services.disponibilidad import horarios_libres
 
 router = APIRouter(tags=["público"])
 limite_reservas = LimitePorIP(maximo=10, segundos=60 * 60)
+limite_bienvenida = LimitePorIP(maximo=10, segundos=60 * 60)
 MAX_TURNOS_FUTUROS = 2
 
 
@@ -158,6 +160,7 @@ def pagina(slug: str, db: DB):
         "lng": b.lng,
         "descripcion": b.descripcion,
         "horas_min_cancelacion": b.horas_min_cancelacion,
+        "bienvenida": bienvenida.activa(db, b),
         "barberos": [
             {
                 "id": x.id,
@@ -298,6 +301,8 @@ def reservar(slug: str, datos: Reserva, request: Request, db: DB, tareas: Backgr
     )
     db.add(turno)
     try:
+        db.flush()
+        bienvenida.vincular(db, b.id, tel, turno)
         db.commit()
     except IntegrityError:  # otro lo sacó en el mismo instante (la base no deja superponer)
         db.rollback()
@@ -306,6 +311,51 @@ def reservar(slug: str, datos: Reserva, request: Request, db: DB, tareas: Backgr
         ) from None
     tareas.add_task(avisos.mandar, avisos.armar(db, turno, "nuevo"))
     return {"token": token, **_ticket(db, turno)}
+
+
+class TelefonoNuevo(BaseModel):
+    telefono: str = Field(min_length=8, max_length=24)
+
+
+@router.post("/p/{slug}/bienvenida")
+def ruleta_de_bienvenida(slug: str, datos: TelefonoNuevo, request: Request, db: DB):
+    """Si el teléfono es nuevo en la barbería, gira la ruleta (una sola vez, para siempre)."""
+    ip = request.client.host if request.client else "?"
+    if not limite_bienvenida.permitir(ip):
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS, "Demasiados intentos seguidos. Probá en un rato."
+        )
+    b = _barberia(db, slug)
+    if not bienvenida.activa(db, b):
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Esta barbería no tiene ruleta de bienvenida."
+        )
+    tel = normalizar_telefono(datos.telefono)
+    if not tel:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "Revisá el teléfono: con código de área, sin 0 ni 15. Ej.: 221 456 7890.",
+        )
+    ya = db.scalar(
+        select(Bienvenida).where(Bienvenida.barberia_id == b.id, Bienvenida.telefono == tel)
+    )
+    if ya:
+        return {"nuevo": False, "motivo": "Ese número ya giró la ruleta de bienvenida."}
+    if not bienvenida.es_nuevo(db, b.id, tel):
+        return {"nuevo": False, "motivo": "La ruleta es para la primera vez. ¡Gracias por volver!"}
+    try:
+        g, i = bienvenida.girar(db, b, tel)
+        db.commit()
+    except IntegrityError:  # dos toques al mismo tiempo: vale el primero
+        db.rollback()
+        return {"nuevo": False, "motivo": "Ese número ya giró la ruleta de bienvenida."}
+    return {
+        "nuevo": True,
+        "indice": i,
+        "premio": g.premio,
+        "vence_en": g.vence_en,
+        "dias": bienvenida.DIAS_PARA_EL_TURNO,
+    }
 
 
 # ─── El ticket: link privado del turno ───
@@ -339,6 +389,7 @@ def _ticket(db, t: Turno) -> dict:
             "barrio": b.barrio,
             "ciudad": b.ciudad,
         },
+        "bienvenida": g.premio if (g := bienvenida.del_turno(db, t)) else None,
         "se_puede_cancelar": t.estado == "reservado" and datetime.now(UTC) < limite,
         "cancelar_hasta": limite,
         "fidelidad": {

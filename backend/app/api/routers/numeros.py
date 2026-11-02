@@ -9,7 +9,7 @@ from sqlalchemy import and_, delete, func, select
 
 from app.api.deps import DB, Admin
 from app.core.tz import ZONA_AR
-from app.models import Barbero, Cliente, Fidelidad, Giro, Servicio, Turno
+from app.models import Barbero, Bienvenida, Cliente, Fidelidad, Giro, Servicio, Turno
 
 router = APIRouter(prefix="/panel", tags=["numeros"])
 
@@ -81,6 +81,12 @@ def borrar_cliente(cliente_id: UUID, admin: Admin, db: DB) -> None:
     db.execute(delete(Giro).where(Giro.cliente_id == c.id))
     db.execute(delete(Turno).where(Turno.cliente_id == c.id))
     db.execute(delete(Fidelidad).where(Fidelidad.cliente_id == c.id))
+    # Un cliente de prueba borrado puede volver a probar la ruleta de bienvenida
+    db.execute(
+        delete(Bienvenida).where(
+            Bienvenida.barberia_id == c.barberia_id, Bienvenida.telefono == c.telefono
+        )
+    )
     db.delete(c)
     db.commit()
 

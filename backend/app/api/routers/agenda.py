@@ -21,7 +21,7 @@ from app.models import (
     Servicio,
     Turno,
 )
-from app.services import premios
+from app.services import bienvenida, premios
 
 router = APIRouter(prefix="/panel", tags=["agenda"])
 
@@ -81,6 +81,8 @@ def _out(db, t: Turno, regla) -> dict:
         "premio": premios.premio_pendiente(db, regla, f),
         "completa_tarjeta": bool(regla) and disponibles == 0 and cortes == regla.cada_x_cortes - 1,
         "cortes": cortes,
+        # Premio de la ruleta de bienvenida (primera vez), si sacó el turno a tiempo
+        "bienvenida": g.premio if (g := bienvenida.del_turno(db, t)) else None,
     }
 
 
@@ -146,6 +148,8 @@ def asistio(turno_id: UUID, datos: Asistencia, admin: Admin, db: DB):
         if f.cortes_acumulados >= regla.cada_x_cortes:
             f.cortes_acumulados = 0
             f.beneficios_disponibles += 1
+    if (g := bienvenida.del_turno(db, t)) and not t.beneficio_aplicado:
+        t.cobrado = bienvenida.cobrado(t.precio, g)  # premio de la ruleta de bienvenida
     t.estado = "asistio"
     db.commit()
     return _out(db, t, regla)
@@ -182,6 +186,8 @@ def corregir(turno_id: UUID, admin: Admin, db: DB):
     t = _turno(db, admin, turno_id)
     regla, f = _regla(db, admin.barberia_id), _fid(db, db.get(Cliente, t.cliente_id))
     if t.estado == "asistio":
+        if bienvenida.del_turno(db, t) and not t.beneficio_aplicado:
+            t.cobrado = None
         if t.beneficio_aplicado:
             premios.deshacer(db, f, t)
         elif regla:
