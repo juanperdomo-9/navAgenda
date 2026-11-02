@@ -12,7 +12,8 @@ const mh = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${Stri
 const ymd = (off: number) => new Date(Date.now() + off * 864e5).toLocaleDateString('en-CA', { timeZone: ZONA })
 const dowDe = (fecha: string) => (new Date(fecha + 'T12:00:00').getDay() + 6) % 7 // 0 = lunes
 const largo = (fecha: string) => { const t = new Date(fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', ''); return t[0].toUpperCase() + t.slice(1) }
-const isoAR = (fecha: string, m: number) => `${fecha}T${mh(m)}:00-03:00`
+const isoAR = (fecha: string, m: number) => m < 24 * 60 ? `${fecha}T${mh(m)}:00-03:00`
+  : `${new Date(new Date(fecha + 'T12:00:00Z').getTime() + 864e5).toISOString().slice(0, 10)}T${mh(m - 24 * 60)}:00-03:00`
 
 type Barbero = { id: string; nombre: string; activo: boolean; horarios: { dia_semana: number; desde: string; hasta: string }[]; servicio_ids: string[] }
 type Servicio = { id: string; nombre: string; precio: number; duracion_min: number; activo: boolean }
@@ -129,7 +130,7 @@ export function Agenda() {
         })}
       </div>
       <div className="tablero">
-        <div className="dato"><small>Facturado</small><b>{pesos(hechos.reduce((a, t) => a + (t.beneficio_aplicado ? 0 : t.precio), 0))}</b></div>
+        <div className="dato"><small>Facturado</small><b>{pesos(hechos.reduce((a, t) => a + t.cobrado, 0))}</b></div>
         <div className="dato"><small>Cortes</small><b>{hechos.length}</b></div>
         <div className="dato"><small>{off < 0 ? 'Sin marcar' : 'Faltan'}</small><b>{ag?.turnos.filter((t) => t.estado === 'reservado').length ?? 0}</b></div>
         <div className="dato"><small>No vinieron</small><b>{ag?.turnos.filter((t) => t.estado === 'no_asistio').length ?? 0}</b></div>
@@ -199,11 +200,11 @@ function TurnoAMano({ b: b0, m: m0, pasado, barberos, fecha, servicios: todos, o
     catch (e) { setError(e instanceof ApiError ? e.message : 'No se pudo cargar.') }
   }
   async function bloquear() {
-    try { await api(`/panel/barberos/${b.id}/bloqueos`, { method: 'POST', body: JSON.stringify({ inicio: isoAR(fecha, m), fin: isoAR(fecha, hasta), motivo: motivo.trim() || 'Bloqueado' }) }); onListo(`Bloqueado de ${mh(m)} a ${mh(hasta)} para ${b.nombre.split(' ')[0]}.`) }
+    try { await api(`/panel/barberos/${b.id}/bloqueos`, { method: 'POST', body: JSON.stringify({ inicio: isoAR(fecha, m), fin: isoAR(fecha, hasta), motivo: motivo.trim() || 'Bloqueado' }) }); onListo(`Bloqueado de ${mh(m)} a ${mh(hasta % (24 * 60))} para ${b.nombre.split(' ')[0]}.`) }
     catch (e) { setError(e instanceof ApiError ? e.message : 'No se pudo bloquear.') }
   }
   return (
-    <Hoja titulo={modo === 'turno' ? (pasado ? 'Turno que ya pasó' : 'Turno a mano') : 'Bloquear horario'} abierta onCerrar={onCerrar} pie={<div className="botones">{modo === 'turno' ? <button type="button" className="btn" onClick={cargar}>{pasado && vino ? 'Cargar: ya vino' : 'Cargar turno'}</button> : <button type="button" className="btn" onClick={bloquear}>Bloquear de {mh(m)} a {mh(hasta)}</button>}</div>}>
+    <Hoja titulo={modo === 'turno' ? (pasado ? 'Turno que ya pasó' : 'Turno a mano') : 'Bloquear horario'} abierta onCerrar={onCerrar} pie={<div className="botones">{modo === 'turno' ? <button type="button" className="btn" onClick={cargar}>{pasado && vino ? 'Cargar: ya vino' : 'Cargar turno'}</button> : <button type="button" className="btn" onClick={bloquear}>Bloquear de {mh(m)} a {mh(hasta % (24 * 60))}</button>}</div>}>
       <section className="bloque">
         <h3 className="cond">{mh(m)} con {b.nombre.split(' ')[0]}</h3>
         {barberos ? <>
