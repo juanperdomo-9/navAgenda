@@ -48,7 +48,8 @@ def create_app() -> FastAPI:
 
 
 def _revisar_deudas_cada_hora() -> None:
-    """Pausa por deuda aunque nadie abra el panel (una sola instancia: alcanza un hilo)."""
+    """Tareas de fondo cada 15 minutos (una sola instancia: alcanza un hilo): pausa por deuda
+    aunque nadie abra el panel y recordatorios por mail del día anterior."""
     import threading
 
     from sqlalchemy.orm import Session
@@ -59,9 +60,13 @@ def _revisar_deudas_cada_hora() -> None:
         try:
             with Session(get_engine()) as db:
                 cobranza.pausar_vencidas(db)
+            from app.services import recordatorios
+
+            with Session(get_engine()) as db:
+                recordatorios.mandar_pendientes(db)
         except Exception:  # noqa: BLE001 (que un error no corte el ciclo)
             pass
-        t = threading.Timer(3600, tarea)
+        t = threading.Timer(900, tarea)
         t.daemon = True
         t.start()
 

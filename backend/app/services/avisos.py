@@ -1,4 +1,5 @@
-"""Avisos por mail al barbero cuando le sacan o le cancelan un turno (API HTTP de Brevo).
+"""Avisos por mail (API HTTP de Brevo): al barbero cuando le sacan o le cancelan un turno, y al
+cliente que dejó su mail, la confirmación con el ticket y el recordatorio del día anterior.
 
 Sin BREVO_API_KEY (o si el barbero no cargó su mail) no se manda nada. El mensaje se arma
 mientras la sesión de la base está abierta y se envía después de responder (BackgroundTasks):
@@ -44,6 +45,48 @@ def armar(db, t: Turno, que: str) -> Aviso | None:
         f"\n\nTu agenda: {get_settings().sitio_url}/panel\n\n{b.nombre} · NavAgenda"
     )
     return x.email, asunto, texto
+
+
+def _datos(db, t: Turno):
+    b, x = db.get(Barberia, t.barberia_id), db.get(Barbero, t.barbero_id)
+    s = db.get(Servicio, t.servicio_id)
+    i = t.inicio.astimezone(ZONA_AR)
+    lugar = ", ".join(v for v in (b.direccion, b.barrio, b.ciudad or "La Plata") if v)
+    return b, x, s, i, lugar
+
+
+def confirmacion(db, t: Turno, token: str) -> Aviso | None:
+    """Al reservar: el ticket por mail (el link privado solo existe en este momento)."""
+    c = db.get(Cliente, t.cliente_id)
+    if not c or not c.email:
+        return None
+    b, x, s, i, lugar = _datos(db, t)
+    cuando = f"{DIAS[i.weekday()]} {i:%d/%m} a las {i:%H:%M}"
+    url = get_settings().sitio_url
+    texto = (
+        f"Hola {c.nombre.split(' ')[0]}, tu turno quedó confirmado.\n\n"
+        f"{cuando.capitalize()}\nCon {x.nombre} · {s.nombre}\n{lugar}\n\n"
+        f"Tu ticket (para verlo o cancelarlo): {url}/t/{token}\n\n"
+        f"El día anterior te mandamos un recordatorio.\n\n{b.nombre} · NavAgenda"
+    )
+    return c.email, f"Turno confirmado: {cuando} en {b.nombre}", texto
+
+
+def recordatorio(db, t: Turno, token: str) -> Aviso | None:
+    """El día anterior: recordatorio del turno de mañana, con el link del ticket."""
+    c = db.get(Cliente, t.cliente_id)
+    if not c or not c.email:
+        return None
+    b, x, s, i, lugar = _datos(db, t)
+    texto = (
+        f"Hola {c.nombre.split(' ')[0]}, te esperamos mañana.\n\n"
+        f"{DIAS[i.weekday()].capitalize()} {i:%d/%m} a las {i:%H:%M}\n"
+        f"Con {x.nombre} · {s.nombre}\n{lugar}\n\n"
+        f"Tu ticket: {get_settings().sitio_url}/t/{token}\n"
+        "Si no podés venir, cancelalo desde ahí así otro aprovecha el horario.\n\n"
+        f"{b.nombre} · NavAgenda"
+    )
+    return c.email, f"Mañana a las {i:%H:%M}: tu turno en {b.nombre}", texto
 
 
 def mandar(aviso: Aviso | None) -> None:

@@ -65,6 +65,7 @@ def reservar(client, ins, hueco, tel=TEL):
             "inicio": hueco["inicio"],
             "nombre": "Nuevo",
             "telefono": tel,
+            "email": "cliente@mail.com",
         },
     )
 

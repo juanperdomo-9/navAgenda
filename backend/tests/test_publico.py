@@ -39,6 +39,7 @@ def reservar(client, ins, libre, tel="221 456 7890", **extra):
             "inicio": libre["inicio"],
             "nombre": "Juan",
             "telefono": tel,
+            "email": "cliente@mail.com",
             **extra,
         },
     )
@@ -153,11 +154,9 @@ def test_avisa_al_barbero_por_mail_al_reservar_y_cancelar(client, ins, db, monke
     db.flush()
     t = reservar(client, ins, libre).json()
     client.post(f"/t/{t['token']}/cancelar")
-    assert [(e[0], e[1].split(":")[0]) for e in enviados] == [
-        ("barbero@mail.com", "Nuevo turno"),
-        ("barbero@mail.com", "Cancelado"),
-    ]
-    assert "Juan" in enviados[0][2] and "4567890" in enviados[0][2]
+    al_barbero = [e for e in enviados if e[0] == "barbero@mail.com"]
+    assert [e[1].split(":")[0] for e in al_barbero] == ["Nuevo turno", "Cancelado"]
+    assert "Juan" in al_barbero[0][2] and "4567890" in al_barbero[0][2]
 
 
 def test_sin_mail_del_barbero_no_se_avisa(client, ins, monkeypatch):
@@ -166,7 +165,7 @@ def test_sin_mail_del_barbero_no_se_avisa(client, ins, monkeypatch):
     enviados = []
     monkeypatch.setattr(avisos, "_enviar", lambda *a: enviados.append(a))
     assert reservar(client, ins, proximo_libre(client, ins)).status_code == 201
-    assert enviados == []
+    assert [e[0] for e in enviados] == ["cliente@mail.com"]  # solo la confirmación al cliente
 
 
 def test_si_el_servicio_no_entra_lo_dice(client, ins, db):
@@ -193,6 +192,55 @@ def test_si_el_servicio_no_entra_lo_dice(client, ins, db):
             "inicio": ultimo["inicio"],
             "nombre": "Juan",
             "telefono": "221 456 7890",
+            "email": "cliente@mail.com",
         },
     )
     assert res.status_code == 409 and "no entra a esa hora" in res.json()["detail"]
+
+
+def test_el_mail_del_cliente_es_obligatorio(client, ins):
+    libre = proximo_libre(client, ins)
+    datos = {"servicio_id": ins["vip"], "inicio": libre["inicio"], "nombre": "Juan"}
+    r = client.post("/p/inspirationmen/turnos", json={**datos, "telefono": "221 456 7890"})
+    assert r.status_code == 422
+    r = client.post(
+        "/p/inspirationmen/turnos",
+        json={**datos, "telefono": "221 456 7890", "email": "no-es-un-mail"},
+    )
+    assert r.status_code == 422
+
+
+def test_confirmacion_y_recordatorio_al_cliente_con_su_link(client, ins, db, monkeypatch):
+    """Al reservar le llega el ticket; el día anterior desde las 20 h, el recordatorio con un
+    link propio que abre el mismo ticket. Una sola vez, y nunca de turnos cancelados."""
+    from app.models import Turno
+    from app.services import avisos, recordatorios
+
+    enviados = []
+    monkeypatch.setattr(avisos, "_enviar", lambda *a: enviados.append(a))
+    hoy = datetime.now(ZONA_AR).date()
+    manana = client.get(
+        "/p/inspirationmen/libres",
+        params={"servicio_id": ins["vip"], "fecha": str(hoy + timedelta(days=1))},
+    ).json()
+    if not manana:
+        pytest.skip("mañana no atiende nadie")
+    t = reservar(client, ins, manana[0]).json()
+    conf = enviados[-1]
+    assert conf[0] == "cliente@mail.com" and f"/t/{t['token']}" in conf[2]
+
+    temprano = datetime.combine(hoy, datetime.min.time(), tzinfo=ZONA_AR).replace(hour=19)
+    assert recordatorios.mandar_pendientes(db, temprano) == 0
+    noche = temprano.replace(hour=20, minute=5)
+    assert recordatorios.mandar_pendientes(db, noche) == 1
+    rec = enviados[-1]
+    assert rec[0] == "cliente@mail.com" and rec[1].startswith("Mañana a las")
+    link = rec[2].split("/t/")[1].split()[0]
+    assert link != t["token"] and client.get(f"/t/{link}").status_code == 200
+    assert recordatorios.mandar_pendientes(db, noche) == 0  # una sola vez
+
+    otro = reservar(client, ins, manana[1] if len(manana) > 1 else manana[0], tel="221 999 8888")
+    if otro.status_code == 201:
+        client.post(f"/t/{otro.json()['token']}/cancelar")
+        assert recordatorios.mandar_pendientes(db, noche) == 0  # cancelado: no se recuerda
+    assert db.scalar(select(Turno.recordado_en).where(Turno.recordado_en.is_not(None)))

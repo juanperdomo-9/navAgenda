@@ -238,6 +238,8 @@ class Cliente(Base):
     barberia_id: Mapped[UUID] = _barberia_fk()
     telefono: Mapped[str] = mapped_column(Text, nullable=False)
     nombre: Mapped[str] = mapped_column(Text, nullable=False)
+    # Opcional: para mandarle la confirmación con el ticket y el recordatorio del día anterior
+    email: Mapped[str | None] = mapped_column(Text)
     bloqueado: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
     creado_en: Mapped[datetime] = _creado_en()
 
@@ -287,6 +289,10 @@ class Turno(Base):
     cobrado: Mapped[int | None] = mapped_column(Integer)
     token_acceso_hash: Mapped[str | None] = mapped_column(Text, unique=True)
     origen: Mapped[str] = mapped_column(Text, nullable=False, server_default="web")
+    # Cuándo se le mandó al cliente el recordatorio del día anterior (una sola vez)
+    recordado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # El link del ticket solo se conoce al reservar: el recordatorio lleva uno propio del turno
+    token_recordatorio_hash: Mapped[str | None] = mapped_column(Text, unique=True)
     creado_en: Mapped[datetime] = _creado_en()
 
 

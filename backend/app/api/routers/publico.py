@@ -8,7 +8,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 from pydantic import AwareDatetime, BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import DB
@@ -210,6 +210,8 @@ class Reserva(BaseModel):
     inicio: AwareDatetime
     nombre: str = Field(min_length=2, max_length=60)
     telefono: str = Field(min_length=8, max_length=24)
+    # Para la confirmación con el ticket y el recordatorio del día anterior
+    email: str = Field(max_length=120, pattern=r"^\s*[^@\s]+@[^@\s]+\.[^@\s]+\s*$")
 
 
 def _por_que_no(db, barberia_id, datos: Reserva, dia: date, inicio: datetime) -> str:
@@ -285,6 +287,7 @@ def reservar(slug: str, datos: Reserva, request: Request, db: DB, tareas: Backgr
         cliente = Cliente(barberia_id=b.id, telefono=tel, nombre=datos.nombre.strip())
         db.add(cliente)
         db.flush()
+    cliente.email = datos.email.strip().lower()
 
     servicio = db.get(Servicio, datos.servicio_id)
     token = secrets.token_urlsafe(18)
@@ -310,6 +313,7 @@ def reservar(slug: str, datos: Reserva, request: Request, db: DB, tareas: Backgr
             status.HTTP_409_CONFLICT, "Ese horario se acaba de ocupar. Elegí otro."
         ) from None
     tareas.add_task(avisos.mandar, avisos.armar(db, turno, "nuevo"))
+    tareas.add_task(avisos.mandar, avisos.confirmacion(db, turno, token))
     return {"token": token, **_ticket(db, turno)}
 
 
@@ -408,7 +412,11 @@ def _ticket(db, t: Turno) -> dict:
 
 
 def _por_token(db, token: str) -> Turno:
-    t = db.scalar(select(Turno).where(Turno.token_acceso_hash == _hash(token)))
+    # Vale el link de la reserva o el del recordatorio
+    h = _hash(token)
+    t = db.scalar(
+        select(Turno).where(or_(Turno.token_acceso_hash == h, Turno.token_recordatorio_hash == h))
+    )
     if not t:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No encontramos ese turno. Revisá el link.")
     return t
