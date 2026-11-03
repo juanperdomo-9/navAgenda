@@ -144,6 +144,7 @@ function Datos({ slug, libre, telInicial, servicios, preferido, barbero, diaTxt,
   const guardado = useMemo(() => { try { return JSON.parse(localStorage.getItem('navagenda-yo') || 'null') } catch { return null } }, [])
   const [nombre, setNombre] = useState(guardado?.nombre ?? '')
   const [tel, setTel] = useState(telInicial ?? guardado?.tel ?? '')
+  const [email, setEmail] = useState(guardado?.email ?? '')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
@@ -152,10 +153,11 @@ function Datos({ slug, libre, telInicial, servicios, preferido, barbero, diaTxt,
     if (!servicio) return setError('Elegí qué te hacés.')
     if (nombre.trim().length < 2) return setError('Poné tu nombre, así te llaman cuando sea tu turno.')
     if (tel.replace(/\D/g, '').length < 10) return setError('Revisá el teléfono: con código de área, sin 0 ni 15. Ej.: 221 456 7890.')
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError('Poné tu mail: ahí te mandamos el ticket y el recordatorio del turno.')
     setEnviando(true); setError('')
     try {
-      const r = await api<{ token: string }>(`/p/${slug}/turnos`, { method: 'POST', body: JSON.stringify({ servicio_id: servicio.id, barbero_id: libre.barbero_id, inicio: libre.inicio, nombre: nombre.trim(), telefono: tel }) })
-      try { localStorage.setItem('navagenda-yo', JSON.stringify({ nombre: nombre.trim(), tel })) } catch { /* opcional */ }
+      const r = await api<{ token: string }>(`/p/${slug}/turnos`, { method: 'POST', body: JSON.stringify({ servicio_id: servicio.id, barbero_id: libre.barbero_id, inicio: libre.inicio, nombre: nombre.trim(), telefono: tel, email: email.trim() }) })
+      try { localStorage.setItem('navagenda-yo', JSON.stringify({ nombre: nombre.trim(), tel, email: email.trim() })) } catch { /* opcional */ }
       onListo(r.token)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No pudimos sacar el turno. Probá de nuevo.')
@@ -178,6 +180,8 @@ function Datos({ slug, libre, telInicial, servicios, preferido, barbero, diaTxt,
       <label>Tu nombre<span className="ctrl"><input value={nombre} onChange={(e) => setNombre(e.target.value)} name="na-nombre" autoComplete="off" /></span></label>
       <label>Tu teléfono<span className="ctrl"><span aria-hidden>+54 9</span><input type="tel" inputMode="tel" value={tel} onChange={(e) => setTel(e.target.value)} name="na-tel" autoComplete="off" /></span>
         <span className="ayuda">Ej.: 221 456 7890, sin 0 ni 15. Lo usamos para sumar tus cortes; no te vamos a escribir.</span></label>
+      <label>Tu mail<span className="ctrl"><input type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} name="na-mail" autoComplete="email" placeholder="nombre@gmail.com" /></span>
+        <span className="ayuda">Para recordarte el turno el día anterior. Te llega con el link de tu ticket.</span></label>
       {error && <p className="error" role="alert">{error}</p>}
       <button type="submit" className="take" disabled={enviando}>{enviando ? 'Confirmando…' : 'Confirmar turno'} <span aria-hidden>→</span></button>
     </form>

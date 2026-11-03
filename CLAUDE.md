@@ -173,7 +173,7 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 
 ## Fuera del MVP (no construir todavía)
 - Pagos o señas online
-- Notificaciones al cliente por WhatsApp, SMS o email (al barbero sí: mail por Brevo)
+- Notificaciones al cliente por WhatsApp o SMS (por mail sí: confirmación y recordatorio; al barbero, mail por Brevo)
 - Verificación del teléfono por SMS/WhatsApp
 - Cuentas de cliente con login
 - Comisiones de barberos y liquidación de sueldos
@@ -252,6 +252,11 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   ruleta de fidelidad y tiene 3 minutos para sacar turno para los próximos 7 días. El premio queda en el turno, se ve en
   la grilla ("Primera vez: …") y se cobra al marcar asistió. Se prende en Mi página (`barberias.ruleta_bienvenida`).
 - Clientes: se pueden borrar (con sus turnos, tarjeta y giro de bienvenida), pensado para clientes de prueba.
+- Mail del cliente (2026-11-03): obligatorio al reservar en la página ("para recordarte el turno"). Al reservar le llega
+  la confirmación con el link del ticket; el día anterior desde las 20:00 (hilo de fondo cada 15 min,
+  `app/services/recordatorios.py`) el recordatorio con un link propio (`turnos.token_recordatorio_hash`), una sola vez.
+- Desarrollo: si el puerto 8000 está ocupado, la API puede correr en otro y el front apunta con `API_URL`
+  (config `frontend-api-8001` en `.claude/launch.json`).
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,
   entrar en `http://localhost:5173/panel/ingresar` con usuario `la-navaja` (clave en `backend/app/db/seed.py`).
 

@@ -13,6 +13,15 @@
       "port": 5173
     },
     {
+      "name": "frontend-api-8001",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "-e",
+        "process.env.API_URL='http://127.0.0.1:8001';require('child_process').spawn('npm',['--prefix','frontend','run','dev','--','--port','5175','--strictPort'],{stdio:'inherit',shell:true})"
+      ],
+      "port": 5175
+    },
+    {
       "name": "design",
       "runtimeExecutable": "python",
       "runtimeArgs": [
