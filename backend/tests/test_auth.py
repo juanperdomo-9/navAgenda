@@ -262,3 +262,38 @@ def test_un_admin_no_puede_cambiar_de_barberia_con_el_header(client, db):
     propios = client.get("/panel/barberos").json()
     ajeno = client.get("/panel/barberos", headers={"X-Barberia": str(uuid.uuid4())}).json()
     assert ajeno == propios
+
+
+def test_alta_completa_con_los_datos_del_formulario(client, db):
+    """El alta lleva todo lo de la sección 01 del PDF: WhatsApp, Instagram, color, descripción."""
+    from app.models import Barberia
+
+    crear_usuario(db, "juan", rol="superadmin")
+    ingresar(client, "juan")
+    base = {
+        "nombre": "Barbería Completa",
+        "slug": "completa",
+        "admin_nombre": "Ana",
+        "admin_usuario": "ana",
+    }
+    malo = client.post("/super/barberias", json={**base, "color_acento": "#787878"})
+    assert malo.status_code == 422  # gris medio: no se lee ni con letra clara ni oscura
+    res = client.post(
+        "/super/barberias",
+        json={
+            **base,
+            "whatsapp": "221 456 7890",
+            "instagram": "https://www.instagram.com/barberia.completa/",
+            "color_acento": "#2f6b4f",
+            "descripcion": "Cortes clásicos",
+            "horas_min_cancelacion": 6,
+        },
+    )
+    assert res.status_code == 201, res.text
+    b = db.get(Barberia, res.json()["barberia"]["id"])
+    assert (b.instagram, b.color_acento, b.horas_min_cancelacion) == (
+        "barberia.completa",
+        "#2f6b4f",
+        6,
+    )
+    assert client.get("/p/completa").json()["instagram"] == "barberia.completa"

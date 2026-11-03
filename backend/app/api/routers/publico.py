@@ -159,6 +159,7 @@ def pagina(slug: str, db: DB):
         "lat": b.lat,
         "lng": b.lng,
         "descripcion": b.descripcion,
+        "instagram": b.instagram,
         "horas_min_cancelacion": b.horas_min_cancelacion,
         "bienvenida": bienvenida.activa(db, b),
         "barberos": [

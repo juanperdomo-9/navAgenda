@@ -149,6 +149,17 @@ class ServicioOut(BaseModel):
 # ─── Configuración de la página ───
 
 
+def usuario_instagram(v: str | None) -> str | None:
+    """'@la.navaja', 'instagram.com/la.navaja/' o 'la.navaja' → 'la.navaja'."""
+    if v is None:
+        return None
+    v = v.strip().split("?")[0].rstrip("/")
+    v = v.rsplit("/", 1)[-1].lstrip("@")
+    if v and not all(c.isalnum() or c in "._" for c in v):
+        raise ValueError("Revisá el Instagram: solo el usuario, ej.: @la.navaja")
+    return v or None
+
+
 class ConfigBarberia(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -165,6 +176,7 @@ class ConfigBarberia(BaseModel):
     descripcion: str | None
     horas_min_cancelacion: int
     ruleta_bienvenida: bool = False
+    instagram: str | None = None
 
 
 class ConfigCambios(BaseModel):
@@ -179,6 +191,12 @@ class ConfigCambios(BaseModel):
     descripcion: str | None = Field(default=None, max_length=600)
     horas_min_cancelacion: int | None = Field(default=None, ge=0, le=72)
     ruleta_bienvenida: bool | None = None
+    instagram: str | None = Field(default=None, max_length=80)
+
+    @field_validator("instagram")
+    @classmethod
+    def insta(cls, v: str | None) -> str | None:
+        return usuario_instagram(v)
 
     @field_validator("color_acento")
     @classmethod

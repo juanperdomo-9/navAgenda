@@ -111,6 +111,8 @@ class Barberia(Base):
     )
     # Cobranza del abono (la maneja el superadmin)
     whatsapp: Mapped[str | None] = mapped_column(Text)
+    # Usuario de Instagram sin @ (se muestra con link en su página)
+    instagram: Mapped[str | None] = mapped_column(Text)
     abono: Mapped[int | None] = mapped_column(Integer)
     pausa_por_deuda: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
