@@ -5,12 +5,31 @@ import re
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import func, select
+from pydantic import BaseModel, Field
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import DB, Superadmin
 from app.core.security import clave_temporal, hashear_clave
-from app.models import Barberia, Barbero, ReglaBeneficio, Servicio, Usuario
+from app.models import (
+    Barberia,
+    Barbero,
+    BarberoServicio,
+    Bienvenida,
+    Bloqueo,
+    Cliente,
+    Fidelidad,
+    FotoLocal,
+    Giro,
+    HorarioBarbero,
+    Pago,
+    Recordatorio,
+    ReglaBeneficio,
+    Servicio,
+    Turno,
+    Usuario,
+    VideoLocal,
+)
 from app.schemas.superadmin import (
     AltaCompleta,
     BarberiaConAdmins,
@@ -21,7 +40,7 @@ from app.schemas.superadmin import (
     NuevaBarberia,
     PdfSubido,
 )
-from app.services import importar_pdf
+from app.services import almacen, importar_pdf
 from app.services import panel as svc
 from app.services.auth import buscar_por_usuario
 
@@ -204,3 +223,32 @@ def resetear_clave(usuario_id: UUID, _: Superadmin, db: DB):
     u.bloqueado_hasta = None
     db.commit()
     return ClaveReseteada(usuario=u.usuario, clave_temporal=clave)
+
+
+class Borrado(BaseModel):
+    confirmar: str = Field(max_length=60)  # el link de la barbería, escrito a mano
+
+
+@router.post("/barberias/{barberia_id}/borrar", status_code=status.HTTP_204_NO_CONTENT)
+def borrar_barberia(barberia_id: UUID, datos: Borrado, _: Superadmin, db: DB) -> None:
+    """Borra la barbería con TODO lo suyo (turnos, clientes, números, admin). No se puede deshacer:
+    hay que escribir su link para confirmar."""
+    b = db.get(Barberia, barberia_id)
+    if not b:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe esa barbería.")
+    if datos.confirmar.strip().lower() != b.slug:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, f"Para borrarla escribí su link: {b.slug}"
+        )
+    for v in db.scalars(select(VideoLocal).where(VideoLocal.barberia_id == b.id)):
+        if almacen.configurado():
+            almacen.borrar(v.ruta)
+    barberos = select(Barbero.id).where(Barbero.barberia_id == b.id)
+    # En orden: primero lo que apunta a otras tablas de la barbería
+    for modelo in (Giro, Bienvenida, Fidelidad, Turno, Bloqueo, BarberoServicio, ReglaBeneficio):
+        db.execute(delete(modelo).where(modelo.barberia_id == b.id))
+    db.execute(delete(HorarioBarbero).where(HorarioBarbero.barbero_id.in_(barberos)))
+    for modelo in (Servicio, Barbero, Cliente, FotoLocal, VideoLocal, Pago, Recordatorio, Usuario):
+        db.execute(delete(modelo).where(modelo.barberia_id == b.id))
+    db.delete(b)
+    db.commit()

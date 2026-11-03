@@ -34,6 +34,14 @@ export function Super() {
       refrescar()
     } catch (e) { setAviso(errMsg(e)) }
   }
+  const [borrando, setBorrando] = useState<{ id: string; texto: string } | null>(null)
+  async function borrar(b: Barberia) {
+    try {
+      await api(`/super/barberias/${b.id}/borrar`, { method: 'POST', body: JSON.stringify({ confirmar: borrando?.texto ?? '' }) })
+      setBorrando(null); setAviso(`Borramos ${b.nombre} y todo lo suyo.`); refrescar()
+    } catch (e) { setAviso(errMsg(e)) }
+  }
+
   async function pausar(b: Barberia) {
     try {
       await api(`/super/barberias/${b.id}`, { method: 'PATCH', body: JSON.stringify({ activa: !b.activa }) })
@@ -81,7 +89,15 @@ export function Super() {
               {b.admins.map((a) => <button key={a.id} className="link" type="button" onClick={() => resetear(b, a)}>Resetear clave{b.admins.length > 1 ? ` de ${a.usuario}` : ''}</button>)}
               <button className="link" type="button" onClick={() => { sessionStorage.setItem(ADMINISTRANDO, JSON.stringify({ id: b.id, nombre: b.nombre })); qc.clear(); location.reload() }}>Administrar (cargar todo)</button>
               <button className={`link ${b.activa ? 'rojo' : ''}`} type="button" onClick={() => pausar(b)}>{b.activa ? 'Pausar' : 'Reactivar'}</button>
+              {borrando?.id !== b.id && <button className="link rojo" type="button" onClick={() => setBorrando({ id: b.id, texto: '' })}>Borrar</button>}
             </span>
+            {borrando?.id === b.id && (
+              <div className="confirmar" style={{ gridColumn: '1 / -1', marginTop: 8 }}>
+                <span>Se borra <b>{b.nombre}</b> con <b>todo</b>: turnos, clientes, números, barberos, fotos y su usuario. <b>No se puede deshacer.</b> Si solo querés que no aparezca, usá "Pausar".</span>
+                <label className="campo" style={{ margin: 0 }}>Para confirmar, escribí su link: <b>{b.slug}</b><input value={borrando.texto} onChange={(e) => setBorrando({ id: b.id, texto: e.target.value })} autoComplete="off" /></label>
+                <span className="botones"><button type="button" className="btn peligro chico" disabled={borrando.texto.trim().toLowerCase() !== b.slug} onClick={() => borrar(b)}>Borrar para siempre</button><button type="button" className="btn sec chico" onClick={() => setBorrando(null)}>No</button></span>
+              </div>
+            )}
           </li>))}</ul>}
       {nueva && <NuevaBarberia pedido={nueva === true ? undefined : nueva} onCerrar={() => setNueva(null)}
         onListo={(c) => { if (nueva !== true) marcar(nueva, 'creada'); setNueva(null); setClave(c); refrescar() }} />}

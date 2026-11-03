@@ -297,3 +297,50 @@ def test_alta_completa_con_los_datos_del_formulario(client, db):
         6,
     )
     assert client.get("/p/completa").json()["instagram"] == "barberia.completa"
+
+
+def test_superadmin_borra_una_barberia_con_todo_si_escribe_su_link(client, db):
+    from sqlalchemy import func, select
+
+    from app.api.routers.publico import limite_reservas
+    from app.db import inspirationmen
+    from app.models import Barberia, Cliente, Turno
+
+    inspirationmen.cargar(db)
+    limite_reservas.reiniciar()
+    p = client.get("/p/inspirationmen").json()
+    s = p["servicios"][0]["id"]
+    hoy = datetime.now(UTC).date()
+    for d in range(1, 10):
+        libres = client.get(
+            "/p/inspirationmen/libres",
+            params={"servicio_id": s, "fecha": str(hoy + timedelta(days=d))},
+        ).json()
+        if libres:
+            break
+    datos = {
+        "servicio_id": s,
+        "inicio": libres[0]["inicio"],
+        "nombre": "Ana",
+        "telefono": "221 456 7890",
+        "email": "ana@mail.com",
+    }
+    assert client.post("/p/inspirationmen/turnos", json=datos).status_code == 201
+    bid = db.scalar(select(Barberia.id).where(Barberia.slug == "inspirationmen"))
+
+    crear_usuario(db, "juan", rol="superadmin")
+    ingresar(client, "juan")
+    mal = client.post(f"/super/barberias/{bid}/borrar", json={"confirmar": "otra"})
+    assert mal.status_code == 422 and "inspirationmen" in mal.json()["detail"]
+    assert (
+        client.post(
+            f"/super/barberias/{bid}/borrar", json={"confirmar": "Inspirationmen "}
+        ).status_code
+        == 204
+    )
+    assert db.get(Barberia, bid) is None
+    assert db.scalar(select(func.count()).select_from(Turno).where(Turno.barberia_id == bid)) == 0
+    assert (
+        db.scalar(select(func.count()).select_from(Cliente).where(Cliente.barberia_id == bid)) == 0
+    )
+    assert client.get("/p/inspirationmen").status_code == 404
