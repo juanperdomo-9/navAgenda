@@ -242,7 +242,27 @@ type PremioRuleta = { texto: string; descuento_pct: number }
 type Regla = { cada_x_cortes: number; tipo: string; valor: number | null; servicio_id: string | null; descripcion: string; modo: 'fijo' | 'ruleta'; ruleta: PremioRuleta[] } | null
 const RULETA_INICIAL: PremioRuleta[] = [{ texto: 'Corte gratis', descuento_pct: 100 }, { texto: '50% de descuento', descuento_pct: 50 }, { texto: '20% de descuento', descuento_pct: 20 }, { texto: '10% de descuento', descuento_pct: 10 }]
 const aTexto = (ps: PremioRuleta[]) => ps.map((p) => ({ texto: p.texto, pct: String(p.descuento_pct) }))
-const PRESETS = ['#c9a46a', '#c47f57', '#d4a24c', '#1f3a5f', '#2f6b4f', '#7a1f2b', '#141210']
+// Los mismos nombres que en el PDF para sumar una barbería
+const PRESETS = [['#c9a46a', 'Arena'], ['#c47f57', 'Terracota'], ['#d4a24c', 'Mostaza'], ['#1f3a5f', 'Azul'], ['#2f6b4f', 'Verde'], ['#7a1f2b', 'Bordó'], ['#141210', 'Negro']]
+/** Colores principales del logo (sin blancos ni transparentes), para elegir sin saber códigos. */
+function coloresDelLogo(url: string): Promise<string[]> {
+  return new Promise((ok) => {
+    const img = new Image()
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = c.height = 48
+      const x = c.getContext('2d')!; x.drawImage(img, 0, 0, 48, 48)
+      const d = x.getImageData(0, 0, 48, 48).data, cuenta = new Map<string, number>()
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 200 || d[i] + d[i + 1] + d[i + 2] > 700) continue
+        const k = [d[i], d[i + 1], d[i + 2]].map((v) => Math.min(255, Math.round(v / 32) * 32).toString(16).padStart(2, '0')).join('')
+        cuenta.set(k, (cuenta.get(k) ?? 0) + 1)
+      }
+      ok([...cuenta].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k]) => '#' + k))
+    }
+    img.onerror = () => ok([])
+    img.src = url
+  })
+}
 function lum(hex: string) { const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] }
 const tinta = (hex: string) => ((lum(hex) + 0.05) / 0.0566 >= 1.03 / (lum(hex) + 0.05) ? '#141210' : '#fffdf3')
 const colorOk = (hex: string) => /^#[0-9a-f]{6}$/.test(hex) && Math.max((lum(hex) + 0.05) / 0.0566, 1.03 / (lum(hex) + 0.05)) >= 4.5
@@ -257,6 +277,7 @@ export function MiPagina() {
   // Los números se editan como texto (así se puede borrar y escribir otro) y se validan al guardar
   const [r, setR] = useState({ cada: '5', tipo: 'servicio_gratis', valor: '', servicio: '', texto: '', modo: 'fijo' as 'fijo' | 'ruleta', ruleta: aTexto(RULETA_INICIAL) })
   const [msg, setMsg] = useState('')
+  const [delLogo, setDelLogo] = useState<string[]>([])
   const [reglaCargada, setReglaCargada] = useState(false)
   useEffect(() => { if (cfg.data && !f) setF(cfg.data) }, [cfg.data, f])
   // Una sola vez: si se recargara al volver a la pestaña, pisaría lo que se está editando
@@ -298,8 +319,13 @@ export function MiPagina() {
             <ul className="links">{[url, ...(bs.data ?? []).filter((b) => b.activo).map((b) => `${url}?con=${b.nombre.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim().replace(/\s+/g, '-')}`)].map((l) => (
               <li key={l}><a href={`${location.protocol}//${l}`} target="_blank" rel="noopener">{l}</a><button type="button" className="quitar" onClick={() => copiar(l)} aria-label={`Copiar ${l}`}><Copy className="i" aria-hidden /></button></li>))}</ul></section>
           <section className="bloque"><h3 className="cond">Color</h3>
-            <div className="colores" role="group" aria-label="Color de tu página">{PRESETS.map((c) => <button key={c} type="button" className="color" style={{ background: c }} aria-pressed={c === f.color_acento} aria-label={`Color ${c}`} onClick={() => setF({ ...f, color_acento: c })} />)}</div>
-            <label className="campo">Otro color (hexadecimal)<input value={f.color_acento} maxLength={7} onChange={(e) => setF({ ...f, color_acento: e.target.value.toLowerCase() })} /></label>
+            <div className="colores" role="group" aria-label="Color de tu página">{PRESETS.map(([c, n]) => <button key={c} type="button" className="color-n" aria-pressed={c === f.color_acento} onClick={() => setF({ ...f, color_acento: c })}><span className="color" style={{ background: c }} aria-hidden />{n}</button>)}</div>
+            <div className="botones" style={{ marginTop: 12 }}>
+              <label className="btn sec chico elegir-color">Elegir a ojo<input type="color" value={/^#[0-9a-f]{6}$/.test(f.color_acento) ? f.color_acento : '#c9a46a'} onChange={(e) => setF({ ...f, color_acento: e.target.value.toLowerCase() })} /></label>
+              {cfg.data?.logo_url && <button type="button" className="btn sec chico" onClick={async () => { const cs = await coloresDelLogo(cfg.data!.logo_url!); setDelLogo(cs); if (!cs.length) setMsg('No encontramos colores en el logo.') }}>Sacar del logo</button>}
+            </div>
+            {delLogo.length > 0 && <div className="colores" role="group" aria-label="Colores del logo">{delLogo.map((c) => <button key={c} type="button" className="color" style={{ background: c }} aria-pressed={c === f.color_acento} aria-label={`Color del logo ${c}`} onClick={() => setF({ ...f, color_acento: c })} />)}</div>}
+            <label className="campo">Código del color (opcional)<input value={f.color_acento} maxLength={7} onChange={(e) => setF({ ...f, color_acento: e.target.value.toLowerCase() })} /></label>
             {!ok && <p className="err">Con ese color no se lee bien el texto. Probá uno más claro o más oscuro.</p>}
             {ok && <div className="previa" style={{ ['--prev' as string]: f.color_acento, ['--prev-ink' as string]: tinta(f.color_acento) }}><b className="cond">{f.nombre}</b><span>{f.direccion}</span></div>}</section>
         </div>
