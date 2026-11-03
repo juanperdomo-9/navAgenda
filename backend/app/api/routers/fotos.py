@@ -1,5 +1,6 @@
-"""Galería del local (hasta 8 fotos) y foto de cada barbero: se suben desde el panel."""
+"""Galería del local (hasta 8 fotos y 2 videos) y foto de cada barbero: se suben desde el panel."""
 
+import uuid
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Response, status
@@ -7,8 +8,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from app.api.deps import DB, Admin
-from app.models import Barbero, FotoLocal
-from app.services import imagenes
+from app.models import Barbero, FotoLocal, VideoLocal
+from app.services import almacen, imagenes
 
 router = APIRouter(tags=["fotos"])
 MAXIMO = 8
@@ -97,3 +98,94 @@ def ver_foto_barbero(barbero_id: UUID, db: DB):
     if not jpg:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Ese barbero no tiene foto.")
     return Response(jpg, media_type="image/jpeg", headers=CACHE)
+
+
+# ─── Videos (Supabase Storage) ───
+
+MAX_VIDEOS = 2
+MAX_MB = 15
+TIPOS = {"video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm"}
+
+
+class VideoNuevo(BaseModel):
+    tipo: str = Field(max_length=40)
+    bytes: int = Field(gt=0)
+
+
+class VideoSubido(BaseModel):
+    ruta: str = Field(max_length=200)
+
+
+def _sin_almacen() -> HTTPException:
+    return HTTPException(
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        "Los videos todavía no están configurados. Avisale a NavAgenda.",
+    )
+
+
+def videos_de(db, barberia_id) -> list[dict]:
+    if not almacen.configurado():
+        return []
+    vs = db.scalars(
+        select(VideoLocal)
+        .where(VideoLocal.barberia_id == barberia_id)
+        .order_by(VideoLocal.creado_en)
+    )
+    return [{"id": v.id, "url": almacen.url_publica(v.ruta)} for v in vs]
+
+
+@router.get("/panel/videos")
+def listar_videos(admin: Admin, db: DB):
+    return {"habilitado": almacen.configurado(), "videos": videos_de(db, admin.barberia_id)}
+
+
+@router.post("/panel/videos/subida")
+def pedir_subida(datos: VideoNuevo, admin: Admin, db: DB):
+    """Valida y devuelve una URL firmada: el navegador sube el archivo directo a Supabase."""
+    if not almacen.configurado():
+        raise _sin_almacen()
+    ext = TIPOS.get(datos.tipo.lower())
+    if not ext:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Subí un video MP4, MOV o WEBM.")
+    if datos.bytes > MAX_MB * 1024 * 1024:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"El video pesa más de {MAX_MB} MB. Cortalo o mandalo más corto (unos 20 segundos).",
+        )
+    hay = db.scalar(select(func.count()).where(VideoLocal.barberia_id == admin.barberia_id))
+    if hay >= MAX_VIDEOS:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, f"Ya tenés {MAX_VIDEOS} videos. Borrá uno para subir otro."
+        )
+    ruta = f"{admin.barberia_id}/{uuid.uuid4().hex}.{ext}"
+    return {"ruta": ruta, "subir_url": almacen.firmar_subida(ruta)}
+
+
+@router.post("/panel/videos", status_code=status.HTTP_201_CREATED)
+def confirmar_video(datos: VideoSubido, admin: Admin, db: DB):
+    """Después de subirlo: queda en la galería (solo rutas de su barbería y que existan)."""
+    if not almacen.configurado():
+        raise _sin_almacen()
+    if not datos.ruta.startswith(f"{admin.barberia_id}/") or not almacen.existe(datos.ruta):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "No encontramos el video subido. Probá de nuevo."
+        )
+    v = VideoLocal(barberia_id=admin.barberia_id, ruta=datos.ruta)
+    db.add(v)
+    db.commit()
+    return {"id": v.id, "url": almacen.url_publica(v.ruta)}
+
+
+@router.delete("/panel/videos/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
+def borrar_video(video_id: UUID, admin: Admin, db: DB) -> None:
+    v = db.scalar(
+        select(VideoLocal).where(
+            VideoLocal.id == video_id, VideoLocal.barberia_id == admin.barberia_id
+        )
+    )
+    if not v:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe ese video.")
+    if almacen.configurado():
+        almacen.borrar(v.ruta)
+    db.delete(v)
+    db.commit()

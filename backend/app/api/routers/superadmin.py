@@ -89,6 +89,7 @@ def _alta(db, datos: NuevaBarberia) -> tuple[Barberia, str]:
     )
     if datos.color_acento:
         barberia.color_acento = datos.color_acento
+    barberia.logo_fondo = datos.logo_fondo
     if datos.horas_min_cancelacion is not None:
         barberia.horas_min_cancelacion = datos.horas_min_cancelacion
     db.add(barberia)

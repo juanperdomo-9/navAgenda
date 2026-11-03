@@ -158,6 +158,7 @@ def leer(pdf: bytes) -> dict:
         "color_acento": color or "#c9a46a",
         "horas_min_cancelacion": min(horas, 72) if horas is not None else 3,
         "descripcion": s(17),
+        "logo_fondo": not b(21),  # "¿Logo de fondo en tu página?" → No
     }
     pendientes = []
     if b(18):

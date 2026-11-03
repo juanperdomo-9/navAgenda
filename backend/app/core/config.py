@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     brevo_api_key: str = ""
     brevo_remitente: str = ""
     brevo_nombre: str = "NavAgenda"
+    # Videos de la galería en Supabase Storage (bucket público). Sin esto no se suben videos.
+    supabase_url: str = ""
+    supabase_service_key: str = ""
+    supabase_bucket: str = "videos"
 
     @property
     def es_produccion(self) -> bool:

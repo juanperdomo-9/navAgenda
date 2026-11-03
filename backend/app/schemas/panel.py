@@ -177,6 +177,7 @@ class ConfigBarberia(BaseModel):
     horas_min_cancelacion: int
     ruleta_bienvenida: bool = False
     instagram: str | None = None
+    logo_fondo: bool = True
 
 
 class ConfigCambios(BaseModel):
@@ -192,6 +193,7 @@ class ConfigCambios(BaseModel):
     horas_min_cancelacion: int | None = Field(default=None, ge=0, le=72)
     ruleta_bienvenida: bool | None = None
     instagram: str | None = Field(default=None, max_length=80)
+    logo_fondo: bool | None = None
 
     @field_validator("instagram")
     @classmethod

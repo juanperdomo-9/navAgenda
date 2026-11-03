@@ -22,6 +22,7 @@ class NuevaBarberia(BaseModel):
     color_acento: str | None = Field(default=None, max_length=7)
     descripcion: str | None = Field(default=None, max_length=600)
     horas_min_cancelacion: int | None = Field(default=None, ge=0, le=72)
+    logo_fondo: bool = True
     # Admin dueño de la barbería
     admin_nombre: str = Field(min_length=2, max_length=80)
     admin_usuario: str = Field(min_length=3, max_length=40, pattern=r"^[A-Za-z0-9._-]+$")

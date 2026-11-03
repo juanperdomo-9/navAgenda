@@ -111,6 +111,8 @@ class Barberia(Base):
     )
     # Cobranza del abono (la maneja el superadmin)
     whatsapp: Mapped[str | None] = mapped_column(Text)
+    # El logo grande y transparente de fondo en su página (se puede sacar)
+    logo_fondo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
     # Usuario de Instagram sin @ (se muestra con link en su página)
     instagram: Mapped[str | None] = mapped_column(Text)
     abono: Mapped[int | None] = mapped_column(Integer)
@@ -433,6 +435,17 @@ class Giro(Base):
     descuento_pct: Mapped[int] = mapped_column(Integer, nullable=False)
     turno_id: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), ForeignKey("turnos.id"))
     usado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    creado_en: Mapped[datetime] = _creado_en()
+
+
+class VideoLocal(Base):
+    """Video de la galería: el archivo vive en Supabase Storage; acá, su ruta en el bucket."""
+
+    __tablename__ = "videos_local"
+
+    id: Mapped[UUID] = _id()
+    barberia_id: Mapped[UUID] = _barberia_fk()
+    ruta: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     creado_en: Mapped[datetime] = _creado_en()
 
 

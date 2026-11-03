@@ -12,6 +12,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import DB
+from app.api.routers.fotos import videos_de
 from app.core.security import LimitePorIP
 from app.core.tz import ZONA_AR
 from app.models import (
@@ -160,6 +161,8 @@ def pagina(slug: str, db: DB):
         "lng": b.lng,
         "descripcion": b.descripcion,
         "instagram": b.instagram,
+        "logo_fondo": b.logo_fondo,
+        "videos": [v["url"] for v in videos_de(db, b.id)],
         "horas_min_cancelacion": b.horas_min_cancelacion,
         "bienvenida": bienvenida.activa(db, b),
         "barberos": [
