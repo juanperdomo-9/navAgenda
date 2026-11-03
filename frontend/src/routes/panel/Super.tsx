@@ -32,6 +32,8 @@ export function Super() {
       const r = await api<{ usuario: string; clave_temporal: string }>(`/super/usuarios/${a.id}/resetear-clave`, { method: 'POST' })
       setClave({ titulo: `Clave nueva para ${b.nombre}`, usuario: r.usuario, clave: r.clave_temporal })
       refrescar()
+      // La clave se muestra arriba de todo: subir para que se vea
+      scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
     } catch (e) { setAviso(errMsg(e)) }
   }
   const [borrando, setBorrando] = useState<{ id: string; texto: string } | null>(null)
