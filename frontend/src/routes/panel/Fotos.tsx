@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImagePlus, X } from 'lucide-react'
+import { Film, ImagePlus, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { api, ApiError } from '@/lib/api'
 import { achicar } from './Logo'
@@ -76,5 +76,48 @@ export function FotoBarbero({ id, url, nombre, onCambio }: { id: string; url: st
         <input ref={input} type="file" accept="image/*" hidden onChange={(e) => subir(e.target.files?.[0])} />
       </div>
     </div>
+  )
+}
+
+/** Videos del local (hasta 2, 15 MB): suben directo del celular a Supabase con una URL firmada. */
+export function VideosLocal({ onAviso }: { onAviso: (m: string) => void }) {
+  const qc = useQueryClient()
+  const q = useQuery({ queryKey: ['p-videos'], queryFn: () => api<{ habilitado: boolean; videos: { id: string; url: string }[] }>('/panel/videos') })
+  const input = useRef<HTMLInputElement>(null)
+  const [avance, setAvance] = useState<number | null>(null)
+  if (!q.data?.habilitado) return null
+  const lista = q.data.videos
+  async function subir(f: File | undefined) {
+    if (!f) return
+    if (f.size > 15 * 1024 * 1024) { onAviso('Ese video pesa más de 15 MB. Mandá uno más corto (unos 20 segundos).'); return }
+    setAvance(0)
+    try {
+      const { ruta, subir_url } = await api<{ ruta: string; subir_url: string }>('/panel/videos/subida', { method: 'POST', body: JSON.stringify({ tipo: f.type || 'video/mp4', bytes: f.size }) })
+      await new Promise<void>((ok, mal) => {
+        const x = new XMLHttpRequest()
+        x.open('PUT', subir_url)
+        x.setRequestHeader('content-type', f.type || 'video/mp4')
+        x.upload.onprogress = (e) => e.lengthComputable && setAvance(Math.round((e.loaded / e.total) * 100))
+        x.onload = () => (x.status < 300 ? ok() : mal(new Error('subida')))
+        x.onerror = () => mal(new Error('subida'))
+        x.send(f)
+      })
+      await api('/panel/videos', { method: 'POST', body: JSON.stringify({ ruta }) })
+      onAviso('Video agregado a tu página.')
+    } catch (e) { onAviso(e instanceof ApiError ? e.message : 'No se pudo subir el video. Probá con otra conexión.') } finally {
+      setAvance(null); if (input.current) input.current.value = ''
+      qc.invalidateQueries({ queryKey: ['p-videos'] })
+    }
+  }
+  async function borrar(id: string) { await api(`/panel/videos/${id}`, { method: 'DELETE' }); qc.invalidateQueries({ queryKey: ['p-videos'] }) }
+  return (
+    <section className="bloque"><h3 className="cond">Videos del local <small>{lista.length}/2</small></h3>
+      <p className="ayuda" style={{ marginTop: 10 }}>Cortos (hasta 15 MB, unos 20 segundos). Se ven en la galería de tu página, sin sonido hasta que los tocan.</p>
+      <ul className="fotos-ed">
+        {lista.map((v, i) => <li key={v.id}><video src={v.url} muted playsInline preload="metadata" /><button type="button" onClick={() => borrar(v.id)} aria-label={`Borrar el video ${i + 1}`}><X aria-hidden /></button></li>)}
+        {lista.length < 2 && <li><button type="button" className="fotos-mas" onClick={() => input.current?.click()} disabled={avance !== null}><Film aria-hidden />{avance !== null ? `Subiendo ${avance}%` : 'Agregar'}</button></li>}
+      </ul>
+      <input ref={input} type="file" accept="video/mp4,video/quicktime,video/webm" hidden onChange={(e) => subir(e.target.files?.[0])} />
+    </section>
   )
 }

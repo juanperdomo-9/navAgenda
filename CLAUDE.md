@@ -260,6 +260,9 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
   `app/services/importar_pdf.py`) y revisa todo en "Revisar y crear" → `POST /super/barberias/completa` crea barbería,
   dueño, servicios, barberos (horarios interpretados del texto) y tarjeta. Si se cambia el formulario, actualizar el lector.
   El alta a mano también lleva WhatsApp, Instagram (`barberias.instagram`, con link en la página), color, descripción y horas.
+- Videos de la galería (2026-11-04): hasta 2 por barbería, 15 MB, en Supabase Storage (bucket público `videos`,
+  `app/services/almacen.py`, tabla `videos_local` con la ruta). El navegador sube directo con URL firmada
+  (`/panel/videos/subida` → PUT → `POST /panel/videos`). Mi página → "Logo de fondo" (`barberias.logo_fondo`) lo saca.
 - Desarrollo: si el puerto 8000 está ocupado, la API puede correr en otro y el front apunta con `API_URL`
   (config `frontend-api-8001` en `.claude/launch.json`).
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,

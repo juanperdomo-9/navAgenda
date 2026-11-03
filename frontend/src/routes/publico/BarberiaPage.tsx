@@ -76,7 +76,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
     <div className={`pb ${tinta(p.color_acento) === '#fffdf3' ? 'oscura' : ''}`} style={estiloBarberia(p.color_acento)}>
       <Barra p={p} onBarbero={(id) => { setBarbero(id); setVer(false) }} />
       <main className="pb-hero">
-        {p.logo_url && <img className="pb-fondo" src={p.logo_url} alt="" aria-hidden />}
+        {p.logo_url && p.logo_fondo !== false && <img className="pb-fondo" src={p.logo_url} alt="" aria-hidden />}
         <h1 className="cond" style={{ ['--largo' as string]: Math.max(5, ...palabras.map((x) => x.length)), ['--largo-total' as string]: Math.max(8, p.nombre.length) }}>{p.nombre}</h1>
         <div className="pb-datos">
           {p.direccion && (
@@ -123,7 +123,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
           </>}
         </section>
       </main>
-      <Galeria fotos={p.fotos ?? []} nombre={p.nombre} />
+      <Galeria fotos={p.fotos ?? []} videos={p.videos ?? []} nombre={p.nombre} />
       <Secciones p={p} servicio={servicio} setServicio={elegirServicio} nombreDe={nombreDe} onElegir={setElegido} onBarbero={conBarbero} subir={subir} />
       <dialog ref={hoja} className="hoja-p" onClose={() => setElegido(null)} aria-label="Tus datos">
         {elegido && (

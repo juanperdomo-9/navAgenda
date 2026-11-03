@@ -6,7 +6,7 @@ import { colorOk, PRESETS } from './Vistas'
 
 type Tramo = { dia_semana: number; desde: string; hasta: string }
 type Propuesta = {
-  barberia: { nombre: string; slug: string; direccion: string; barrio: string; ciudad: string; whatsapp: string; instagram: string; color_acento: string; horas_min_cancelacion: number; descripcion: string }
+  barberia: { nombre: string; slug: string; direccion: string; barrio: string; ciudad: string; whatsapp: string; instagram: string; color_acento: string; horas_min_cancelacion: number; descripcion: string; logo_fondo: boolean }
   admin: { nombre: string; whatsapp: string; usuario: string }
   barberos: { nombre: string; horario_texto: string; horarios: Tramo[]; servicios: string[]; email: string }[]
   servicios: { nombre: string; precio: number; duracion_min: number; quienes: string }[]

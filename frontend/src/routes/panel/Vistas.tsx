@@ -3,7 +3,7 @@ import { Copy, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api, ApiError } from '@/lib/api'
 import { Hoja } from './Agenda'
-import { FotoBarbero, FotosLocal } from './Fotos'
+import { FotoBarbero, FotosLocal, VideosLocal } from './Fotos'
 import { Logo } from './Logo'
 import { Ubicacion } from './Ubicacion'
 
@@ -237,7 +237,7 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
 }
 
 /* ═══ MI PÁGINA ═══ */
-type Config = { nombre: string; slug: string; logo_url: string | null; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null; ruleta_bienvenida: boolean; instagram: string | null }
+type Config = { nombre: string; slug: string; logo_url: string | null; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null; ruleta_bienvenida: boolean; instagram: string | null; logo_fondo: boolean }
 type PremioRuleta = { texto: string; descuento_pct: number }
 type Regla = { cada_x_cortes: number; tipo: string; valor: number | null; servicio_id: string | null; descripcion: string; modo: 'fijo' | 'ruleta'; ruleta: PremioRuleta[] } | null
 const RULETA_INICIAL: PremioRuleta[] = [{ texto: 'Corte gratis', descuento_pct: 100 }, { texto: '50% de descuento', descuento_pct: 50 }, { texto: '20% de descuento', descuento_pct: 20 }, { texto: '10% de descuento', descuento_pct: 10 }]
@@ -298,7 +298,7 @@ export function MiPagina() {
   async function guardar() {
     if (!ok) return setMsg('Con ese color no se lee bien el texto. Probá otro.')
     try {
-      await api('/panel/barberia', { method: 'PATCH', body: JSON.stringify({ nombre: f!.nombre, color_acento: f!.color_acento, direccion: f!.direccion, barrio: f!.barrio, descripcion: f!.descripcion, instagram: f!.instagram || null, horas_min_cancelacion: f!.horas_min_cancelacion, lat: f!.lat, lng: f!.lng, ruleta_bienvenida: r.modo === 'ruleta' && f!.ruleta_bienvenida }) })
+      await api('/panel/barberia', { method: 'PATCH', body: JSON.stringify({ nombre: f!.nombre, color_acento: f!.color_acento, direccion: f!.direccion, barrio: f!.barrio, descripcion: f!.descripcion, instagram: f!.instagram || null, logo_fondo: f!.logo_fondo, horas_min_cancelacion: f!.horas_min_cancelacion, lat: f!.lat, lng: f!.lng, ruleta_bienvenida: r.modo === 'ruleta' && f!.ruleta_bienvenida }) })
       const n = Number(r.cada)
       if (!Number.isInteger(n) || n < 1 || n > 20) return setMsg('La tarjeta va de 1 a 20 cortes.')
       const ruleta = r.ruleta.filter((x) => x.texto.trim().length >= 2).map((x) => ({ texto: x.texto.trim(), descuento_pct: x.pct.trim() === '' ? 0 : Number(x.pct) }))
@@ -331,7 +331,9 @@ export function MiPagina() {
         </div>
         <div style={{ display: 'grid', gap: 26, alignContent: 'start' }}>
           <FotosLocal onAviso={setMsg} />
+          <VideosLocal onAviso={setMsg} />
           <Logo url={cfg.data?.logo_url ?? null} nombre={f.nombre} onCambio={(m) => { setMsg(m); qc.invalidateQueries({ queryKey: ['p-config'] }) }} />
+          {cfg.data?.logo_url && <label className="check"><input type="checkbox" checked={f.logo_fondo} onChange={(e) => setF({ ...f, logo_fondo: e.target.checked })} /><span>Logo de fondo<small style={{ display: 'block', fontWeight: 500 }}>Grande y transparente detrás del nombre, en tu página. Se guarda con "Guardar cambios".</small></span></label>}
           <section className="bloque"><h3 className="cond">Datos</h3>
             <label className="campo">Nombre<input value={f.nombre} onChange={(e) => setF({ ...f, nombre: e.target.value })} /></label>
             <div className="fila2"><label className="campo">Dirección<input value={f.direccion ?? ''} onChange={(e) => setF({ ...f, direccion: e.target.value })} /></label><label className="campo">Barrio<input value={f.barrio ?? ''} onChange={(e) => setF({ ...f, barrio: e.target.value })} /></label></div>

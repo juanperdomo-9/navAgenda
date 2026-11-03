@@ -4,7 +4,11 @@ import { ZONA } from './comun'
 import type { PaginaBarberia } from './Secciones'
 
 /** Fotos del local: una grande y dos chicas (como una vidriera); "Ver todas" las abre en pantalla completa. */
-export function Galeria({ fotos, nombre }: { fotos: string[]; nombre: string }) {
+const esVideo = (u: string) => /\.(mp4|mov|webm)(\?|$)/i.test(u)
+
+export function Galeria({ fotos: soloFotos, videos = [], nombre }: { fotos: string[]; videos?: string[]; nombre: string }) {
+  // El primer video va segundo: la foto grande sigue mostrando el local
+  const fotos = soloFotos.length ? [soloFotos[0], ...videos, ...soloFotos.slice(1)] : videos
   const [abierta, setAbierta] = useState<number | null>(null)
   const ref = useRef<HTMLDialogElement>(null)
   const tira = useRef<HTMLDivElement>(null)
@@ -20,7 +24,7 @@ export function Galeria({ fotos, nombre }: { fotos: string[]; nombre: string }) 
       <div className={`gal-grilla n${Math.min(fotos.length, 3)}`}>
         {fotos.slice(0, 3).map((f, i) => (
           <button key={f} type="button" onClick={() => setAbierta(i)} aria-label={`Ver foto ${i + 1} de ${fotos.length}`}>
-            <img src={f} alt="" loading={i ? 'lazy' : 'eager'} />
+            {esVideo(f) ? <><video src={f} muted loop autoPlay playsInline preload="metadata" aria-hidden /><span className="gal-play" aria-hidden>▶</span></> : <img src={f} alt="" loading={i ? 'lazy' : 'eager'} />}
             {i === Math.min(fotos.length, 3) - 1 && fotos.length > 1 && <span className="gal-todas">Ver todas ({fotos.length})</span>}
           </button>
         ))}
@@ -28,7 +32,7 @@ export function Galeria({ fotos, nombre }: { fotos: string[]; nombre: string }) 
       <dialog ref={ref} className="gal-full" onClose={() => setAbierta(null)} aria-label={`Fotos de ${nombre}`}>
         <button type="button" className="gal-cerrar" onClick={() => setAbierta(null)} aria-label="Cerrar las fotos"><X aria-hidden /></button>
         <div className="gal-tira" ref={tira}>
-          {fotos.map((f, i) => <figure key={f}><img src={f} alt={`Foto ${i + 1} de ${fotos.length} de ${nombre}`} loading="lazy" /><figcaption>{i + 1} / {fotos.length}</figcaption></figure>)}
+          {fotos.map((f, i) => <figure key={f}>{esVideo(f) ? <video src={f} controls playsInline preload="metadata" aria-label={`Video ${i + 1} de ${nombre}`} /> : <img src={f} alt={`Foto ${i + 1} de ${fotos.length} de ${nombre}`} loading="lazy" />}<figcaption>{i + 1} / {fotos.length}</figcaption></figure>)}
         </div>
         {fotos.length > 1 && <>
           <button type="button" className="gal-flecha izq" onClick={() => mover(-1)} aria-label="Foto anterior"><ChevronLeft aria-hidden /></button>

@@ -14,6 +14,8 @@ export type PaginaBarberia = {
   fidelidad: { cada: number; descripcion: string; modo?: string; ruleta?: string[] } | null
   bienvenida?: boolean
   instagram?: string | null
+  videos?: string[]
+  logo_fondo?: boolean
 }
 export type Libre = { inicio: string; fin: string; barbero_id: string }
 

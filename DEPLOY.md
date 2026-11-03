@@ -22,6 +22,11 @@
    En Render → `navagenda-api` → *Environment* agregá `BREVO_API_KEY` (la clave) y `BREVO_REMITENTE` (el mail
    verificado). Cada barbero carga su mail en *Barberos → editar*. Sin la clave no se manda nada.
 
+7. **Videos de la galería (Supabase Storage)**: en Supabase → *Storage* → *New bucket* llamado `videos`, **público**,
+   con límite de 15 MB por archivo y tipos `video/mp4, video/quicktime, video/webm`. En *Project Settings → API* copiá la
+   *Project URL* y la clave *service_role* (secreta). En Render → `navagenda-api` → *Environment*: `SUPABASE_URL` y
+   `SUPABASE_SERVICE_KEY`. Sin eso, la sección de videos no aparece en el panel.
+
 Si se pierde una clave: el superadmin resetea la de cualquier admin desde su panel.
 
 Dominio propio: en Render → `navagenda-web` → *Custom domains* (después).
