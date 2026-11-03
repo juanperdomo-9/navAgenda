@@ -26,6 +26,7 @@ export function Barra({ p, onBarbero }: { p: PaginaBarberia; onBarbero: (id: str
         <div className="bm-datos">
           {p.direccion && <a href={`https://www.google.com/maps/search/?api=1&query=${p.lat && p.lng ? `${p.lat},${p.lng}` : encodeURIComponent(lugar)}`} target="_blank" rel="noopener"><MapPin className="i" aria-hidden />{lugar}</a>}
           <dl>{atencion(p).map((x) => [<dt key={'t' + x.d}>{x.dias}</dt>, <dd key={'d' + x.d}>{x.txt}</dd>])}</dl>
+          {p.instagram && <a href={`https://instagram.com/${p.instagram}`} target="_blank" rel="noopener">Instagram @{p.instagram}</a>}
         </div>
         <p className="bm-tit">Barberos</p>
         <ul className="bm-barberos">
@@ -55,6 +56,7 @@ export function PieBarberia({ p, onBarbero }: { p: PaginaBarberia; onBarbero: (i
       <div>
         <b className="cond pie-nombre">{p.logo_url && <img src={p.logo_url} alt="" />}{p.nombre}</b>
         {p.direccion && <p>{lugar}</p>}
+        {p.instagram && <p><a href={`https://instagram.com/${p.instagram}`} target="_blank" rel="noopener">Instagram @{p.instagram}</a></p>}
         <dl>{atencion(p).map((x) => [<dt key={'t' + x.d}>{x.dias}</dt>, <dd key={'d' + x.d}>{x.txt}</dd>])}</dl>
       </div>
       <ul aria-label="Links de cada barbero">

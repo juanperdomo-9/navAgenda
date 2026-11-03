@@ -237,13 +237,13 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
 }
 
 /* ═══ MI PÁGINA ═══ */
-type Config = { nombre: string; slug: string; logo_url: string | null; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null; ruleta_bienvenida: boolean }
+type Config = { nombre: string; slug: string; logo_url: string | null; color_acento: string; direccion: string | null; barrio: string | null; descripcion: string | null; horas_min_cancelacion: number; lat: string | null; lng: string | null; ruleta_bienvenida: boolean; instagram: string | null }
 type PremioRuleta = { texto: string; descuento_pct: number }
 type Regla = { cada_x_cortes: number; tipo: string; valor: number | null; servicio_id: string | null; descripcion: string; modo: 'fijo' | 'ruleta'; ruleta: PremioRuleta[] } | null
 const RULETA_INICIAL: PremioRuleta[] = [{ texto: 'Corte gratis', descuento_pct: 100 }, { texto: '50% de descuento', descuento_pct: 50 }, { texto: '20% de descuento', descuento_pct: 20 }, { texto: '10% de descuento', descuento_pct: 10 }]
 const aTexto = (ps: PremioRuleta[]) => ps.map((p) => ({ texto: p.texto, pct: String(p.descuento_pct) }))
 // Los mismos nombres que en el PDF para sumar una barbería
-const PRESETS = [['#c9a46a', 'Arena'], ['#c47f57', 'Terracota'], ['#d4a24c', 'Mostaza'], ['#1f3a5f', 'Azul'], ['#2f6b4f', 'Verde'], ['#7a1f2b', 'Bordó'], ['#141210', 'Negro']]
+export const PRESETS = [['#c9a46a', 'Arena'], ['#c47f57', 'Terracota'], ['#d4a24c', 'Mostaza'], ['#1f3a5f', 'Azul'], ['#2f6b4f', 'Verde'], ['#7a1f2b', 'Bordó'], ['#141210', 'Negro']]
 /** Colores principales del logo (sin blancos ni transparentes), para elegir sin saber códigos. */
 function coloresDelLogo(url: string): Promise<string[]> {
   return new Promise((ok) => {
@@ -265,7 +265,7 @@ function coloresDelLogo(url: string): Promise<string[]> {
 }
 function lum(hex: string) { const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] }
 const tinta = (hex: string) => ((lum(hex) + 0.05) / 0.0566 >= 1.03 / (lum(hex) + 0.05) ? '#141210' : '#fffdf3')
-const colorOk = (hex: string) => /^#[0-9a-f]{6}$/.test(hex) && Math.max((lum(hex) + 0.05) / 0.0566, 1.03 / (lum(hex) + 0.05)) >= 4.5
+export const colorOk = (hex: string) => /^#[0-9a-f]{6}$/.test(hex) && Math.max((lum(hex) + 0.05) / 0.0566, 1.03 / (lum(hex) + 0.05)) >= 4.5
 
 export function MiPagina() {
   const qc = useQueryClient()
@@ -298,7 +298,7 @@ export function MiPagina() {
   async function guardar() {
     if (!ok) return setMsg('Con ese color no se lee bien el texto. Probá otro.')
     try {
-      await api('/panel/barberia', { method: 'PATCH', body: JSON.stringify({ nombre: f!.nombre, color_acento: f!.color_acento, direccion: f!.direccion, barrio: f!.barrio, descripcion: f!.descripcion, horas_min_cancelacion: f!.horas_min_cancelacion, lat: f!.lat, lng: f!.lng, ruleta_bienvenida: r.modo === 'ruleta' && f!.ruleta_bienvenida }) })
+      await api('/panel/barberia', { method: 'PATCH', body: JSON.stringify({ nombre: f!.nombre, color_acento: f!.color_acento, direccion: f!.direccion, barrio: f!.barrio, descripcion: f!.descripcion, instagram: f!.instagram || null, horas_min_cancelacion: f!.horas_min_cancelacion, lat: f!.lat, lng: f!.lng, ruleta_bienvenida: r.modo === 'ruleta' && f!.ruleta_bienvenida }) })
       const n = Number(r.cada)
       if (!Number.isInteger(n) || n < 1 || n > 20) return setMsg('La tarjeta va de 1 a 20 cortes.')
       const ruleta = r.ruleta.filter((x) => x.texto.trim().length >= 2).map((x) => ({ texto: x.texto.trim(), descuento_pct: x.pct.trim() === '' ? 0 : Number(x.pct) }))
@@ -338,6 +338,7 @@ export function MiPagina() {
             <div className="campo">Ubicación en el mapa<span className="ayuda">{f.lat ? 'Listo. Si no es ahí, tocá el lugar correcto.' : 'Tocá el mapa donde está tu local, así aparece en tu página.'}</span>
               <Ubicacion lat={f.lat} lng={f.lng} onCambiar={(lat, lng) => setF((x) => x && { ...x, lat, lng })} /></div>
             <label className="campo">Descripción<textarea maxLength={600} value={f.descripcion ?? ''} onChange={(e) => setF({ ...f, descripcion: e.target.value })} /></label>
+            <label className="campo">Instagram<input value={f.instagram ?? ''} onChange={(e) => setF({ ...f, instagram: e.target.value })} placeholder="@tu.barberia" autoComplete="off" /><span className="ayuda">Aparece con link en el menú y el pie de tu página.</span></label>
             <label className="campo">Pueden cancelar hasta<select value={f.horas_min_cancelacion} onChange={(e) => setF({ ...f, horas_min_cancelacion: +e.target.value })}>{[0, 1, 2, 3, 6, 12, 24].map((h) => <option key={h} value={h}>{h ? `${h} h antes` : 'el último momento'}</option>)}</select></label></section>
           <section className="bloque"><h3 className="cond">Tarjeta de cortes</h3><p className="ayuda" style={{ marginTop: 10 }}>Así la ven tus clientes en su ticket: una tijera tachada por cada corte.</p>
             <div className="periodo" role="group" aria-label="Tipo de premio" style={{ marginTop: 12 }}>

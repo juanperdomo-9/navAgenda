@@ -255,6 +255,11 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Mail del cliente (2026-11-03): obligatorio al reservar en la página ("para recordarte el turno"). Al reservar le llega
   la confirmación con el link del ticket; el día anterior desde las 20:00 (hilo de fondo cada 15 min,
   `app/services/recordatorios.py`) el recordatorio con un link propio (`turnos.token_recordatorio_hash`), una sola vez.
+- Alta de barbería desde el PDF (2026-11-03): el superadmin toca "Cargar desde PDF", sube el formulario "Sumá tu
+  barbería" completado (`docs/NavAgenda - Datos para sumar tu barberia.pdf`, 129 campos c1…c129 leídos por posición en
+  `app/services/importar_pdf.py`) y revisa todo en "Revisar y crear" → `POST /super/barberias/completa` crea barbería,
+  dueño, servicios, barberos (horarios interpretados del texto) y tarjeta. Si se cambia el formulario, actualizar el lector.
+  El alta a mano también lleva WhatsApp, Instagram (`barberias.instagram`, con link en la página), color, descripción y horas.
 - Desarrollo: si el puerto 8000 está ocupado, la API puede correr en otro y el front apunta con `API_URL`
   (config `frontend-api-8001` en `.claude/launch.json`).
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,

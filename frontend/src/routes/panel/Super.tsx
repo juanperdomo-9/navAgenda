@@ -4,10 +4,12 @@ import { useState, type FormEvent } from 'react'
 import { ADMINISTRANDO, api, ApiError } from '@/lib/api'
 import { Hoja } from './Agenda'
 import { Cobranza } from './Cobranza'
+import { colorOk, PRESETS } from './Vistas'
+import { AltaDesdePdf, CargarPdf } from './DesdePdf'
 
 type Admin = { id: string; nombre: string; usuario: string; ultimo_ingreso: string | null; debe_cambiar_clave: boolean }
 type Barberia = { id: string; nombre: string; slug: string; barrio: string | null; activa: boolean; admins: Admin[]; barberos: number }
-type Clave = { titulo: string; usuario: string; clave: string }
+type Clave = { titulo: string; usuario: string; clave: string; id?: string; nombre?: string }
 type Pedido = { id: string; barberia: string; nombre: string; telefono: string; barrio: string | null; mensaje: string | null; creado_en: string }
 
 const aSlug = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -21,6 +23,7 @@ export function Super() {
   const [nueva, setNueva] = useState<Pedido | true | null>(null)
   const ps = useQuery({ queryKey: ['s-pedidos'], queryFn: () => api<Pedido[]>('/super/solicitudes') })
   const [clave, setClave] = useState<Clave | null>(null)
+  const [delPdf, setDelPdf] = useState<Parameters<typeof AltaDesdePdf>[0]['p'] | null>(null)
   const [aviso, setAviso] = useState('')
   const refrescar = () => qc.invalidateQueries({ queryKey: ['s-barberias'] })
 
@@ -48,7 +51,9 @@ export function Super() {
     <main>
       <div className="titulo"><h1 className="cond">Barberías</h1>
         <p>{ls.length ? `${ls.filter((b) => b.activa).length} online de ${ls.length}.` : ''} Cada una tiene su admin, que entra con usuario y clave.</p></div>
-      <button type="button" className="btn" onClick={() => { setNueva(true); setClave(null) }}><Plus className="i" aria-hidden />Nueva barbería</button>
+      <div className="botones"><button type="button" className="btn" onClick={() => { setNueva(true); setClave(null) }}><Plus className="i" aria-hidden />Nueva barbería</button>
+        <CargarPdf onLeido={(x) => { setClave(null); setDelPdf(x) }} /></div>
+      {delPdf && <AltaDesdePdf p={delPdf} onCerrar={() => setDelPdf(null)} onListo={(c) => { setDelPdf(null); setClave(c); refrescar() }} />}
       {clave && <ClaveTemporal {...clave} onCerrar={() => setClave(null)} />}
       <Cobranza />
       {!!ps.data?.length && (
@@ -85,7 +90,7 @@ export function Super() {
 }
 
 /** La clave temporal se ve una sola vez: hay que pasársela al dueño. */
-function ClaveTemporal({ titulo, usuario, clave, onCerrar }: Clave & { onCerrar: () => void }) {
+function ClaveTemporal({ titulo, usuario, clave, id, nombre, onCerrar }: Clave & { onCerrar: () => void }) {
   const [copiado, setCopiado] = useState(false)
   const texto = `Usuario: ${usuario}\nClave temporal: ${clave}\nEntrá en ${location.origin}/panel/ingresar y elegí tu clave.`
   return (
@@ -96,13 +101,16 @@ function ClaveTemporal({ titulo, usuario, clave, onCerrar }: Clave & { onCerrar:
       <p style={{ display: 'flex', gap: 18 }}>
         <button type="button" className="link" style={{ color: 'inherit' }} onClick={() => navigator.clipboard?.writeText(texto).then(() => setCopiado(true))}><Copy className="i" aria-hidden />{copiado ? 'Copiado' : 'Copiar para mandar'}</button>
         <button type="button" className="link" style={{ color: 'inherit' }} onClick={onCerrar}>Listo, ya la pasé</button>
+        {id && <button type="button" className="link" style={{ color: 'var(--roll, #f6d13a)' }} onClick={() => { sessionStorage.setItem(ADMINISTRANDO, JSON.stringify({ id, nombre })); location.reload() }}>Seguir cargando (03 a 07) →</button>}
       </p>
     </section>
   )
 }
 
 function NuevaBarberia({ pedido, onCerrar, onListo }: { pedido?: Pedido; onCerrar: () => void; onListo: (c: Clave) => void }) {
-  const [f, setF] = useState({ nombre: pedido?.barberia ?? '', slug: aSlug(pedido?.barberia ?? ''), direccion: '', barrio: pedido?.barrio ?? '', admin_nombre: pedido?.nombre ?? '', admin_usuario: aSlug(pedido?.barberia ?? '') })
+  // Todo lo de las secciones 01 y 02 del PDF "Sumá tu barbería", en el mismo orden
+  const [f, setF] = useState({ nombre: pedido?.barberia ?? '', slug: aSlug(pedido?.barberia ?? ''), direccion: '', barrio: pedido?.barrio ?? '', ciudad: 'La Plata',
+    whatsapp: '', instagram: '', color_acento: '#c9a46a', descripcion: '', horas_min_cancelacion: '3', admin_nombre: pedido?.nombre ?? '', admin_usuario: aSlug(pedido?.barberia ?? '') })
   const [tocado, setTocado] = useState({ slug: false, admin_usuario: false })
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -116,13 +124,15 @@ function NuevaBarberia({ pedido, onCerrar, onListo }: { pedido?: Pedido; onCerra
     e.preventDefault()
     if (f.nombre.trim().length < 2 || f.admin_nombre.trim().length < 2) return setError('Completá el nombre de la barbería y el del dueño.')
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(f.slug)) return setError('El link solo puede tener letras sin tilde, números y guiones.')
+    if (!colorOk(f.color_acento)) return setError('Con ese color no se lee bien la página. Elegí otro.')
     setEnviando(true)
     try {
-      const r = await api<{ barberia: { nombre: string }; admin_usuario: string; clave_temporal: string }>('/super/barberias', {
+      const r = await api<{ barberia: { id: string; nombre: string }; admin_usuario: string; clave_temporal: string }>('/super/barberias', {
         method: 'POST',
-        body: JSON.stringify({ ...f, direccion: f.direccion || null, barrio: f.barrio || null, ciudad: 'La Plata' }),
+        body: JSON.stringify({ ...f, direccion: f.direccion || null, barrio: f.barrio || null, ciudad: f.ciudad || 'La Plata', whatsapp: f.whatsapp || null,
+          instagram: f.instagram || null, descripcion: f.descripcion || null, horas_min_cancelacion: +f.horas_min_cancelacion }),
       })
-      onListo({ titulo: `${r.barberia.nombre} ya está creada`, usuario: r.admin_usuario, clave: r.clave_temporal })
+      onListo({ titulo: `${r.barberia.nombre} ya está creada`, usuario: r.admin_usuario, clave: r.clave_temporal, id: r.barberia.id, nombre: r.barberia.nombre })
     } catch (err) { setError(errMsg(err)) } finally { setEnviando(false) }
   }
 
@@ -136,12 +146,22 @@ function NuevaBarberia({ pedido, onCerrar, onListo }: { pedido?: Pedido; onCerra
     <Hoja titulo="Nueva barbería" abierta onCerrar={onCerrar}
       pie={<button type="submit" form="nueva-b" className="btn" disabled={enviando}>{enviando ? 'Creando…' : 'Crear barbería'}</button>}>
       <form id="nueva-b" onSubmit={enviar} style={{ display: 'grid', gap: 4 }}>
-        {campo('nombre', 'Nombre')}
+        <p className="pdf-sec cond">01 · La barbería</p>
+        {campo('nombre', 'Nombre de la barbería')}
         {campo('slug', 'Link', { ayuda: `${location.host}/${f.slug || '…'}`, auto: 'slug' })}
-        {campo('direccion', 'Dirección (opcional)', { ayuda: 'Ej.: Calle 8 e/ 49 y 50' })}
-        {campo('barrio', 'Barrio (opcional)')}
+        <div className="fila2">{campo('direccion', 'Dirección', { ayuda: 'Ej.: Calle 8 e/ 49 y 50' })}{campo('barrio', 'Barrio')}</div>
+        <div className="fila2">{campo('ciudad', 'Ciudad')}{campo('whatsapp', 'WhatsApp de la barbería')}</div>
+        {campo('instagram', 'Instagram', { ayuda: 'El usuario, ej.: @la.navaja (o pegá el link)' })}
+        <div className="campo">Color de la marca<span className="ayuda">Tocá el que tildó en el PDF, o elegilo a ojo.</span>
+          <div className="colores" role="group" aria-label="Color de la marca">{PRESETS.map(([c, n]) => <button key={c} type="button" className="color-n" aria-pressed={c === f.color_acento} onClick={() => setF({ ...f, color_acento: c })}><span className="color" style={{ background: c }} aria-hidden />{n}</button>)}
+            <label className="btn sec chico elegir-color">Elegir a ojo<input type="color" value={/^#[0-9a-f]{6}$/.test(f.color_acento) ? f.color_acento : '#c9a46a'} onChange={(e) => setF({ ...f, color_acento: e.target.value.toLowerCase() })} /></label></div>
+          {!colorOk(f.color_acento) && <span className="err">Con ese color no se lee bien la página. Probá uno más claro o más oscuro.</span>}</div>
+        <label className="campo">Descripción para su página<textarea maxLength={600} value={f.descripcion} onChange={(e) => setF({ ...f, descripcion: e.target.value })} /></label>
+        <label className="campo">Pueden cancelar hasta<select value={f.horas_min_cancelacion} onChange={(e) => setF({ ...f, horas_min_cancelacion: e.target.value })}>{[0, 1, 2, 3, 6, 12, 24].map((h) => <option key={h} value={h}>{h ? `${h} h antes` : 'el último momento'}</option>)}</select></label>
+        <p className="pdf-sec cond">02 · Quién maneja el panel</p>
         {campo('admin_nombre', 'Nombre del dueño')}
         {campo('admin_usuario', 'Usuario del dueño', { ayuda: 'Con este usuario entra al panel.', auto: 'admin_usuario' })}
+        <p className="ayuda">Horario, barberos, servicios, tarjeta, logo y fotos (secciones 03 a 07) se cargan después, con "Administrar".</p>
         {error && <p role="alert" className="err">{error}</p>}
       </form>
     </Hoja>

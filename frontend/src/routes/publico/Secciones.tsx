@@ -13,6 +13,7 @@ export type PaginaBarberia = {
   servicios: { id: string; nombre: string; precio: number; duracion_min: number }[]
   fidelidad: { cada: number; descripcion: string; modo?: string; ruleta?: string[] } | null
   bienvenida?: boolean
+  instagram?: string | null
 }
 export type Libre = { inicio: string; fin: string; barbero_id: string }
 
