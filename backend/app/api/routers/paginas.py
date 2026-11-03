@@ -54,7 +54,8 @@ def etiquetas(titulo: str, descripcion: str, imagen: str, url: str) -> str:
     )
 
 
-@router.get("/pagina/{ruta:path}", response_class=HTMLResponse)
+# HEAD también: UptimeRobot revisa con HEAD y sin esto marcaba la web caída (405)
+@router.api_route("/pagina/{ruta:path}", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def pagina(ruta: str, db: DB):
     html = _index()
     if not html:  # sin el index publicado: que lo resuelva la carpeta de la barbería o el inicio
