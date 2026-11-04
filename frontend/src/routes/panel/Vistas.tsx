@@ -9,7 +9,7 @@ import { Ubicacion } from './Ubicacion'
 
 type Tramo = { dia_semana: number; desde: string; hasta: string }
 type Barbero = { id: string; nombre: string; foto_url: string | null; email: string | null; activo: boolean; horarios: Tramo[]; servicio_ids: string[] }
-type Servicio = { id: string; nombre: string; precio: number; duracion_min: number; activo: boolean; barbero_ids: string[] }
+type Servicio = { id: string; nombre: string; precio: number; duracion_min: number; descripcion: string | null; activo: boolean; barbero_ids: string[] }
 type Franja = { desde: string; hasta: string; dias: number[] }
 
 const DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
@@ -194,6 +194,7 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
   const [nombre, setNombre] = useState(s?.nombre ?? '')
   const [precio, setPrecio] = useState(s ? s.precio.toLocaleString('es-AR') : '')
   const [dur, setDur] = useState(s?.duracion_min ?? 30)
+  const [desc, setDesc] = useState(s?.descripcion ?? '')
   const [bs, setBs] = useState<string[]>(s ? s.barbero_ids : barberos.map((b) => b.id))
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -206,7 +207,7 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
     if (guardando) return
     setGuardando(true)
     try {
-      const datos = { nombre: nombre.trim(), precio: p, duracion_min: dur }
+      const datos = { nombre: nombre.trim(), precio: p, duracion_min: dur, descripcion: desc.trim() }
       const out = s ? await api<Servicio>(`/panel/servicios/${s.id}`, { method: 'PATCH', body: JSON.stringify(datos) }) : await api<Servicio>('/panel/servicios', { method: 'POST', body: JSON.stringify(datos) })
       await api(`/panel/servicios/${out.id}/barberos`, { method: 'PUT', body: JSON.stringify({ barbero_ids: bs }) })
       onListo(s ? `"${datos.nombre}" actualizado en tu página.` : `"${datos.nombre}" ya se puede reservar.`)
@@ -221,6 +222,7 @@ function EditorServicio({ s, barberos, onCerrar, onListo }: { s: Servicio | null
       pie={<>{error && <p className="estado mal" role="alert">{error}</p>}<div className="botones"><button type="button" className="btn sec" onClick={onCerrar}>Cancelar</button><button type="button" className="btn" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar'}</button></div></>}>
       <section className="bloque"><h3 className="cond">Servicio</h3>
         <label className="campo">Nombre<input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="off" placeholder="Ej.: Corte + barba" /></label>
+        <label className="campo">Descripción (opcional)<input value={desc} maxLength={160} onChange={(e) => setDesc(e.target.value)} autoComplete="off" placeholder="Ej.: Corte con máquina y tijera, lavado y peinado" /><span className="ayuda">Una línea: qué incluye. Se ve en tu lista de precios y cuando reservan.</span></label>
         <div className="fila2">
           <label className="campo">Precio<span className="prefijo"><span aria-hidden>$</span><input inputMode="numeric" value={precio} onChange={(e) => { const n = e.target.value.replace(/\D/g, ''); setPrecio(n ? (+n).toLocaleString('es-AR') : '') }} /></span></label>
           <label className="campo">Duración<select value={dur} onChange={(e) => setDur(+e.target.value)}>{Array.from({ length: 48 }, (_, i) => (i + 1) * 5).map((m) => <option key={m} value={m}>{m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`}</option>)}</select></label>

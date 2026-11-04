@@ -10,7 +10,7 @@ export type PaginaBarberia = {
   fotos: string[]
   nombre: string; slug: string; logo_url: string | null; direccion: string | null; barrio: string | null; ciudad: string | null; lat: string | null; lng: string | null
   barberos: { id: string; nombre: string; foto_url: string | null; servicio_ids: string[]; horarios: Tramo[] }[]
-  servicios: { id: string; nombre: string; precio: number; duracion_min: number }[]
+  servicios: { id: string; nombre: string; precio: number; duracion_min: number; descripcion?: string | null }[]
   fidelidad: { cada: number; descripcion: string; modo?: string; ruleta?: string[] } | null
   bienvenida?: boolean
   instagram?: string | null
@@ -101,7 +101,8 @@ export function Secciones({ p, servicio, setServicio, nombreDe, onElegir, onBarb
             <h3>{p.nombre}</h3>
             <ul>{p.servicios.map((s) => (
               <li key={s.id}><button type="button" onClick={() => { setServicio(s.id); subir() }}>
-                {s.nombre} <small>{s.duracion_min} min</small><span className="lead" /><b>{pesos(s.precio)}</b></button></li>))}</ul>
+                {s.nombre} <small>{s.duracion_min} min</small><span className="lead" /><b>{pesos(s.precio)}</b>
+                {s.descripcion && <span className="serv-desc">{s.descripcion}</span>}</button></li>))}</ul>
             <p className="pie-caja">Se paga en el local. Sin seña.</p>
           </div>
         </section>

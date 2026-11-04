@@ -180,7 +180,13 @@ def pagina(slug: str, db: DB):
             for x in barberos
         ],
         "servicios": [
-            {"id": s.id, "nombre": s.nombre, "precio": s.precio, "duracion_min": s.duracion_min}
+            {
+                "id": s.id,
+                "nombre": s.nombre,
+                "precio": s.precio,
+                "duracion_min": s.duracion_min,
+                "descripcion": s.descripcion,
+            }
             for s in servicios
         ],
         "fidelidad": {

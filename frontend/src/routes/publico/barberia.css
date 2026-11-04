@@ -386,3 +386,7 @@
 .gal-grilla button { position: relative; }
 .gal-play { position: absolute; left: 10px; bottom: 10px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #141210cc; color: #fffdf3; font-size: 16px; }
 .gal-tira video { max-width: 100%; max-height: 80vh; display: block; margin: auto; background: #000; }
+
+/* Lista de precios: descripción del servicio en una línea debajo */
+.caja li button:has(.serv-desc) { flex-wrap: wrap; }
+.serv-desc { flex-basis: 100%; display: block; margin-top: 2px; font: 500 13px/1.35 var(--type-archivo); text-transform: none; letter-spacing: 0; opacity: .8; text-align: left; }

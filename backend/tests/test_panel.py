@@ -360,3 +360,34 @@ def test_no_se_crean_dos_barberos_iguales(client, db):
     )
     r = client.post("/panel/barberos", json={"nombre": "ALEXIS ", "horarios": h})
     assert r.status_code == 409
+
+
+def test_servicio_con_descripcion_que_se_ve_en_la_pagina(client, db):
+    from sqlalchemy import select
+
+    from app.core.security import hashear_clave
+    from app.db import inspirationmen
+    from app.models import Usuario
+    from tests.util import CLAVE, ingresar
+
+    inspirationmen.cargar(db)
+    admin = db.scalar(select(Usuario).where(Usuario.usuario == "inspirationmen"))
+    admin.password_hash, admin.debe_cambiar_clave = hashear_clave(CLAVE), False
+    db.flush()
+    ingresar(client, "inspirationmen")
+    s = client.post(
+        "/panel/servicios",
+        json={
+            "nombre": "Afeitado",
+            "precio": 8000,
+            "duracion_min": 30,
+            "descripcion": " Con toalla caliente ",
+        },
+    ).json()
+    assert s["descripcion"] == "Con toalla caliente"
+    vista = {
+        x["nombre"]: x["descripcion"] for x in client.get("/p/inspirationmen").json()["servicios"]
+    }
+    assert vista["Afeitado"] == "Con toalla caliente"
+    r = client.patch(f"/panel/servicios/{s['id']}", json={"descripcion": ""})
+    assert r.json()["descripcion"] is None

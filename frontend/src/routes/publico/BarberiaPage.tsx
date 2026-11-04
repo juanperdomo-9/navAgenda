@@ -173,7 +173,7 @@ function Datos({ slug, libre, telInicial, servicios, preferido, barbero, diaTxt,
         {servicios.map((s) => (
           <label key={s.id} className="serv">
             <input type="radio" name="servicio" value={s.id} checked={s.id === sid} onChange={() => { setSid(s.id); setError('') }} />
-            <span>{s.nombre}<small>{s.duracion_min} min</small></span><b>{pesos(s.precio)}</b>
+            <span>{s.nombre}<small>{s.duracion_min} min{s.descripcion ? ` · ${s.descripcion}` : ''}</small></span><b>{pesos(s.precio)}</b>
           </label>
         ))}
       </fieldset>

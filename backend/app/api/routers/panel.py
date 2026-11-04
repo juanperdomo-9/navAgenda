@@ -208,6 +208,7 @@ def listar_servicios(admin: Admin, db: DB):
 def crear_servicio(datos: ServicioNuevo, admin: Admin, db: DB):
     _sin_repetir(db, Servicio, admin.barberia_id, datos.nombre, "un servicio")
     s = svc.crear_servicio(db, admin.barberia_id, datos.nombre, datos.precio, datos.duracion_min)
+    s.descripcion = (datos.descripcion or "").strip() or None
     db.commit()
     return svc.servicio_out(db, s)
 
@@ -218,6 +219,7 @@ def cambiar_servicio(servicio_id: UUID, datos: ServicioCambios, admin: Admin, db
     s = _servicio(db, admin, servicio_id)
     for campo, valor in datos.model_dump(exclude_unset=True).items():
         setattr(s, campo, valor.strip() if isinstance(valor, str) else valor)
+    s.descripcion = s.descripcion or None  # vacía = sin descripción
     db.commit()
     return svc.servicio_out(db, s)
 

@@ -68,6 +68,7 @@ def servicio_out(db: Session, s: Servicio) -> ServicioOut:
         nombre=s.nombre,
         precio=s.precio,
         duracion_min=s.duracion_min,
+        descripcion=s.descripcion,
         activo=s.activo,
         barbero_ids=list(barberos),
     )

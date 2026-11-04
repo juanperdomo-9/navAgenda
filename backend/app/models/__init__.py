@@ -202,6 +202,8 @@ class Servicio(Base):
     nombre: Mapped[str] = mapped_column(Text, nullable=False)
     precio: Mapped[int] = mapped_column(Integer, nullable=False)
     duracion_min: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Qué incluye, en una línea (opcional): se ve en la lista de precios y al reservar
+    descripcion: Mapped[str | None] = mapped_column(Text)
     activo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
     creado_en: Mapped[datetime] = _creado_en()
 

@@ -128,12 +128,14 @@ class ServicioNuevo(BaseModel):
     nombre: str = Field(min_length=2, max_length=60)
     precio: int = Field(ge=0, le=10_000_000)
     duracion_min: int = Field(ge=5, le=480, multiple_of=5)
+    descripcion: str | None = Field(default=None, max_length=160)
 
 
 class ServicioCambios(BaseModel):
     nombre: str | None = Field(default=None, min_length=2, max_length=60)
     precio: int | None = Field(default=None, ge=0, le=10_000_000)
     duracion_min: int | None = Field(default=None, ge=5, le=480, multiple_of=5)
+    descripcion: str | None = Field(default=None, max_length=160)
     activo: bool | None = None
 
 
@@ -142,6 +144,7 @@ class ServicioOut(BaseModel):
     nombre: str
     precio: int
     duracion_min: int
+    descripcion: str | None = None
     activo: bool
     barbero_ids: list[UUID]
 
