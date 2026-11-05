@@ -8,6 +8,7 @@ import { Led } from './Led'
 import { diaDe, Secciones, type Libre, type PaginaBarberia } from './Secciones'
 import { Barra, PieBarberia } from './Barra'
 import { Cargando } from './Cargando'
+import { LoQueDicen } from './Opiniones'
 import { Bienvenida, leerGanado, mostrarTalon, PremioActivo, TalonBienvenida, type Ganado } from './Bienvenida'
 import { estadoAhora, Galeria } from './Galeria'
 import './barberia.css'
@@ -124,6 +125,7 @@ function Maquina({ p, con }: { p: Pagina; con: string | null }) {
         </section>
       </main>
       <Galeria fotos={p.fotos ?? []} videos={p.videos ?? []} nombre={p.nombre} />
+      <LoQueDicen r={p.opiniones} />
       <Secciones p={p} servicio={servicio} setServicio={elegirServicio} nombreDe={nombreDe} onElegir={setElegido} onBarbero={conBarbero} subir={subir} />
       <dialog ref={hoja} className="hoja-p" onClose={() => setElegido(null)} aria-label="Tus datos">
         {elegido && (

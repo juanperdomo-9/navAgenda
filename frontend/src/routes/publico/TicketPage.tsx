@@ -5,12 +5,14 @@ import { api, ApiError } from '@/lib/api'
 import { estiloBarberia, fechaLarga, horaAR, pesos } from './comun'
 import { Cargando } from './Cargando'
 import { Ruleta } from './Ruleta'
+import { Estrellas, Opinar, type OpinionPublica } from './Opiniones'
 import './barberia.css'
 
 type Ticket = {
   estado: string; inicio: string; fin: string; precio: number; servicio: string; barbero: string; cliente: string
   barberia: { nombre: string; slug: string; color_acento: string; direccion: string | null; barrio: string | null; ciudad: string | null }
   se_puede_cancelar: boolean; cancelar_hasta: string; bienvenida: string | null
+  puede_opinar: boolean; opinion: OpinionPublica | null; videos_habilitados: boolean
   fidelidad: { cada: number; descripcion: string; cortes: number; premios: number; modo: 'fijo' | 'ruleta'; ruleta: string[]; puede_girar: boolean; premio: string | null } | null
 }
 
@@ -71,6 +73,8 @@ export function TicketPage() {
             </div>
           )}
         </article>
+        {d.puede_opinar && <Opinar token={token!} videos={d.videos_habilitados} onListo={() => { setMsg('¡Gracias por tu opinión!'); qc.invalidateQueries({ queryKey: ['ticket', token] }) }} />}
+        {d.opinion && <p className="tk-msg op-gracias"><Estrellas n={d.opinion.estrellas} /> Gracias por tu opinión{d.opinion.texto ? `: “${d.opinion.texto}”` : '.'}</p>}
         {msg && <p className="tk-msg" role="status">{msg}</p>}
         <div className="tk-acc">
           {d.estado === 'reservado' && <button type="button" onClick={compartir}>Guardar el ticket en WhatsApp</button>}

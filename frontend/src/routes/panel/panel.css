@@ -356,3 +356,8 @@ main { padding-bottom: 48px; }
 
 /* Alta de barbería: secciones como en el PDF */
 .pdf-sec { margin-top: 14px; padding: 6px 10px; background: var(--ink); color: var(--papel); font: 900 16px 'Archivo'; font-stretch: 62%; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Opiniones en el panel */
+.opinion.oculta { opacity: .6; }
+.opinion .op-estrellas svg { width: 16px; height: 16px; fill: none; stroke: currentColor; opacity: .35; }
+.opinion .op-estrellas svg.llena { fill: #f6d13a; stroke: #141210; opacity: 1; }

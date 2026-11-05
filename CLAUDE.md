@@ -263,6 +263,10 @@ Prioridad del producto: **entrar, sacar el turno y salir**. Lindo, simple y conc
 - Videos de la galería (2026-11-04): hasta 2 por barbería, 15 MB, en Supabase Storage (bucket público `videos`,
   `app/services/almacen.py`, tabla `videos_local` con la ruta). El navegador sube directo con URL firmada
   (`/panel/videos/subida` → PUT → `POST /panel/videos`). Mi página → "Logo de fondo" (`barberias.logo_fondo`) lo saca.
+- Opiniones (2026-11-05): solo opina quien tiene un turno "asistió", una vez, desde su ticket (estrellas 1-5, texto y
+  video opcional a Supabase Storage). Al día siguiente desde las 11 le llega el mail "¿Cómo te fue?" con un link nuevo
+  (`recordatorios.pedir_opiniones`). 4-5 estrellas se publican solas; el resto, si la barbería las muestra (panel →
+  Opiniones). La página muestra "Lo que dicen" con promedio y talones (tabla `opiniones`, migración 0014).
 - Desarrollo: si el puerto 8000 está ocupado, la API puede correr en otro y el front apunta con `API_URL`
   (config `frontend-api-8001` en `.claude/launch.json`).
 - Para probar: `docker compose up -d`, backend `uv run uvicorn app.main:app`, frontend `npm run dev`,

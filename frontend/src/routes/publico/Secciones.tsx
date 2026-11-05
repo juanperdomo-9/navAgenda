@@ -16,6 +16,7 @@ export type PaginaBarberia = {
   instagram?: string | null
   videos?: string[]
   logo_fondo?: boolean
+  opiniones?: import('./Opiniones').ResumenOpiniones
 }
 export type Libre = { inicio: string; fin: string; barbero_id: string }
 

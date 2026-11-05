@@ -1,16 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, ChartColumn, Contact, ExternalLink, Globe, LogOut, Menu, Scissors, Store, Users, X } from 'lucide-react'
+import { CalendarDays, ChartColumn, Contact, ExternalLink, Globe, LogOut, Menu, Scissors, Star, Store, Users, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { ADMINISTRANDO, administrando, api, ApiError, type UsuarioPanel } from '@/lib/api'
 import { Agenda } from './Agenda'
 import { Clientes, Numeros } from './Numeros'
+import { Opiniones } from './Opiniones'
 import { Super } from './Super'
 import { Barberos, MiPagina, Servicios } from './Vistas'
 import './panel.css'
 
 type Config = { nombre: string; slug: string; direccion: string | null; barrio: string | null }
-const NAV = [['agenda', 'Agenda', CalendarDays], ['barberos', 'Barberos', Users], ['servicios', 'Servicios', Scissors], ['clientes', 'Clientes', Contact], ['numeros', 'Números', ChartColumn], ['pagina', 'Mi página', Globe]] as const
+const NAV = [['agenda', 'Agenda', CalendarDays], ['barberos', 'Barberos', Users], ['servicios', 'Servicios', Scissors], ['clientes', 'Clientes', Contact], ['opiniones', 'Opiniones', Star], ['numeros', 'Números', ChartColumn], ['pagina', 'Mi página', Globe]] as const
 type Vista = (typeof NAV)[number][0]
 
 /** Panel de la barbería (diseño: design/panel). Verifica la sesión y muestra la Agenda. */
@@ -54,7 +55,7 @@ export function PanelPage() {
           </header>
           {como && <p className="administrando">Estás cargando <b>{como.nombre}</b>. Todo lo que hagas queda en su panel. <button type="button" className="link" onClick={() => { sessionStorage.removeItem(ADMINISTRANDO); qc.clear(); location.reload() }}>Volver a mis barberías</button></p>}
           {yo.data.debe_cambiar_clave ? <CambiarClave nombre={yo.data.nombre} onListo={() => qc.invalidateQueries({ queryKey: ['yo'] })} />
-            : admin ? { agenda: <Agenda />, barberos: <Barberos />, servicios: <Servicios />, clientes: <Clientes />, numeros: <Numeros />, pagina: <MiPagina /> }[vista]
+            : admin ? { agenda: <Agenda />, barberos: <Barberos />, servicios: <Servicios />, clientes: <Clientes />, opiniones: <Opiniones />, numeros: <Numeros />, pagina: <MiPagina /> }[vista]
             : <Super />}
         </div>
       </div>

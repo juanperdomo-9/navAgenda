@@ -390,3 +390,32 @@
 /* Lista de precios: descripción del servicio en una línea debajo */
 .caja li button:has(.serv-desc) { flex-wrap: wrap; }
 .serv-desc { flex-basis: 100%; display: block; margin-top: 2px; font: 500 13px/1.35 var(--type-archivo); text-transform: none; letter-spacing: 0; opacity: .8; text-align: left; }
+
+/* Opiniones: talones de ticket en la página y formulario en el ticket */
+.op-estrellas { display: inline-flex; gap: 2px; vertical-align: middle; }
+.op-estrellas svg { fill: none; stroke: currentColor; opacity: .35; }
+.op-estrellas svg.llena { fill: #f6d13a; stroke: #141210; opacity: 1; }
+.opiniones { display: grid; gap: 22px; }
+.op-prom { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 10px; font: 600 16px var(--type-archivo); }
+.op-prom b { font: 900 64px/1 var(--type-archivo); font-stretch: 62%; }
+.op-talones { list-style: none; padding: 0; display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
+.op-talon { flex: 0 0 min(300px, 80vw); scroll-snap-align: start; display: grid; gap: 10px; align-content: start; padding: 20px 20px 22px; background: var(--paper); color: var(--ink);
+  -webkit-mask: radial-gradient(circle 8px at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 8px at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat; }
+.op-talon p { font: 600 17px/1.4 var(--type-archivo); }
+.op-talon small { font: 700 13px var(--type-archivo); color: #3d3310; text-transform: uppercase; letter-spacing: .04em; }
+.op-talon video { width: 100%; aspect-ratio: 9 / 16; max-height: 360px; object-fit: cover; border-radius: 6px; background: #000; }
+.op-form { margin-top: 18px; padding: 22px 20px; background: var(--paper); color: var(--ink); display: grid; gap: 12px; }
+.op-form h2 { font: 900 32px var(--type-archivo); font-stretch: 62%; text-transform: uppercase; }
+.op-elegir { display: flex; gap: 6px; }
+.op-elegir button { width: 52px; height: 52px; display: grid; place-items: center; border: 0; background: none; cursor: pointer; }
+.op-elegir svg { width: 42px; height: 42px; fill: none; stroke: #141210; stroke-width: 1.6; }
+.op-elegir button.llena svg { fill: #f6d13a; }
+.op-etiqueta { font: 800 15px var(--type-archivo); min-height: 20px; }
+.op-campo { display: grid; gap: 6px; font: 700 14px var(--type-archivo); }
+.op-campo textarea { min-height: 80px; padding: 10px 12px; border: 2px solid #14121040; border-radius: 4px; font: 500 16px var(--type-archivo); background: #fff; color: #141210; }
+.op-video button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 2px dashed #14121060; border-radius: 4px; background: none; cursor: pointer; font: 700 15px var(--type-archivo); }
+.op-video span { display: block; margin-top: 6px; font: 500 13px var(--type-archivo); color: #3d3310; }
+.op-error { color: #9e2a1c; font: 600 14px var(--type-archivo); }
+.op-enviar { min-height: 56px; border: 2px solid #141210; border-radius: 4px; background: #f6d13a; color: #141210; cursor: pointer; font: 900 22px var(--type-archivo); font-stretch: 70%; text-transform: uppercase; }
+.op-gracias { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
