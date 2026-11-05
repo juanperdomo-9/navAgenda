@@ -10,6 +10,7 @@ from app.api.routers import (
     logo,
     numeros,
     og,
+    opiniones,
     paginas,
     panel,
     publico,
@@ -42,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(paginas.router)
     app.include_router(cobranza.router)
     app.include_router(fotos.router)
+    app.include_router(opiniones.router)
     if settings.es_produccion:
         _revisar_deudas_cada_hora()
     return app
@@ -64,6 +66,8 @@ def _revisar_deudas_cada_hora() -> None:
 
             with Session(get_engine()) as db:
                 recordatorios.mandar_pendientes(db)
+            with Session(get_engine()) as db:
+                recordatorios.pedir_opiniones(db)
         except Exception:  # noqa: BLE001 (que un error no corte el ciclo)
             pass
         t = threading.Timer(900, tarea)

@@ -299,6 +299,8 @@ class Turno(Base):
     recordado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # El link del ticket solo se conoce al reservar: el recordatorio lleva uno propio del turno
     token_recordatorio_hash: Mapped[str | None] = mapped_column(Text, unique=True)
+    # Cuándo se le pidió la opinión por mail (el día después del corte, una sola vez)
+    opinion_pedida_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     creado_en: Mapped[datetime] = _creado_en()
 
 
@@ -437,6 +439,27 @@ class Giro(Base):
     descuento_pct: Mapped[int] = mapped_column(Integer, nullable=False)
     turno_id: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), ForeignKey("turnos.id"))
     usado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    creado_en: Mapped[datetime] = _creado_en()
+
+
+class Opinion(Base):
+    """Opinión de un cliente que fue: una por turno "asistió". El video vive en Supabase Storage."""
+
+    __tablename__ = "opiniones"
+    __table_args__ = (CheckConstraint("estrellas BETWEEN 1 AND 5", name="estrellas_validas"),)
+
+    id: Mapped[UUID] = _id()
+    barberia_id: Mapped[UUID] = _barberia_fk()
+    turno_id: Mapped[UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("turnos.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    estrellas: Mapped[int] = mapped_column(Integer, nullable=False)
+    texto: Mapped[str | None] = mapped_column(Text)
+    video_ruta: Mapped[str | None] = mapped_column(Text)
+    visible: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
     creado_en: Mapped[datetime] = _creado_en()
 
 

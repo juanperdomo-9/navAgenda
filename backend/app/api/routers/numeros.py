@@ -9,7 +9,7 @@ from sqlalchemy import and_, delete, func, select
 
 from app.api.deps import DB, Admin
 from app.core.tz import ZONA_AR
-from app.models import Barbero, Bienvenida, Cliente, Fidelidad, Giro, Servicio, Turno
+from app.models import Barbero, Bienvenida, Cliente, Fidelidad, Giro, Opinion, Servicio, Turno
 
 router = APIRouter(prefix="/panel", tags=["numeros"])
 
@@ -79,6 +79,8 @@ def borrar_cliente(cliente_id: UUID, admin: Admin, db: DB) -> None:
     if not c:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe ese cliente.")
     db.execute(delete(Giro).where(Giro.cliente_id == c.id))
+    turnos = select(Turno.id).where(Turno.cliente_id == c.id)
+    db.execute(delete(Opinion).where(Opinion.turno_id.in_(turnos)))
     db.execute(delete(Turno).where(Turno.cliente_id == c.id))
     db.execute(delete(Fidelidad).where(Fidelidad.cliente_id == c.id))
     # Un cliente de prueba borrado puede volver a probar la ruleta de bienvenida

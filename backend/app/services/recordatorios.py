@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.tz import ZONA_AR
-from app.models import Cliente, Turno
+from app.models import Cliente, Opinion, Turno
 from app.services import avisos
 
 HORA = 20
@@ -49,3 +49,36 @@ def mandar_pendientes(db: Session, ahora: datetime | None = None) -> int:
         avisos.mandar(aviso)
         n += 1
     return n
+
+
+HORA_OPINION = 11
+
+
+def pedir_opiniones(db: Session, ahora: datetime | None = None) -> int:
+    """El día después del corte, desde las 11: mail "¿Cómo te fue?" a los que fueron y no opinaron.
+    El link nuevo reemplaza al del recordatorio (ese turno ya pasó)."""
+    ahora = (ahora or datetime.now(UTC)).astimezone(ZONA_AR)
+    if ahora.hour < HORA_OPINION:
+        return 0
+    hoy = datetime.combine(ahora.date(), time(0), tzinfo=ZONA_AR)
+    turnos = db.scalars(
+        select(Turno)
+        .join(Cliente, Cliente.id == Turno.cliente_id)
+        .outerjoin(Opinion, Opinion.turno_id == Turno.id)
+        .where(
+            Turno.estado == "asistio",
+            Turno.opinion_pedida_en.is_(None),
+            Turno.inicio >= hoy - timedelta(days=1),
+            Turno.inicio < hoy,
+            Cliente.email.is_not(None),
+            Opinion.id.is_(None),
+        )
+    ).all()
+    for t in turnos:
+        token = secrets.token_urlsafe(18)
+        aviso = avisos.pedido_opinion(db, t, token)
+        t.opinion_pedida_en = datetime.now(UTC)
+        t.token_recordatorio_hash = hashlib.sha256(token.encode()).hexdigest()
+        db.commit()
+        avisos.mandar(aviso)
+    return len(turnos)

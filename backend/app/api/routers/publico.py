@@ -24,11 +24,12 @@ from app.models import (
     Fidelidad,
     FotoLocal,
     HorarioBarbero,
+    Opinion,
     ReglaBeneficio,
     Servicio,
     Turno,
 )
-from app.services import avisos, bienvenida, premios
+from app.services import almacen, avisos, bienvenida, opiniones, premios
 from app.services.disponibilidad import horarios_libres
 
 router = APIRouter(tags=["público"])
@@ -163,6 +164,7 @@ def pagina(slug: str, db: DB):
         "instagram": b.instagram,
         "logo_fondo": b.logo_fondo,
         "videos": [v["url"] for v in videos_de(db, b.id)],
+        "opiniones": opiniones.para_pagina(db, b.id),
         "horas_min_cancelacion": b.horas_min_cancelacion,
         "bienvenida": bienvenida.activa(db, b),
         "barberos": [
@@ -404,6 +406,9 @@ def _ticket(db, t: Turno) -> dict:
             "ciudad": b.ciudad,
         },
         "bienvenida": g.premio if (g := bienvenida.del_turno(db, t)) else None,
+        "puede_opinar": opiniones.puede_opinar(db, t),
+        "opinion": opiniones.a_dict(db, o) if (o := opiniones.de_turno(db, t)) else None,
+        "videos_habilitados": almacen.configurado(),
         "se_puede_cancelar": t.estado == "reservado" and datetime.now(UTC) < limite,
         "cancelar_hasta": limite,
         "fidelidad": {
@@ -469,4 +474,81 @@ def cancelar(token: str, db: DB, tareas: BackgroundTasks):
     t.estado = "cancelado"
     db.commit()
     tareas.add_task(avisos.mandar, avisos.armar(db, t, "cancelado"))
+    return _ticket(db, t)
+
+
+# ─── Opiniones: solo quien fue, una vez por turno, desde su ticket ───
+
+
+class OpinionNueva(BaseModel):
+    estrellas: int = Field(ge=1, le=5)
+    texto: str | None = Field(default=None, max_length=280)
+    video_ruta: str | None = Field(default=None, max_length=200)
+
+
+class VideoOpinion(BaseModel):
+    tipo: str = Field(max_length=40)
+    bytes: int = Field(gt=0)
+
+
+@router.post("/t/{token}/opinion/video")
+def subir_video_opinion(token: str, datos: VideoOpinion, db: DB):
+    """URL firmada para que el cliente suba su video testimonio directo a Supabase."""
+    from app.api.routers.fotos import MAX_MB, TIPOS
+
+    t = _por_token(db, token)
+    if not opiniones.puede_opinar(db, t):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Este turno ya tiene opinión o todavía no fue."
+        )
+    if not almacen.configurado():
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "Por ahora no se pueden subir videos."
+        )
+    ext = TIPOS.get(datos.tipo.lower())
+    if not ext or datos.bytes > MAX_MB * 1024 * 1024:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"Subí un video MP4, MOV o WEBM de hasta {MAX_MB} MB (unos 20 segundos).",
+        )
+    ruta = f"{t.barberia_id}/opiniones/{secrets.token_hex(12)}.{ext}"
+    return {"ruta": ruta, "subir_url": almacen.firmar_subida(ruta)}
+
+
+@router.post("/t/{token}/opinion", status_code=status.HTTP_201_CREATED)
+def opinar(token: str, datos: OpinionNueva, db: DB):
+    t = _por_token(db, token)
+    if t.estado != "asistio":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Vas a poder opinar después de tu corte. ¡Te esperamos!"
+        )
+    if opiniones.de_turno(db, t):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Ya dejaste tu opinión de este turno. ¡Gracias!"
+        )
+    ruta = datos.video_ruta
+    if ruta and (
+        not ruta.startswith(f"{t.barberia_id}/opiniones/")
+        or not almacen.configurado()
+        or not almacen.existe(ruta)
+    ):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "No encontramos el video. Probá de nuevo."
+        )
+    o = Opinion(
+        barberia_id=t.barberia_id,
+        turno_id=t.id,
+        estrellas=datos.estrellas,
+        texto=(datos.texto or "").strip() or None,
+        video_ruta=ruta,
+        visible=datos.estrellas >= opiniones.PUBLICA_SOLA_DESDE,
+    )
+    db.add(o)
+    try:
+        db.commit()
+    except IntegrityError:  # dos envíos al mismo tiempo
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Ya dejaste tu opinión de este turno."
+        ) from None
     return _ticket(db, t)

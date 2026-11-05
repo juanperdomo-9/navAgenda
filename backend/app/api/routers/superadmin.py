@@ -22,6 +22,7 @@ from app.models import (
     FotoLocal,
     Giro,
     HorarioBarbero,
+    Opinion,
     Pago,
     Recordatorio,
     ReglaBeneficio,
@@ -245,7 +246,16 @@ def borrar_barberia(barberia_id: UUID, datos: Borrado, _: Superadmin, db: DB) ->
             almacen.borrar(v.ruta)
     barberos = select(Barbero.id).where(Barbero.barberia_id == b.id)
     # En orden: primero lo que apunta a otras tablas de la barbería
-    for modelo in (Giro, Bienvenida, Fidelidad, Turno, Bloqueo, BarberoServicio, ReglaBeneficio):
+    for modelo in (
+        Opinion,
+        Giro,
+        Bienvenida,
+        Fidelidad,
+        Turno,
+        Bloqueo,
+        BarberoServicio,
+        ReglaBeneficio,
+    ):
         db.execute(delete(modelo).where(modelo.barberia_id == b.id))
     db.execute(delete(HorarioBarbero).where(HorarioBarbero.barbero_id.in_(barberos)))
     for modelo in (Servicio, Barbero, Cliente, FotoLocal, VideoLocal, Pago, Recordatorio, Usuario):

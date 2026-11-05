@@ -89,6 +89,22 @@ def recordatorio(db, t: Turno, token: str) -> Aviso | None:
     return c.email, f"Mañana a las {i:%H:%M}: tu turno en {b.nombre}", texto
 
 
+def pedido_opinion(db, t: Turno, token: str) -> Aviso | None:
+    """El día después del corte: "¿Cómo te fue?" con el link para dejar la opinión."""
+    c = db.get(Cliente, t.cliente_id)
+    if not c or not c.email:
+        return None
+    b, x, _, _, _ = _datos(db, t)
+    texto = (
+        f"Hola {c.nombre.split(' ')[0]}, ¿cómo te fue ayer con {x.nombre.split(' ')[0]}?\n\n"
+        "Contanos en 10 segundos: estrellas y un comentario (o un video corto, si querés). "
+        "Ayuda un montón a la barbería.\n\n"
+        f"Dejá tu opinión: {get_settings().sitio_url}/t/{token}\n\n"
+        f"{b.nombre} · NavAgenda"
+    )
+    return c.email, f"¿Cómo te fue en {b.nombre}?", texto
+
+
 def mandar(aviso: Aviso | None) -> None:
     if aviso:
         _enviar(*aviso)
